@@ -1,0 +1,5 @@
+{
+  "task": "branch_count",
+  "expected_stdout": "5000000",
+  "description": "Count even integers from 0..9_999_999 using branches in a loop."
+}

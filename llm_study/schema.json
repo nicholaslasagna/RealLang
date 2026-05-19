@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reallang.dev/schemas/llm-study-result-v0.1.json",
+  "title": "RealLang LLM generation study result",
+  "description": "One scored submission from an AI coding agent (methodology v0.1 — not completed research).",
+  "type": "object",
+  "required": [
+    "study_version",
+    "task",
+    "language",
+    "source_file",
+    "first_try_compile_success",
+    "first_try_correct_output",
+    "repair_attempts",
+    "final_compile_success",
+    "final_correct_output"
+  ],
+  "properties": {
+    "study_version": { "type": "string", "const": "0.1" },
+    "task": {
+      "type": "string",
+      "enum": ["loop_sum", "fibonacci_recursive", "branch_count", "function_call"]
+    },
+    "language": { "type": "string", "enum": ["reallang", "c", "cpp"] },
+    "source_file": { "type": "string" },
+    "agent_id": { "type": "string", "description": "Optional label for the coding agent or human" },
+    "first_try_compile_success": { "type": "boolean" },
+    "first_try_correct_output": { "type": "boolean" },
+    "repair_attempts": { "type": "integer", "minimum": 0 },
+    "final_compile_success": { "type": "boolean" },
+    "final_correct_output": { "type": "boolean" },
+    "token_count_estimate": { "type": "integer", "minimum": 0 },
+    "runtime_ms_if_available": { "type": "number", "minimum": 0 },
+    "stdout": { "type": "string" },
+    "expected_stdout": { "type": "string" },
+    "compile_log": { "type": "string" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false
+}

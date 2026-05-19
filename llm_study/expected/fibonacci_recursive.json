@@ -1,0 +1,5 @@
+{
+  "task": "fibonacci_recursive",
+  "expected_stdout": "9227465",
+  "description": "Print fib(35) using recursive functions and if/else."
+}

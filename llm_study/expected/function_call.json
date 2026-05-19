@@ -1,0 +1,5 @@
+{
+  "task": "function_call",
+  "expected_stdout": "1250025000",
+  "description": "Accumulate inc(i) for i in 0..49999 using a helper function in a hot loop."
+}

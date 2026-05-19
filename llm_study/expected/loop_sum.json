@@ -1,0 +1,5 @@
+{
+  "task": "loop_sum",
+  "expected_stdout": "1249975000",
+  "description": "Sum integers 0..49999 using a while loop and mutable state."
+}
