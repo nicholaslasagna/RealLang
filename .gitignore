@@ -10,6 +10,7 @@ build/
 .venv/
 venv/
 *.c
+!benchmarks/c/*.c
 *.o
 *.out
 benchmarks/build/
