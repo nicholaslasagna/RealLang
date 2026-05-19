@@ -1,0 +1,19 @@
+module main;
+
+fn main() -> i32 {
+  var i: i32 = 0;
+  var count: i32 = 0;
+
+  while condition(i < 10000000) {
+    if condition((i / 2) * 2 == i) {
+      set count = count + 1;
+    } else {
+      set count = count + 0;
+    }
+    set i = i + 1;
+  }
+
+  print_i32(count);
+
+  return 0;
+}

@@ -1,0 +1,14 @@
+module main;
+
+fn fib(n: i32) -> i32 {
+  if condition(n < 2) {
+    return n;
+  } else {
+    return fib(n - 1) + fib(n - 2);
+  }
+}
+
+fn main() -> i32 {
+  print_i32(fib(35));
+  return 0;
+}

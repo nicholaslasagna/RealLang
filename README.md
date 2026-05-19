@@ -6,7 +6,17 @@ This repository implements the compiler incrementally in **vertical slices**—e
 
 ## Performance model
 
-RealLang targets **C-like performance** by lowering to generated C today, with a planned LLVM backend later. It is not positioned as “faster than C”; the goal is predictable, native-speed output with semantics that stay easy for both humans and models to reason about.
+RealLang does **not** attempt to beat C by magic. RealLang currently lowers to C, then relies on mature native compilers for optimization. Its performance goal is **C-like native execution**. Its research goal is different: can an AI-native language improve first-try correctness, repairability, and code generation reliability while preserving native performance?
+
+See [benchmarks/README.md](benchmarks/README.md) for the v0.1 harness (RealLang vs C vs C++ on loops, recursion, branches, and calls).
+
+## Research direction
+
+RealLang is designed by **Imagicast Studios** as an AI-native systems language. It lowers to C for native execution, uses deterministic syntax, explicit semantics, structured AI-repairable diagnostics, and a benchmark harness comparing RealLang-generated C against handwritten C/C++ baselines.
+
+**Long-term question:** Can an AI-native language improve first-try compile success, correctness, and repairability while preserving C-like performance?
+
+The [llm_study/](llm_study/) directory provides the **methodology and scoring harness** for that study (no completed results yet).
 
 ## Integer overflow (v0.1)
 
@@ -56,6 +66,9 @@ realc examples/hello.real --emit-c
 cc -std=c11 -Wall -Wextra -o hello examples/hello.c && ./hello
 
 pytest
+
+# Benchmarks (optional; branch_count is slow)
+python benchmarks/run_benchmarks.py --skip-slow
 ```
 
 ## CLI

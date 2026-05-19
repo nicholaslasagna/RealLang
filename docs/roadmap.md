@@ -1,52 +1,53 @@
 # RealLang roadmap
 
-RealLang is designed by **Imagicast Studios**. Development proceeds in small, test-backed milestones—no milestone is “done” until its example programs compile and its tests pass.
+RealLang is designed by **Imagicast Studios**. Development proceeds in small, test-backed milestones.
 
 ## Milestone 1 — hello.real vertical slice ✅
 
-**Status:** completed
-
-- Lexer, parser, AST, typechecker, C codegen
-- CLI: `realc examples/hello.real --emit-c`
-- Example: `examples/hello.real`
+Lexer through C codegen; `examples/hello.real`
 
 ## Milestone 2 — functions and arithmetic ✅
 
-**Status:** completed
-
-- Function declarations with parameters, calls, `i32` arithmetic, `let`, return checking
-- Example: `examples/add.real`
+Parameters, calls, `let`, `i32` math; `examples/add.real`
 
 ## Milestone 3 — mutation and control flow ✅
 
-**Status:** completed
-
-- `var` / `set`, `bool`, comparisons, `if` / `else`, `while condition(...)`
-- Examples: `examples/looptest.real`, `examples/condition.real`
+`var`/`set`, `bool`, `if`/`else`, `while`; `looptest.real`, `condition.real`
 
 ## Milestone 4 — diagnostics and correctness hardening ✅
 
-**Status:** completed
+Structured `REAL_*_ERROR[Exxx]` diagnostics; documented `i32` wrapping; warning-free C
 
-- Structured diagnostics with stable error codes (`REAL_*_ERROR[Exxx]`)
-- File, line, column; expected/found; suggested repairs
-- Documented v0.1 `i32` wrapping overflow semantics
-- Clean generated C (`cc -std=c11 -Wall -Wextra`) for all examples
-- Codegen TODO for explicit wrapping lowering in a future backend pass
+## Milestone 5 — benchmark harness v0.1 ✅
 
-## Milestone 5 — wider numeric types
+`benchmarks/` — RealLang vs C vs C++ with warmup, median/stdev, anti-DCE hardening
 
-- `i64`, `f64`
-- Additional print builtins
-- Benchmark prep
+## Milestone 6 — LLM generation reliability study framework ✅
 
-## Milestone 6 — performance benchmarks
+`llm_study/` — prompts (RealLang/C/C++), expected outputs, JSON schema, `score_submission.py`
 
-- Benchmark suite against C, C++, and Assembly baselines
-- Measure generated-C output; later, LLVM lowering when available
+**No completed study results yet** — methodology and harness only.
 
-## Milestone 7 — LLM generation reliability
+## Milestone 7 — `i64` / `f64`
 
-- Study how reliably models generate valid RealLang
-- Measure repair loops using compiler diagnostics
-- Document patterns that improve generation and fix rates
+Wider numeric types and print builtins
+
+## Milestone 8 — arrays
+
+Fixed arrays and indexing
+
+## Milestone 9 — explicit `i32` wrapping lowering
+
+Trustworthy `-O3` codegen for benchmarks and production
+
+## Milestone 10 — LLVM IR experiment
+
+Alternative backend beyond C emission
+
+## Milestone 11 — extended benchmarks + published tables
+
+Larger suite; optional Assembly baselines
+
+## Milestone 12 — run LLM reliability study
+
+Execute `llm_study` across agents; aggregate first-try and repair metrics

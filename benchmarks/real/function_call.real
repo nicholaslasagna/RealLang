@@ -1,0 +1,19 @@
+module main;
+
+fn inc(x: i32) -> i32 {
+  return x + 1;
+}
+
+fn main() -> i32 {
+  var i: i32 = 0;
+  var total: i32 = 0;
+
+  while condition(i < 50000) {
+    set total = total + inc(i);
+    set i = i + 1;
+  }
+
+  print_i32(total);
+
+  return 0;
+}
