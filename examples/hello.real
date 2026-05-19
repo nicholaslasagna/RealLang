@@ -1,0 +1,5 @@
+module main;
+fn main() -> i32 {
+  print_str("Hello from RealLang");
+  return 0;
+}

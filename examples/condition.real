@@ -1,0 +1,13 @@
+module main;
+
+fn main() -> i32 {
+  let x: i32 = 10;
+
+  if condition(x == 10) {
+    print_bool(true);
+  } else {
+    print_bool(false);
+  }
+
+  return 0;
+}
