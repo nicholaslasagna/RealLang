@@ -15,6 +15,9 @@ BUILTINS: dict[str, tuple[list[ast.TypeKind], ast.TypeKind]] = {
 
 FunctionSig = tuple[list[ast.TypeKind], ast.TypeKind]
 
+_I32_SOURCE_LITERAL_MIN = 0
+_I32_SOURCE_LITERAL_MAX = 2**31 - 1
+
 _C_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _C_RESERVED_IDENTIFIERS = {
     "auto",
@@ -144,7 +147,7 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
                         repair="Change the return type to i32.",
                     )
                 )
-        if fn.return_type not in (ast.TypeKind.I32,):
+        if fn.return_type not in (ast.TypeKind.I32, ast.TypeKind.BOOL):
             raise RealTypeError(
                 type_error(
                     "E200",
@@ -152,7 +155,7 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
                     file=file,
                     line=fn.span.line,
                     column=fn.span.column,
-                    expected="i32",
+                    expected="i32 or bool",
                     found=fn.return_type.name,
                 )
             )
@@ -216,10 +219,16 @@ def _check_function(fn: ast.Function, functions: dict[str, FunctionSig], *, file
         raise RealTypeError(
             type_error(
                 "E220",
-                f"Function {fn.name!r} must return i32 on every path.",
+                f"Function {fn.name!r} must return {fn.return_type.name} on every path.",
                 file=file,
                 line=fn.span.line,
                 column=fn.span.column,
+                why=(
+                    "RealLang v0.1 only treats a direct return statement, or an "
+                    "if/else where both branches return, as guaranteeing a return. "
+                    "while loops do not guarantee a return."
+                ),
+                expected="return on every control-flow path",
                 repair="Add a return statement after control flow or return from every branch.",
             )
         )
@@ -434,6 +443,7 @@ def _check_expr(
     file: str | None,
 ) -> ast.TypeKind:
     if isinstance(expr, ast.IntLit):
+        _check_i32_literal(expr, file=file)
         return ast.TypeKind.I32
     if isinstance(expr, ast.BoolLit):
         return ast.TypeKind.BOOL
@@ -582,6 +592,31 @@ def _check_call(
             )
 
     return ret_type
+
+
+def _check_i32_literal(expr: ast.IntLit, *, file: str | None) -> None:
+    if _I32_SOURCE_LITERAL_MIN <= expr.value <= _I32_SOURCE_LITERAL_MAX:
+        return
+    raise RealTypeError(
+        type_error(
+            "E221",
+            f"Integer literal {expr.value} is outside the RealLang i32 source literal range.",
+            file=file,
+            line=expr.span.line,
+            column=expr.span.column,
+            why=(
+                "RealLang v0.1 integer literals are non-negative decimal source "
+                "tokens. There is no unary minus syntax yet, so -2147483648 is "
+                "not accepted as a direct source literal."
+            ),
+            expected=f"{_I32_SOURCE_LITERAL_MIN}..{_I32_SOURCE_LITERAL_MAX}",
+            found=str(expr.value),
+            repair=(
+                "Use a literal between 0 and 2147483647, or express negative or "
+                "wrapping values with supported i32 arithmetic."
+            ),
+        )
+    )
 
 
 def _check_c_identifier(

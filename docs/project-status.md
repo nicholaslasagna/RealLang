@@ -46,6 +46,7 @@ these as goals rather than proven outcomes.
 - module declarations
 - functions
 - parameters
+- `i32` and `bool` return values for non-main functions
 - function calls
 - return statements
 - `let` immutable bindings
@@ -62,11 +63,14 @@ these as goals rather than proven outcomes.
 
 ## Current quality signals
 
-At the time this document was added:
+As of Milestone 10:
 
 - the full test suite passed
 - examples compiled warning-free with `cc -std=c11 -Wall -Wextra`
 - benchmark RealLang sources compiled warning-free in the test suite
+- accepted programs require guaranteed `i32` or `bool` return paths
+- `i32` source integer literals are checked against the documented
+  `0..2147483647` range
 - benchmark and LLM study harnesses existed
 - no completed LLM reliability study results were published
 

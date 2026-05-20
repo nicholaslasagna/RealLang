@@ -10,7 +10,7 @@ documentation issue, not as permission to make undocumented claims.
 RealLang v0.1 currently supports:
 
 - module declarations
-- functions with parameters and `i32` return values
+- functions with parameters and `i32` or `bool` return values
 - function calls
 - `return` statements
 - immutable `let` bindings
@@ -50,6 +50,12 @@ Important constraints:
 `i32` is intended to mean a 32-bit signed integer value with defined
 two's-complement wrapping arithmetic modulo 2^32.
 
+Source integer literals are non-negative decimal tokens in the range
+`0..2147483647`. RealLang v0.1 does not have unary minus syntax, so
+`-2147483648` is not accepted as a direct source literal or as unary minus over
+`2147483648`. Negative `i32` values can be produced by supported arithmetic
+expressions, which use the wrapping semantics described below.
+
 This is a RealLang language rule, not a C rule. The C backend lowers `i32` to
 `int32_t` and uses explicit `uint32_t`-backed helpers for wrapping `+`, `-`,
 and `*`, so those operations do not rely on C signed overflow behavior.
@@ -72,6 +78,15 @@ String literals currently exist for `print_str`. RealLang does not yet expose a
 general string type with variables, operations, ownership, allocation, or
 Unicode semantics.
 
+### Function return types
+
+Non-main user-defined functions can currently return `i32` or `bool`.
+`main` has a fixed v0.1 signature:
+
+```real
+fn main() -> i32
+```
+
 ### `void`
 
 `void` exists in the internal model for statement-only builtins such as
@@ -91,11 +106,21 @@ generated code, or generated runtime helper names.
 
 Function parameter names must be unique within the function.
 
-`main` has a fixed v0.1 signature:
+## Return paths
 
-```real
-fn main() -> i32
-```
+Every currently supported user-defined non-void function must guarantee a
+`return` on every control-flow path.
+
+The v0.1 return-path rules are intentionally conservative:
+
+- A direct `return` statement satisfies the current path.
+- `if condition(...) { ... } else { ... }` satisfies the current path only when
+  both branches guarantee a return.
+- `while condition(...) { ... }` does not guarantee a return, even when the
+  condition appears constant.
+
+The parser currently requires `else` on every `if`, so an `if` without `else`
+is rejected before return-path analysis.
 
 ## Backend contract
 

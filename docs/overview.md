@@ -22,7 +22,7 @@ hardened C today and future LLVM backends.
 |------|-------|
 | `i32` | 32-bit signed integer; wrapping arithmetic (see below) |
 | `bool` | `true` / `false` |
-| `void` | Function return / statement-only builtins |
+| `void` | Internal type for statement-only builtins; user-defined `void` functions are not implemented |
 | `string` | String literals for `print_str` |
 
 ### `i32` overflow semantics
@@ -75,6 +75,7 @@ Errors use stable codes for automated repair:
 | `REAL_PARSE_ERROR` | `E101` missing `;`, `E102` missing `)`, `E103` missing `}` |
 | `REAL_TYPE_ERROR` | `E203` set on `let`, `E205` wrong arity, `E207`/`E208` non-bool condition |
 | `REAL_TYPE_ERROR` | `E217` invalid `main` parameters, `E218` duplicate parameter, `E219` unsafe C identifier |
+| `REAL_TYPE_ERROR` | `E220` missing guaranteed return path, `E221` `i32` literal out of range |
 
 Each diagnostic may include file path, line, column, problem, why, expected/found, and suggested repair.
 
