@@ -25,7 +25,7 @@ Performance is modeled as **C-like**, not “faster than C”: generated C is th
 
 RealLang v0.1 defines **`i32` arithmetic as two's-complement wrapping modulo 2³²**. Addition, subtraction, multiplication, and division that exceed the representable range wrap deterministically in the language semantics.
 
-This is intentional and documented—not “whatever C does.” The reference C backend currently maps `i32` to C `int`; a future backend milestone will lower wrapping arithmetic explicitly (for example via `uint32_t` casts) so generated code cannot depend on undefined signed overflow in C.
+This is intentional and documented—not “whatever C does.” The reference C backend lowers `i32` to `int32_t` and uses explicit `uint32_t`-backed helpers for wrapping `+`, `-`, and `*`. Division handles the `INT32_MIN / -1` overflow case explicitly; divide-by-zero behavior is not specified yet.
 
 ---
 

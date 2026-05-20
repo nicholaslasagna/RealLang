@@ -22,6 +22,25 @@ lex -> parse -> typecheck -> emit C
 
 The emitted C is compiled by an external C compiler such as `cc`.
 
+## Long-term ambition
+
+RealLang should eventually compete with Rust, C, and C++ through measurable
+strengths, not broad superiority claims.
+
+The intended evidence targets are:
+
+- AI-generated RealLang compiles correctly more often than AI-generated Rust,
+  C, or C++ on comparable tasks.
+- RealLang diagnostics reduce repair attempts.
+- RealLang syntax reduces ambiguity for tools and coding agents.
+- RealLang native backends preserve C/Rust-like performance on measured
+  workloads.
+- RealLang benchmarks are reproducible, honest, and scoped to the data they
+  actually measure.
+
+Until benchmark and study data support a narrow claim, RealLang should frame
+these as goals rather than proven outcomes.
+
 ## Current implemented language features
 
 - module declarations
@@ -45,7 +64,7 @@ The emitted C is compiled by an external C compiler such as `cc`.
 
 At the time this document was added:
 
-- the full test suite passed with 52 tests
+- the full test suite passed
 - examples compiled warning-free with `cc -std=c11 -Wall -Wextra`
 - benchmark RealLang sources compiled warning-free in the test suite
 - benchmark and LLM study harnesses existed
@@ -57,8 +76,8 @@ These are useful early signals, not proof of production readiness.
 
 Known limitations include:
 
-- the C backend does not yet faithfully lower all documented `i32` wrapping
-  semantics
+- divide-by-zero behavior is not specified
+- accepted-program C validity still has known hardening work
 - no LLVM backend exists yet
 - no RealIR exists yet
 - user-defined `void` functions are not implemented
@@ -77,7 +96,8 @@ Recommended near-term work:
 
 - ensure accepted RealLang programs emit warning-free C
 - add tests for currently accepted-invalid programs
-- harden `i32` lowering so C output matches RealLang wrapping semantics
+- keep `i32` lowering aligned with RealLang wrapping semantics as new
+  expression forms are added
 - document exact semantics before adding new types or arrays
 - keep each milestone small and test-backed
 
@@ -96,4 +116,3 @@ Avoid wording such as:
 - "RealLang is safer than Rust."
 - "RealLang has proven AI reliability."
 - "RealLang is production-ready."
-

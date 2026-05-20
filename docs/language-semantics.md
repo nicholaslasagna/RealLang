@@ -50,17 +50,13 @@ Important constraints:
 `i32` is intended to mean a 32-bit signed integer value with defined
 two's-complement wrapping arithmetic modulo 2^32.
 
-This is a RealLang language rule, not a C rule. The current C backend still
-lowers `i32` to C `int`, and the backend has a known hardening task: arithmetic
-lowering must avoid relying on C signed overflow behavior.
+This is a RealLang language rule, not a C rule. The C backend lowers `i32` to
+`int32_t` and uses explicit `uint32_t`-backed helpers for wrapping `+`, `-`,
+and `*`, so those operations do not rely on C signed overflow behavior.
 
-Until that hardening lands, programs that overflow `i32` should be treated as
-semantically specified by RealLang but not yet faithfully lowered by the C
-backend.
-
-Division is currently available through `/`. More precise division semantics,
-including divide-by-zero behavior and the overflow case `INT_MIN / -1`, still
-need to be specified and tested.
+Division is currently available through `/`. The backend handles the signed
+division overflow case `INT32_MIN / -1` explicitly. Divide-by-zero behavior
+still needs to be specified and tested.
 
 ### `bool`
 
@@ -103,4 +99,3 @@ The intended frontend/backend contract is:
 
 The project is not fully at that contract yet. The known gaps are tracked as
 compiler hardening work, not as language features.
-

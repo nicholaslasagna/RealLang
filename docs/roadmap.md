@@ -2,6 +2,18 @@
 
 RealLang is designed by **Imagicast Studios**. Development proceeds in small, test-backed milestones.
 
+Current ordering discipline:
+
+1. Codex audit and technical risk review
+2. Documentation and open-source polish
+3. `i32` C backend hardening
+4. RealIR design
+5. LLVM backend experiments
+6. Language expansion
+
+New language features should wait until the current backend contract is more
+trustworthy.
+
 ## Milestone 1 — hello.real vertical slice ✅
 
 Lexer through C codegen; `examples/hello.real`
@@ -33,15 +45,17 @@ Structured `REAL_*_ERROR[Exxx]` diagnostics; documented `i32` wrapping; warning-
 Language semantics, AI fluency model, performance model, Rust comparison
 methodology, project status, contributing guide, and security policy.
 
-## Milestone 8 - accepted-program C validity
+## Milestone 8 - explicit `i32` wrapping lowering
+
+Lower `i32` arithmetic through explicit helpers so generated C does not rely on
+undefined signed overflow for `+`, `-`, `*`, or the `INT32_MIN / -1` division
+overflow case.
+
+## Milestone 9 - accepted-program C validity
 
 Tighten the frontend/backend contract so accepted RealLang programs emit
 warning-free C under the supported flags. Cover main signatures, duplicate
 parameters, forward calls, block scoping, and C identifier collisions.
-
-## Milestone 9 - explicit `i32` wrapping lowering
-
-Trustworthy `-O3` codegen for benchmarks and production
 
 ## Milestone 10 - RealIR design sketch
 

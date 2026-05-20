@@ -75,3 +75,7 @@ Claims about AI generation reliability should be tied to scored study data.
 Until then, RealLang should describe its AI fluency as a design goal and
 research direction, not as a proven result.
 
+RealLang may eventually compete with Rust, C, and C++ if measured evidence shows
+that AI-generated RealLang compiles correctly more often, needs fewer repair
+attempts, and preserves native performance on comparable workloads. That is a
+long-term research target, not a current claim.

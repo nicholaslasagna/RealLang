@@ -65,20 +65,19 @@ Current limitations include:
 - no pinned CPU frequency or scheduler isolation
 - no compiler version and hardware metadata in committed results
 - RealLang-generated benchmark C is post-processed for some anti-DCE hardening
-- `i32` wrapping lowering is not hardened yet
+- benchmark methodology still needs compiler and hardware metadata
 
 These limitations do not make the harness useless. They define the boundary of
 what the results can support.
 
 ## Integer semantics and performance
 
-RealLang defines `i32` as wrapping two's-complement arithmetic, but the current
-C backend still lowers `i32` to C `int`. C signed overflow is not a valid
-implementation strategy for RealLang's documented arithmetic semantics.
+RealLang defines `i32` as wrapping two's-complement arithmetic. The C backend
+lowers `i32` to `int32_t` and routes `+`, `-`, and `*` through explicit
+`uint32_t`-backed helpers so those operations do not rely on C signed overflow.
 
-Before serious `-O3` performance claims, the backend should lower `i32`
-arithmetic explicitly, for example through fixed-width helpers or `uint32_t`
-based operations that preserve the language semantics.
+Division handles the `INT32_MIN / -1` overflow case explicitly. Divide-by-zero
+behavior remains unspecified and should not be used for performance claims.
 
 ## Future evidence requirements
 
@@ -94,4 +93,3 @@ Before publishing stronger performance comparisons, the project should record:
 - raw timing samples
 - correctness outputs
 - whether results were generated from raw or post-processed emitted C
-

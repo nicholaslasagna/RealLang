@@ -63,4 +63,4 @@ Build artifacts land in `benchmarks/build/` (gitignored).
 
 ## Overflow note
 
-Benchmarks use `i32` sizes that fit in range without wrapping for **correctness checks**. RealLang v0.1 defines wrapping semantics; the C backend documents a future explicit lowering pass. For serious `-O3` benchmark studies, consider `-fwrapv` or explicit `uint32_t` lowering until that lands.
+Benchmarks use `i32` sizes that fit in range without wrapping for **correctness checks**. RealLang v0.1 defines wrapping semantics, and the C backend lowers wrapping `+`, `-`, and `*` through explicit `uint32_t`-backed helpers. Broader `-O3` benchmark claims still need stronger methodology and environment metadata.

@@ -84,12 +84,22 @@ def run_cmd(cmd: list[str], *, cwd: Path | None = None, env: dict[str, str] | No
 def harden_emitted_c(path: Path) -> None:
     """Discourage -O3 from constant-folding benchmark loops in generated C."""
     text = path.read_text(encoding="utf-8")
-    if "bench_limit" not in text:
-        header = "static volatile int bench_limit = 50000;\n\n"
-        text = header + text.replace("i < 50000", "i < bench_limit")
+    had_bench_limit = "bench_limit" in text
+    bench_limit = None
+    for candidate in ("50000", "10000000"):
+        if f"i < {candidate}" in text:
+            bench_limit = candidate
+            text = text.replace(f"i < {candidate}", "i < bench_limit")
+            break
+    if not had_bench_limit and bench_limit is not None:
+        header = f"static volatile int bench_limit = {bench_limit};\n\n"
+        text = header + text
     text = text.replace("int i =", "volatile int i =")
     text = text.replace("int total =", "volatile int total =")
     text = text.replace("int count =", "volatile int count =")
+    text = text.replace("int32_t i =", "volatile int32_t i =")
+    text = text.replace("int32_t total =", "volatile int32_t total =")
+    text = text.replace("int32_t count =", "volatile int32_t count =")
     path.write_text(text, encoding="utf-8")
 
 

@@ -22,7 +22,7 @@ The [llm_study/](llm_study/) directory provides the **methodology and scoring ha
 
 **`i32` uses defined two's-complement wrapping arithmetic** (modulo 2³²). Overflow is not undefined behavior in the RealLang language model—for example, `examples/looptest.real` may wrap when the accumulated sum exceeds `i32` range.
 
-The current C backend lowers `i32` to C `int` and documents a planned hardening step: explicit `uint32_t`-based lowering (or equivalent) so generated C never relies on accidental or undefined signed overflow. See the TODO in `src/reallang/codegen.py`.
+The C backend lowers `i32` to `int32_t` and routes `+`, `-`, and `*` through explicit `uint32_t`-backed wrapping helpers. Division handles the `INT32_MIN / -1` overflow case explicitly; divide-by-zero behavior is not specified yet.
 
 ## Current language (through milestone 3)
 
