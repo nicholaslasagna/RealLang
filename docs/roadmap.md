@@ -28,26 +28,43 @@ Structured `REAL_*_ERROR[Exxx]` diagnostics; documented `i32` wrapping; warning-
 
 **No completed study results yet** — methodology and harness only.
 
-## Milestone 7 — `i64` / `f64`
+## Milestone 7 - documentation and open-source credibility
 
-Wider numeric types and print builtins
+Language semantics, AI fluency model, performance model, Rust comparison
+methodology, project status, contributing guide, and security policy.
 
-## Milestone 8 — arrays
+## Milestone 8 - accepted-program C validity
 
-Fixed arrays and indexing
+Tighten the frontend/backend contract so accepted RealLang programs emit
+warning-free C under the supported flags. Cover main signatures, duplicate
+parameters, forward calls, block scoping, and C identifier collisions.
 
-## Milestone 9 — explicit `i32` wrapping lowering
+## Milestone 9 - explicit `i32` wrapping lowering
 
 Trustworthy `-O3` codegen for benchmarks and production
 
-## Milestone 10 — LLVM IR experiment
+## Milestone 10 - RealIR design sketch
+
+Minimal typed IR design before adding another backend or broad language
+features.
+
+## Milestone 11 - LLVM IR experiment
 
 Alternative backend beyond C emission
 
-## Milestone 11 — extended benchmarks + published tables
+## Milestone 12 - `i64` / `f64`
+
+Wider numeric types and print builtins, after current integer semantics are
+hardened.
+
+## Milestone 13 - arrays
+
+Fixed arrays and indexing
+
+## Milestone 14 - extended benchmarks + published tables
 
 Larger suite; optional Assembly baselines
 
-## Milestone 12 — run LLM reliability study
+## Milestone 15 - run LLM reliability study
 
 Execute `llm_study` across agents; aggregate first-try and repair metrics

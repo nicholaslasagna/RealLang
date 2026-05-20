@@ -4,9 +4,9 @@
 
 - **Deterministic parsing** — unambiguous grammar and predictable tokenization
 - **Explicit semantics** — few surprises for readers, tools, and models
-- **LLM-safe code generation** — syntax and errors that models can produce and fix reliably
+- **LLM-oriented code generation reliability** — syntax and errors designed to be easier for models to produce and repair
 - **AI-repairable diagnostics** — structured errors with stable codes, locations, and suggested repairs
-- **Native-speed compilation** — C emission today; LLVM backends planned
+- **Native executable output** — C emission today; LLVM backends planned
 
 Performance is modeled as **C-like**, not “faster than C”: generated C is the current lowering path, with future LLVM support for the same semantics.
 
@@ -74,3 +74,11 @@ Errors use stable codes for automated repair:
 Each diagnostic may include file path, line, column, problem, why, expected/found, and suggested repair.
 
 See [roadmap.md](roadmap.md) for planned milestones.
+
+Additional status and methodology documents:
+
+- [language-semantics.md](language-semantics.md)
+- [ai-fluency-model.md](ai-fluency-model.md)
+- [performance-model.md](performance-model.md)
+- [rust-comparison-methodology.md](rust-comparison-methodology.md)
+- [project-status.md](project-status.md)

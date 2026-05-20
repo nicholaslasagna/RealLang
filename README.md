@@ -1,6 +1,6 @@
 # RealLang
 
-**RealLang** is an experimental AI-native systems programming language designed by **Imagicast Studios**. It prioritizes deterministic parsing, explicit semantics, LLM-safe code generation, AI-repairable diagnostics, and native-speed compilation through a C backend.
+**RealLang** is an experimental AI-native systems programming language designed by **Imagicast Studios**. It prioritizes deterministic parsing, explicit semantics, LLM-oriented code generation reliability, AI-repairable diagnostics, and native executable output through a C backend.
 
 This repository implements the compiler incrementally in **vertical slices**—each milestone compiles only the programs it claims to support.
 
@@ -89,6 +89,16 @@ docs/           language notes and roadmap
 ## Roadmap
 
 See [docs/roadmap.md](docs/roadmap.md).
+
+## Project documents
+
+- [Language semantics](docs/language-semantics.md)
+- [AI fluency model](docs/ai-fluency-model.md)
+- [Performance model](docs/performance-model.md)
+- [Rust comparison methodology](docs/rust-comparison-methodology.md)
+- [Project status](docs/project-status.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## License
 
