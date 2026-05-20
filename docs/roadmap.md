@@ -7,9 +7,12 @@ Current ordering discipline:
 1. Codex audit and technical risk review
 2. Documentation and open-source polish
 3. `i32` C backend hardening
-4. RealIR design
-5. LLVM backend experiments
-6. Language expansion
+4. Accepted-program C validity
+5. Return-path, literal-bound, and block-scope correctness
+6. RealIR design
+7. Minimal RealIR implementation
+8. Language expansion
+9. LLVM backend experiments
 
 New language features should wait until the current backend contract is more
 trustworthy.
@@ -57,28 +60,45 @@ Tighten the frontend/backend contract so accepted RealLang programs emit
 warning-free C under the supported flags. Cover main signatures, duplicate
 parameters, forward calls, block scoping, and C identifier collisions.
 
-## Milestone 10 - RealIR design sketch
+## Milestone 10 - return-path analysis and integer literal bounds
 
-Minimal typed IR design before adding another backend or broad language
-features.
+Strengthen guaranteed-return analysis and reject integer literals outside the
+documented `i32` language range unless/until explicit literal semantics say
+otherwise.
 
-## Milestone 11 - LLVM IR experiment
+## Milestone 11 - block scope correctness
 
-Alternative backend beyond C emission
+Finish lexical block-scope behavior so nested declarations, mutation, and
+diagnostics match the documented semantics and generated C.
 
-## Milestone 12 - `i64` / `f64`
+## Milestone 12 - RealIR design document
+
+Document a minimal typed RealIR before implementing it. Define values,
+instructions, blocks, control flow, function signatures, diagnostics handoff,
+and lowering requirements from AST to C/LLVM.
+
+## Milestone 13 - minimal RealIR implementation
+
+Introduce the smallest useful RealIR pipeline behind existing behavior, with no
+new language syntax.
+
+## Milestone 14 - `i64` / `f64`
 
 Wider numeric types and print builtins, after current integer semantics are
 hardened.
 
-## Milestone 13 - arrays
+## Milestone 15 - arrays
 
 Fixed arrays and indexing
 
-## Milestone 14 - extended benchmarks + published tables
+## Milestone 16 - LLVM backend experiment
+
+Alternative backend beyond C emission
+
+## Milestone 17 - extended benchmarks + published tables
 
 Larger suite; optional Assembly baselines
 
-## Milestone 15 - run LLM reliability study
+## Milestone 18 - run LLM reliability study
 
 Execute `llm_study` across agents; aggregate first-try and repair metrics
