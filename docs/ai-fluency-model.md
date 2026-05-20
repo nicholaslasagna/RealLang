@@ -22,6 +22,10 @@ RealLang is shaped around measurable properties:
 These properties are intended to reduce avoidable model errors and make repair
 loops more mechanical.
 
+The broader design target is AI-generated systems code that is more
+deterministic, repairable, and benchmarkable while preserving native execution
+through hardened C today and future LLVM backends.
+
 ## What AI-native does not mean
 
 RealLang does not currently:

@@ -10,6 +10,10 @@
 
 Performance is modeled as **C-like**, not “faster than C”: generated C is the current lowering path, with future LLVM support for the same semantics.
 
+RealLang is designed to make AI-generated systems code more deterministic,
+repairable, and benchmarkable while preserving native execution through
+hardened C today and future LLVM backends.
+
 ---
 
 ## Types (v0.1)
