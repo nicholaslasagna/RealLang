@@ -93,6 +93,72 @@ class Binding:
     decl_kind: str
 
 
+@dataclass
+class Scope:
+    frames: list[dict[str, Binding]]
+
+    @classmethod
+    def function(cls, params: list[ast.Param]) -> Scope:
+        param_frame = {
+            p.name: Binding(type=p.type, mutable=False, decl_kind="parameter")
+            for p in params
+        }
+        return cls([param_frame, {}])
+
+    def child(self) -> Scope:
+        return Scope([*self.frames, {}])
+
+    def lookup(self, name: str) -> Binding | None:
+        for frame in reversed(self.frames):
+            if name in frame:
+                return frame[name]
+        return None
+
+    def declare(
+        self,
+        name: str,
+        binding: Binding,
+        span: ast.Span,
+        *,
+        file: str | None,
+    ) -> None:
+        current = self.frames[-1]
+        if name in current:
+            existing = current[name]
+            raise RealTypeError(
+                type_error(
+                    "E202",
+                    f"Redeclared binding {name!r}.",
+                    file=file,
+                    line=span.line,
+                    column=span.column,
+                    why=(
+                        f"'{name}' is already declared as a {existing.decl_kind} "
+                        "in this block."
+                    ),
+                    repair="Rename the binding or remove the duplicate declaration.",
+                )
+            )
+        outer = self.lookup(name)
+        if outer is not None:
+            raise RealTypeError(
+                type_error(
+                    "E202",
+                    f"Binding {name!r} shadows an outer declaration.",
+                    file=file,
+                    line=span.line,
+                    column=span.column,
+                    why=(
+                        "RealLang v0.1 rejects shadowing so each visible name "
+                        "resolves to a single binding for repair tools and C emission. "
+                        f"The outer binding is a {outer.decl_kind}."
+                    ),
+                    repair="Rename the nested binding or reuse the existing visible name.",
+                )
+            )
+        current[name] = binding
+
+
 def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
     if not module.functions:
         raise RealTypeError(
@@ -210,11 +276,9 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
 
 
 def _check_function(fn: ast.Function, functions: dict[str, FunctionSig], *, file: str | None) -> None:
-    env: dict[str, Binding] = {
-        p.name: Binding(type=p.type, mutable=False, decl_kind="parameter") for p in fn.params
-    }
+    scope = Scope.function(fn.params)
     for stmt in fn.body.statements:
-        _check_statement(stmt, fn.return_type, env, functions, file=file)
+        _check_statement(stmt, fn.return_type, scope, functions, file=file)
     if not _block_guarantees_return(fn.body.statements):
         raise RealTypeError(
             type_error(
@@ -237,14 +301,14 @@ def _check_function(fn: ast.Function, functions: dict[str, FunctionSig], *, file
 def _check_statement(
     stmt: ast.Stmt,
     expected_return: ast.TypeKind,
-    env: dict[str, Binding],
+    scope: Scope,
     functions: dict[str, FunctionSig],
     *,
     file: str | None,
 ) -> None:
     if isinstance(stmt, ast.LetStmt):
         _check_c_identifier(stmt.name, stmt.span, "binding", file=file)
-        init_type = _check_expr(stmt.init, env, functions, file=file)
+        init_type = _check_expr(stmt.init, scope, functions, file=file)
         if init_type != stmt.type:
             raise RealTypeError(
                 type_error(
@@ -258,24 +322,17 @@ def _check_statement(
                     repair=f"Change the initializer to produce {stmt.type.name}, or change the annotation.",
                 )
             )
-        if stmt.name in env:
-            raise RealTypeError(
-                type_error(
-                    "E202",
-                    f"Redeclared binding {stmt.name!r}.",
-                    file=file,
-                    line=stmt.span.line,
-                    column=stmt.span.column,
-                    why=f"'{stmt.name}' is already in scope in this function.",
-                    repair="Rename the binding or remove the earlier declaration.",
-                )
-            )
-        env[stmt.name] = Binding(type=stmt.type, mutable=False, decl_kind="let")
+        scope.declare(
+            stmt.name,
+            Binding(type=stmt.type, mutable=False, decl_kind="let"),
+            stmt.span,
+            file=file,
+        )
         return
 
     if isinstance(stmt, ast.VarStmt):
         _check_c_identifier(stmt.name, stmt.span, "binding", file=file)
-        init_type = _check_expr(stmt.init, env, functions, file=file)
+        init_type = _check_expr(stmt.init, scope, functions, file=file)
         if init_type != stmt.type:
             raise RealTypeError(
                 type_error(
@@ -289,22 +346,17 @@ def _check_statement(
                     repair=f"Change the initializer to produce {stmt.type.name}, or change the annotation.",
                 )
             )
-        if stmt.name in env:
-            raise RealTypeError(
-                type_error(
-                    "E202",
-                    f"Redeclared binding {stmt.name!r}.",
-                    file=file,
-                    line=stmt.span.line,
-                    column=stmt.span.column,
-                    repair="Rename the binding or remove the earlier declaration.",
-                )
-            )
-        env[stmt.name] = Binding(type=stmt.type, mutable=True, decl_kind="var")
+        scope.declare(
+            stmt.name,
+            Binding(type=stmt.type, mutable=True, decl_kind="var"),
+            stmt.span,
+            file=file,
+        )
         return
 
     if isinstance(stmt, ast.SetStmt):
-        if stmt.name not in env:
+        binding = scope.lookup(stmt.name)
+        if binding is None:
             raise RealTypeError(
                 type_error(
                     "E201",
@@ -315,7 +367,6 @@ def _check_statement(
                     repair=f"Declare {stmt.name} with let or var before assigning to it.",
                 )
             )
-        binding = env[stmt.name]
         if not binding.mutable:
             raise RealTypeError(
                 type_error(
@@ -332,7 +383,7 @@ def _check_statement(
                     ),
                 )
             )
-        value_type = _check_expr(stmt.value, env, functions, file=file)
+        value_type = _check_expr(stmt.value, scope, functions, file=file)
         if value_type != binding.type:
             raise RealTypeError(
                 type_error(
@@ -349,7 +400,7 @@ def _check_statement(
         return
 
     if isinstance(stmt, ast.WhileStmt):
-        cond_type = _check_expr(stmt.condition, env, functions, file=file)
+        cond_type = _check_expr(stmt.condition, scope, functions, file=file)
         if cond_type != ast.TypeKind.BOOL:
             raise RealTypeError(
                 type_error(
@@ -363,13 +414,13 @@ def _check_statement(
                     repair="Use a comparison or bool expression inside condition(...).",
                 )
             )
-        body_env = env.copy()
+        body_scope = scope.child()
         for inner in stmt.body.statements:
-            _check_statement(inner, expected_return, body_env, functions, file=file)
+            _check_statement(inner, expected_return, body_scope, functions, file=file)
         return
 
     if isinstance(stmt, ast.IfStmt):
-        cond_type = _check_expr(stmt.condition, env, functions, file=file)
+        cond_type = _check_expr(stmt.condition, scope, functions, file=file)
         if cond_type != ast.TypeKind.BOOL:
             raise RealTypeError(
                 type_error(
@@ -383,16 +434,16 @@ def _check_statement(
                     repair="Use a comparison or bool expression inside condition(...).",
                 )
             )
-        then_env = env.copy()
+        then_scope = scope.child()
         for inner in stmt.then_body.statements:
-            _check_statement(inner, expected_return, then_env, functions, file=file)
-        else_env = env.copy()
+            _check_statement(inner, expected_return, then_scope, functions, file=file)
+        else_scope = scope.child()
         for inner in stmt.else_body.statements:
-            _check_statement(inner, expected_return, else_env, functions, file=file)
+            _check_statement(inner, expected_return, else_scope, functions, file=file)
         return
 
     if isinstance(stmt, ast.ExprStmt):
-        kind = _check_expr(stmt.expr, env, functions, file=file)
+        kind = _check_expr(stmt.expr, scope, functions, file=file)
         if kind != ast.TypeKind.VOID:
             raise RealTypeError(
                 type_error(
@@ -408,7 +459,7 @@ def _check_statement(
         return
 
     if isinstance(stmt, ast.ReturnStmt):
-        value_type = _check_expr(stmt.value, env, functions, file=file)
+        value_type = _check_expr(stmt.value, scope, functions, file=file)
         if value_type != expected_return:
             raise RealTypeError(
                 type_error(
@@ -437,7 +488,7 @@ def _check_statement(
 
 def _check_expr(
     expr: ast.Expr,
-    env: dict[str, Binding],
+    scope: Scope,
     functions: dict[str, FunctionSig],
     *,
     file: str | None,
@@ -450,7 +501,8 @@ def _check_expr(
     if isinstance(expr, ast.StringLit):
         return ast.TypeKind.STRING
     if isinstance(expr, ast.IdentExpr):
-        if expr.name not in env:
+        binding = scope.lookup(expr.name)
+        if binding is None:
             raise RealTypeError(
                 type_error(
                     "E201",
@@ -461,13 +513,13 @@ def _check_expr(
                     repair=f"Declare {expr.name} with let or var before use.",
                 )
             )
-        return env[expr.name].type
+        return binding.type
     if isinstance(expr, ast.BinExpr):
-        return _check_bin(expr, env, functions, file=file)
+        return _check_bin(expr, scope, functions, file=file)
     if isinstance(expr, ast.CmpExpr):
-        return _check_cmp(expr, env, functions, file=file)
+        return _check_cmp(expr, scope, functions, file=file)
     if isinstance(expr, ast.CallExpr):
-        return _check_call(expr, env, functions, file=file)
+        return _check_call(expr, scope, functions, file=file)
     raise RealTypeError(
         type_error(
             "E200",
@@ -481,13 +533,13 @@ def _check_expr(
 
 def _check_bin(
     expr: ast.BinExpr,
-    env: dict[str, Binding],
+    scope: Scope,
     functions: dict[str, FunctionSig],
     *,
     file: str | None,
 ) -> ast.TypeKind:
-    left = _check_expr(expr.left, env, functions, file=file)
-    right = _check_expr(expr.right, env, functions, file=file)
+    left = _check_expr(expr.left, scope, functions, file=file)
+    right = _check_expr(expr.right, scope, functions, file=file)
     if left != ast.TypeKind.I32 or right != ast.TypeKind.I32:
         raise RealTypeError(
             type_error(
@@ -505,13 +557,13 @@ def _check_bin(
 
 def _check_cmp(
     expr: ast.CmpExpr,
-    env: dict[str, Binding],
+    scope: Scope,
     functions: dict[str, FunctionSig],
     *,
     file: str | None,
 ) -> ast.TypeKind:
-    left = _check_expr(expr.left, env, functions, file=file)
-    right = _check_expr(expr.right, env, functions, file=file)
+    left = _check_expr(expr.left, scope, functions, file=file)
+    right = _check_expr(expr.right, scope, functions, file=file)
     if left != right:
         raise RealTypeError(
             type_error(
@@ -540,7 +592,7 @@ def _check_cmp(
 
 def _check_call(
     call: ast.CallExpr,
-    env: dict[str, Binding],
+    scope: Scope,
     functions: dict[str, FunctionSig],
     *,
     file: str | None,
@@ -576,7 +628,7 @@ def _check_call(
         )
 
     for arg, expected in zip(call.args, param_types, strict=True):
-        arg_type = _check_expr(arg, env, functions, file=file)
+        arg_type = _check_expr(arg, scope, functions, file=file)
         if arg_type != expected:
             raise RealTypeError(
                 type_error(

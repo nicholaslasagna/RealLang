@@ -95,9 +95,23 @@ not currently part of the implemented syntax.
 
 ## Names and scopes
 
-The intended model is lexical scoping with explicit declarations. The compiler
-rejects redeclarations within a function environment. Bindings declared inside
-`if` and `while` blocks are block-local and are not visible after the block.
+The implemented model is lexical scoping with explicit declarations.
+
+- Function parameters are visible throughout the function body.
+- `let` and `var` bindings are visible from their declaration point to the end
+  of the current block.
+- `if` branches and `while` bodies introduce nested block scopes.
+- Bindings declared inside `if`, `else`, or `while` blocks are not visible
+  after that block.
+- Redeclaration in the same block is rejected.
+- Shadowing a visible outer binding is rejected in v0.1. This is the simpler
+  AI-friendly policy: each visible name resolves to one binding, which keeps
+  diagnostics and generated C easier to repair.
+- The same binding name may be reused in sibling blocks, such as the `if` and
+  `else` branches of the same statement, because neither binding is visible in
+  the other sibling block.
+- `set` resolves the nearest visible binding and requires that binding to be a
+  mutable `var`; attempts to mutate a `let` are rejected.
 
 Because RealLang v0.1 emits C directly, user identifiers must also be portable
 C identifiers. Function, parameter, and binding names cannot use C reserved

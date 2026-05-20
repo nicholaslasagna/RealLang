@@ -63,7 +63,7 @@ these as goals rather than proven outcomes.
 
 ## Current quality signals
 
-As of Milestone 10:
+As of Milestone 11:
 
 - the full test suite passed
 - examples compiled warning-free with `cc -std=c11 -Wall -Wextra`
@@ -71,6 +71,8 @@ As of Milestone 10:
 - accepted programs require guaranteed `i32` or `bool` return paths
 - `i32` source integer literals are checked against the documented
   `0..2147483647` range
+- block scoping is enforced with declaration-point visibility, block-local
+  `if`/`while` bindings, rejected shadowing, and nested `set` resolution
 - benchmark and LLM study harnesses existed
 - no completed LLM reliability study results were published
 
@@ -84,6 +86,7 @@ Known limitations include:
 - no LLVM backend exists yet
 - no RealIR exists yet
 - user-defined `void` functions are not implemented
+- nested shadowing is intentionally rejected in v0.1
 - arrays, structs, imports, generics, ownership, and modules beyond a single
   source file are not implemented
 - the standard library is limited to a few print builtins
