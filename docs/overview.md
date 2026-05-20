@@ -70,6 +70,7 @@ Errors use stable codes for automated repair:
 | `REAL_LEX_ERROR` | `E001` unknown token |
 | `REAL_PARSE_ERROR` | `E101` missing `;`, `E102` missing `)`, `E103` missing `}` |
 | `REAL_TYPE_ERROR` | `E203` set on `let`, `E205` wrong arity, `E207`/`E208` non-bool condition |
+| `REAL_TYPE_ERROR` | `E217` invalid `main` parameters, `E218` duplicate parameter, `E219` unsafe C identifier |
 
 Each diagnostic may include file path, line, column, problem, why, expected/found, and suggested repair.
 

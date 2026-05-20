@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from reallang import ast_nodes as ast
@@ -13,6 +14,73 @@ BUILTINS: dict[str, tuple[list[ast.TypeKind], ast.TypeKind]] = {
 }
 
 FunctionSig = tuple[list[ast.TypeKind], ast.TypeKind]
+
+_C_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_C_RESERVED_IDENTIFIERS = {
+    "auto",
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "register",
+    "restrict",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+    "while",
+    "_Alignas",
+    "_Alignof",
+    "_Atomic",
+    "_Bool",
+    "_Complex",
+    "_Generic",
+    "_Imaginary",
+    "_Noreturn",
+    "_Static_assert",
+    "_Thread_local",
+}
+_GENERATED_C_IDENTIFIERS = {
+    "main",
+    "bool",
+    "false",
+    "true",
+    "int32_t",
+    "uint32_t",
+    "INT32_MIN",
+    "PRId32",
+    "UINT32_C",
+    "printf",
+    "memcpy",
+    "real_i32_from_u32",
+    "real_i32_add",
+    "real_i32_sub",
+    "real_i32_mul",
+    "real_i32_div",
+}
+_C_DENIED_IDENTIFIERS = _C_RESERVED_IDENTIFIERS | _GENERATED_C_IDENTIFIERS
 
 
 @dataclass
@@ -37,6 +105,7 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
 
     functions: dict[str, FunctionSig] = {}
     for fn in module.functions:
+        _check_c_identifier(fn.name, fn.span, "function", file=file, allow_main=True)
         if fn.name in functions:
             raise RealTypeError(
                 type_error(
@@ -48,19 +117,33 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
                     repair="Rename or remove the duplicate function.",
                 )
             )
-        if fn.name == "main" and fn.return_type != ast.TypeKind.I32:
-            raise RealTypeError(
-                type_error(
-                    "E216",
-                    "fn main() must return i32.",
-                    file=file,
-                    line=fn.span.line,
-                    column=fn.span.column,
-                    expected="i32",
-                    found=fn.return_type.name,
-                    repair="Change the return type to i32.",
+        if fn.name == "main":
+            if fn.params:
+                raise RealTypeError(
+                    type_error(
+                        "E217",
+                        "fn main() must not declare parameters.",
+                        file=file,
+                        line=fn.params[0].span.line,
+                        column=fn.params[0].span.column,
+                        expected="fn main() -> i32",
+                        found=f"{len(fn.params)} parameter(s)",
+                        repair="Remove parameters from main.",
+                    )
                 )
-            )
+            if fn.return_type != ast.TypeKind.I32:
+                raise RealTypeError(
+                    type_error(
+                        "E216",
+                        "fn main() must return i32.",
+                        file=file,
+                        line=fn.span.line,
+                        column=fn.span.column,
+                        expected="i32",
+                        found=fn.return_type.name,
+                        repair="Change the return type to i32.",
+                    )
+                )
         if fn.return_type not in (ast.TypeKind.I32,):
             raise RealTypeError(
                 type_error(
@@ -73,7 +156,22 @@ def typecheck(module: ast.Module, *, file: str | None = None) -> ast.Module:
                     found=fn.return_type.name,
                 )
             )
+        seen_params: set[str] = set()
         for param in fn.params:
+            _check_c_identifier(param.name, param.span, "parameter", file=file)
+            if param.name in seen_params:
+                raise RealTypeError(
+                    type_error(
+                        "E218",
+                        f"Duplicate parameter {param.name!r}.",
+                        file=file,
+                        line=param.span.line,
+                        column=param.span.column,
+                        why="A function parameter name may only be declared once.",
+                        repair="Rename or remove the duplicate parameter.",
+                    )
+                )
+            seen_params.add(param.name)
             if param.type not in (ast.TypeKind.I32, ast.TypeKind.BOOL):
                 raise RealTypeError(
                     type_error(
@@ -114,6 +212,17 @@ def _check_function(fn: ast.Function, functions: dict[str, FunctionSig], *, file
     }
     for stmt in fn.body.statements:
         _check_statement(stmt, fn.return_type, env, functions, file=file)
+    if not _block_guarantees_return(fn.body.statements):
+        raise RealTypeError(
+            type_error(
+                "E220",
+                f"Function {fn.name!r} must return i32 on every path.",
+                file=file,
+                line=fn.span.line,
+                column=fn.span.column,
+                repair="Add a return statement after control flow or return from every branch.",
+            )
+        )
 
 
 def _check_statement(
@@ -125,6 +234,7 @@ def _check_statement(
     file: str | None,
 ) -> None:
     if isinstance(stmt, ast.LetStmt):
+        _check_c_identifier(stmt.name, stmt.span, "binding", file=file)
         init_type = _check_expr(stmt.init, env, functions, file=file)
         if init_type != stmt.type:
             raise RealTypeError(
@@ -155,6 +265,7 @@ def _check_statement(
         return
 
     if isinstance(stmt, ast.VarStmt):
+        _check_c_identifier(stmt.name, stmt.span, "binding", file=file)
         init_type = _check_expr(stmt.init, env, functions, file=file)
         if init_type != stmt.type:
             raise RealTypeError(
@@ -243,8 +354,9 @@ def _check_statement(
                     repair="Use a comparison or bool expression inside condition(...).",
                 )
             )
+        body_env = env.copy()
         for inner in stmt.body.statements:
-            _check_statement(inner, expected_return, env, functions, file=file)
+            _check_statement(inner, expected_return, body_env, functions, file=file)
         return
 
     if isinstance(stmt, ast.IfStmt):
@@ -262,10 +374,12 @@ def _check_statement(
                     repair="Use a comparison or bool expression inside condition(...).",
                 )
             )
+        then_env = env.copy()
         for inner in stmt.then_body.statements:
-            _check_statement(inner, expected_return, env, functions, file=file)
+            _check_statement(inner, expected_return, then_env, functions, file=file)
+        else_env = env.copy()
         for inner in stmt.else_body.statements:
-            _check_statement(inner, expected_return, env, functions, file=file)
+            _check_statement(inner, expected_return, else_env, functions, file=file)
         return
 
     if isinstance(stmt, ast.ExprStmt):
@@ -468,3 +582,49 @@ def _check_call(
             )
 
     return ret_type
+
+
+def _check_c_identifier(
+    name: str,
+    span: ast.Span,
+    subject: str,
+    *,
+    file: str | None,
+    allow_main: bool = False,
+) -> None:
+    if allow_main and name == "main":
+        return
+    c_reserved_prefix = name.startswith("__") or (
+        len(name) > 1 and name[0] == "_" and name[1].isupper()
+    )
+    if (
+        not _C_IDENTIFIER_RE.match(name)
+        or name in _C_DENIED_IDENTIFIERS
+        or c_reserved_prefix
+    ):
+        raise RealTypeError(
+            type_error(
+                "E219",
+                f"{subject.capitalize()} name {name!r} cannot be emitted safely to C.",
+                file=file,
+                line=span.line,
+                column=span.column,
+                why=(
+                    "RealLang v0.1 emits C directly, so user identifiers must be "
+                    "portable C identifiers and must not collide with C keywords, "
+                    "standard library names, or generated runtime helper names."
+                ),
+                repair="Rename the identifier to a simple project-local name such as value, count, or helper.",
+            )
+        )
+
+
+def _block_guarantees_return(statements: list[ast.Stmt]) -> bool:
+    for stmt in statements:
+        if isinstance(stmt, ast.ReturnStmt):
+            return True
+        if isinstance(stmt, ast.IfStmt) and _block_guarantees_return(
+            stmt.then_body.statements
+        ) and _block_guarantees_return(stmt.else_body.statements):
+            return True
+    return False

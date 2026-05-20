@@ -81,12 +81,21 @@ not currently part of the implemented syntax.
 ## Names and scopes
 
 The intended model is lexical scoping with explicit declarations. The compiler
-currently rejects redeclarations within a function environment, but block-scope
-semantics need more hardening so typechecking and emitted C agree exactly.
+rejects redeclarations within a function environment. Bindings declared inside
+`if` and `while` blocks are block-local and are not visible after the block.
 
-Names that are valid RealLang identifiers may still collide with generated C
-identifiers or C keywords. The backend should eventually sanitize or reject
-such names consistently.
+Because RealLang v0.1 emits C directly, user identifiers must also be portable
+C identifiers. Function, parameter, and binding names cannot use C reserved
+keywords, reserved C implementation prefixes, standard library names needed by
+generated code, or generated runtime helper names.
+
+Function parameter names must be unique within the function.
+
+`main` has a fixed v0.1 signature:
+
+```real
+fn main() -> i32
+```
 
 ## Backend contract
 
@@ -97,5 +106,5 @@ The intended frontend/backend contract is:
    supported C compiler flags.
 3. Generated C should preserve the documented RealLang semantics.
 
-The project is not fully at that contract yet. The known gaps are tracked as
-compiler hardening work, not as language features.
+The accepted-program C validity contract is intentionally narrow: it applies to
+currently implemented RealLang features and the supported C toolchain flags.

@@ -30,15 +30,13 @@ def emit_c(module: ast.Module) -> str:
         lines.extend(helper_lines)
         lines.append("")
 
-    others = [fn for fn in module.functions if fn.name != "main"]
-    mains = [fn for fn in module.functions if fn.name == "main"]
+    for fn in module.functions:
+        lines.append(_emit_prototype(fn))
+    lines.append("")
 
-    for fn in others:
+    for fn in module.functions:
         lines.extend(_emit_function(fn))
         lines.append("")
-
-    for fn in mains:
-        lines.extend(_emit_function(fn, c_name="main", c_sig="int main(void)"))
 
     return "\n".join(lines).rstrip() + "\n"
 
@@ -101,20 +99,23 @@ def _emit_i32_helpers(helpers: set[str]) -> list[str]:
     return lines
 
 
+def _emit_prototype(fn: ast.Function) -> str:
+    if fn.name == "main":
+        return "int main(void);"
+    return f"{_c_type(fn.return_type)} {fn.name}({_c_params(fn.params)});"
+
+
 def _emit_function(
     fn: ast.Function,
-    *,
-    c_name: str | None = None,
-    c_sig: str | None = None,
 ) -> list[str]:
-    name = c_name if c_name else fn.name
-    if c_sig:
-        header = f"{c_sig} {{"
+    if fn.name == "main":
+        header = "int main(void) {"
     else:
-        params = ", ".join(f"{_c_type(p.type)} {p.name}" for p in fn.params)
-        header = f"{_c_type(fn.return_type)} {name}({params}) {{"
+        header = f"{_c_type(fn.return_type)} {fn.name}({_c_params(fn.params)}) {{"
 
     lines = [header]
+    for param in fn.params:
+        lines.append(f"{_pad(1)}(void){param.name};")
     for stmt in fn.body.statements:
         lines.extend(_emit_statement(stmt, depth=1))
     lines.append("}")
@@ -128,7 +129,10 @@ def _pad(depth: int) -> str:
 def _emit_statement(stmt: ast.Stmt, *, depth: int) -> list[str]:
     pad = _pad(depth)
     if isinstance(stmt, (ast.LetStmt, ast.VarStmt)):
-        return [f"{pad}{_c_type(stmt.type)} {stmt.name} = {_emit_expr(stmt.init)};"]
+        return [
+            f"{pad}{_c_type(stmt.type)} {stmt.name} = {_emit_expr(stmt.init)};",
+            f"{pad}(void){stmt.name};",
+        ]
 
     if isinstance(stmt, ast.SetStmt):
         return [f"{pad}{stmt.name} = {_emit_expr(stmt.value)};"]
@@ -297,6 +301,12 @@ def _c_type(kind: ast.TypeKind) -> str:
     if kind == ast.TypeKind.BOOL:
         return "bool"
     raise ValueError(f"unsupported C type for {kind}")
+
+
+def _c_params(params: list[ast.Param]) -> str:
+    if not params:
+        return "void"
+    return ", ".join(f"{_c_type(p.type)} {p.name}" for p in params)
 
 
 def _emit_i32_literal(value: int) -> str:

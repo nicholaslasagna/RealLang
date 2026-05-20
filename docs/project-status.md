@@ -77,7 +77,6 @@ These are useful early signals, not proof of production readiness.
 Known limitations include:
 
 - divide-by-zero behavior is not specified
-- accepted-program C validity still has known hardening work
 - no LLVM backend exists yet
 - no RealIR exists yet
 - user-defined `void` functions are not implemented
@@ -94,8 +93,8 @@ large feature expansion.
 
 Recommended near-term work:
 
-- ensure accepted RealLang programs emit warning-free C
-- add tests for currently accepted-invalid programs
+- keep accepted RealLang programs warning-free under the supported C flags
+- add tests for any newly discovered accepted-invalid programs
 - keep `i32` lowering aligned with RealLang wrapping semantics as new
   expression forms are added
 - document exact semantics before adding new types or arrays
