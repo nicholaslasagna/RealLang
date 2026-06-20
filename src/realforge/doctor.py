@@ -54,42 +54,47 @@ def run_doctor(config: RealForgeConfig | None = None) -> DoctorReport:
         detail = f"{realc_cmd} ({err})"
     checks.append(DoctorCheck(name="realc", ok=realc_ok, detail=detail))
 
-    if cfg.ollama_base_url:
-        checks.append(
-            DoctorCheck(
-                name="ollama",
-                ok=True,
-                detail=f"configured: {cfg.ollama_base_url} (connectivity not probed in v0.1)",
-            )
+    if cfg.config_path is not None:
+        model_detail = (
+            f"{cfg.config_path}: provider={cfg.model.provider}, "
+            f"model={cfg.model.model or '(unset)'}, "
+            f"base_url={cfg.model.base_url or '(unset)'}"
         )
     else:
-        checks.append(
-            DoctorCheck(
-                name="ollama",
-                ok=True,
-                detail="optional — set REALFORGE_OLLAMA_URL to enable Ollama adapter",
-            )
-        )
+        model_detail = "no .realforge.toml (default provider: mock)"
 
-    if cfg.openai_compatible_base_url:
+    checks.append(DoctorCheck(name="model-config", ok=True, detail=model_detail))
+
+    if cfg.model.provider == "ollama":
+        configured = cfg.model.base_url or cfg.ollama_base_url
+        checks.append(
+            DoctorCheck(
+                name="ollama",
+                ok=bool(configured and cfg.model.model),
+                detail=(
+                    f"provider=ollama model={cfg.model.model or '(unset)'} "
+                    f"base_url={configured or '(unset)'}"
+                ),
+            )
+        )
+    elif cfg.model.provider in {"openai_compatible_local", "openai-compatible-local"}:
+        configured = cfg.model.base_url or cfg.openai_compatible_base_url
         checks.append(
             DoctorCheck(
                 name="openai-compatible-local",
-                ok=True,
+                ok=bool(configured and cfg.model.model),
                 detail=(
-                    f"configured: {cfg.openai_compatible_base_url} "
-                    "(connectivity not probed in v0.1)"
+                    f"provider={cfg.model.provider} model={cfg.model.model or '(unset)'} "
+                    f"base_url={configured or '(unset)'}"
                 ),
             )
         )
     else:
         checks.append(
             DoctorCheck(
-                name="openai-compatible-local",
+                name="local-model",
                 ok=True,
-                detail=(
-                    "optional — set REALFORGE_OPENAI_COMPAT_URL for local OpenAI-compatible servers"
-                ),
+                detail=f"provider={cfg.model.provider} (offline/local adapter)",
             )
         )
 

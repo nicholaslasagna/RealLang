@@ -1,7 +1,15 @@
 # RealForge architecture
 
-RealForge 0.1 is a small, test-backed vertical slice of a local-first coding agent.
-It is designed to grow incrementally without rewriting RealLang or requiring cloud APIs.
+RealForge is a local-first coding agent platform built for RealLang: **compiler-guided**,
+**benchmark-aware**, **repair-loop native**, and designed for local LLMs rather than
+cloud APIs.
+
+Current releases are small, test-backed vertical slices that grow incrementally without
+rewriting RealLang or requiring cloud endpoints. RealForge 0.3 hardens workspace
+trust: boundary enforcement, backup rotation, and post-apply rollback.
+
+RealForge remains experimental and does not claim to outperform Codex, Claude Code,
+or Cursor yet.
 
 ## Control flow
 
@@ -37,8 +45,9 @@ Used internally and by `realforge repair`. Flow:
 1. Run `realc --check` on a `.real` file.
 2. Parse diagnostics.
 3. Apply only proven-safe repairs (currently E203 let→var).
-4. On `--apply`, write through `patcher.py` with backup.
+4. On `--apply`, write through `patcher.py` with rotated backup.
 5. Rerun `realc --check` and report outcome.
+6. If recheck fails, restore the backup by default (unless `--keep-failed-repair`).
 
 ## Permission model
 
@@ -46,9 +55,10 @@ Used internally and by `realforge repair`. Flow:
 |------|-------|-------------|
 | `readonly` | `realc --check` only | blocked |
 | `ask` | blocked in v0.1 (future prompt) | blocked |
-| `workspace-write` | allowed (non-destructive) | allowed within workspace root |
+| `workspace-write` | allowed (non-destructive) | allowed only inside workspace root |
 
-CLI `--apply` is an explicit user action and bypasses readonly for that write only.
+CLI `--apply` requires `workspace-write` mode and a target path inside the workspace root.
+Explicit `--apply` does not bypass workspace boundaries.
 
 ## Subprocess boundary
 

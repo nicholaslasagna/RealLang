@@ -15,7 +15,7 @@ from realforge.providers.base import ModelProvider
 from realforge.repair_rules import apply_safe_repairs
 from realforge.report import format_check_fail, format_repair_plan
 from realforge.runner import run_realc_check
-from realforge.workspace import read_source
+from realforge.workspace import read_source, restore_from_backup
 
 
 class AgentMode(str, Enum):
@@ -40,6 +40,7 @@ class RepairOutcome:
     diff: str
     backup: Path | None
     message: str
+    rolled_back: bool = False
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,7 @@ def repair_file(
     dry_run: bool = True,
     config: RealForgeConfig | None = None,
     permissions: Permissions | None = None,
-    explicit_apply: bool = False,
+    keep_failed_repair: bool = False,
 ) -> RepairOutcome:
     cfg = config or default_config()
     perms = permissions or Permissions(mode=cfg.permission_mode, workspace_root=cfg.workspace_root)
@@ -110,15 +111,10 @@ def repair_file(
             message=msg,
         )
 
-    backup = apply_with_backup(
-        path,
-        plan,
-        suffix=cfg.backup_suffix,
-        permissions=perms,
-        explicit=explicit_apply,
-    )
+    backup = apply_with_backup(path, plan, suffix=cfg.backup_suffix, permissions=perms)
     after_check = check_file(path, cfg)
     ok = after_check.ok
+    rolled_back = False
     msg = format_repair_plan(path, plan, dry_run=False)
     msg += f"\nbackup: {backup}"
     if ok:
@@ -127,15 +123,22 @@ def repair_file(
         msg += f"\nFAIL after repair: {path}"
         if after_check.diagnostics:
             msg += "\n" + format_check_fail(path, after_check.diagnostics)
+        if keep_failed_repair:
+            msg += "\nkeep-failed-repair: modified file retained; backup preserved"
+        else:
+            restore_from_backup(path, backup)
+            rolled_back = True
+            msg += f"\nrollback: restored {path} from {backup} due to failed recheck"
 
     return RepairOutcome(
         ok=ok,
-        changed=True,
+        changed=not rolled_back and before != plan.source,
         diagnostics_before=check.diagnostics,
         diagnostics_after=after_check.diagnostics,
         diff=diff,
         backup=backup,
         message=msg,
+        rolled_back=rolled_back,
     )
 
 
@@ -148,7 +151,7 @@ def run_agent(
     config: RealForgeConfig | None = None,
     permissions: Permissions | None = None,
     memory: SessionMemory | None = None,
-    explicit_apply: bool = False,
+    keep_failed_repair: bool = False,
 ) -> AgentOutcome:
     cfg = config or default_config()
     perms = permissions or Permissions(mode=cfg.permission_mode, workspace_root=cfg.workspace_root)
@@ -164,10 +167,10 @@ def run_agent(
 
     repair = repair_file(
         path,
-        dry_run=not explicit_apply,
+        dry_run=not perms.can_write_file(path),
         config=cfg,
         permissions=perms,
-        explicit_apply=explicit_apply,
+        keep_failed_repair=keep_failed_repair,
     )
     mem.record("repair", {"path": str(path), "ok": repair.ok, "changed": repair.changed})
     return AgentOutcome(mode=mode, plan=plan, repair=repair, message=repair.message)

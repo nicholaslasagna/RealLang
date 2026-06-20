@@ -88,6 +88,78 @@ def test_realforge_ask_mock():
     assert "realc --check" in proc.stdout
 
 
+def test_realforge_plan_mock():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "realforge.cli",
+            "plan",
+            "--provider",
+            "mock",
+            "--task",
+            "review diagnostics",
+        ],
+        capture_output=True,
+        text=True,
+        env=_env(),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "Task: review diagnostics" in proc.stdout
+    assert "Steps:" in proc.stdout
+
+
+def test_realforge_generate_dry_run_mock():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "realforge.cli",
+            "generate",
+            "--provider",
+            "mock",
+            "--task",
+            "hello world program",
+            "--dry-run",
+        ],
+        capture_output=True,
+        text=True,
+        env=_env(),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "RealForge generate (dry-run)" in proc.stdout
+    assert "module main;" in proc.stdout
+
+
+def test_realforge_plan_from_config_file(tmp_path: Path):
+    config_path = tmp_path / ".realforge.toml"
+    config_path.write_text(
+        """
+[model]
+provider = "mock"
+""".strip(),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "realforge.cli",
+            "plan",
+            "--config-root",
+            str(tmp_path),
+            "--task",
+            "configured plan",
+        ],
+        capture_output=True,
+        text=True,
+        env=_env(),
+        cwd=str(tmp_path),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "Task: configured plan" in proc.stdout
+
+
 def test_realforge_doctor():
     proc = subprocess.run(
         [sys.executable, "-m", "realforge.cli", "doctor"],
@@ -97,3 +169,4 @@ def test_realforge_doctor():
     )
     assert proc.returncode == 0, proc.stderr
     assert "overall: PASS" in proc.stdout
+    assert "model-config" in proc.stdout

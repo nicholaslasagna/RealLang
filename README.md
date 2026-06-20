@@ -24,15 +24,19 @@ The [llm_study/](llm_study/) directory provides the **methodology and scoring ha
 
 ## RealForge
 
-[RealForge](docs/realforge.md) is an experimental **local-first coding-agent platform**
-for RealLang. It uses `realc` diagnostics, safe patching, local model adapters, and
-(test/benchmark feedback loops as they are added). It does not require cloud AI
-providers.
+[RealForge](docs/realforge.md) is a **local-first coding agent platform built for RealLang**:
+compiler-guided, benchmark-aware, repair-loop native, and designed to run with local
+LLMs instead of cloud APIs.
+
+It uses `realc` diagnostics, safe patching, and local model adapters configured via
+`.realforge.toml` (see [local model adapters](docs/realforge-local-models.md)).
 
 ```bash
 realforge check examples/hello.real
 realforge repair path/to/bad.real --dry-run
-realforge ask --provider mock --task "plan a diagnostic review"
+realforge ask --task "plan a diagnostic review"
+realforge plan --task "plan a diagnostic review"
+realforge generate --task "hello world program" --dry-run
 realforge doctor
 ```
 
@@ -99,7 +103,9 @@ realc <file.real> --check
 realc <file.real> --emit-c [-o output.c]
 realforge check <file.real>
 realforge repair <file.real> --dry-run|--apply
-realforge ask --provider mock --task "..."
+realforge ask --task "..."
+realforge plan --task "..."
+realforge generate --task "..." --dry-run|--apply --output <file.real>
 realforge doctor
 ```
 

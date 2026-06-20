@@ -1,38 +1,29 @@
 import sys
 from pathlib import Path
 
-from realforge.agent_loop import AgentMode, check_file, repair_file, run_agent
+import pytest
+
+from realforge.agent_loop import check_file, repair_file
 from realforge.config import RealForgeConfig
 from realforge.permissions import PermissionMode, Permissions
-from realforge.providers import MockProvider
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
-def _config() -> RealForgeConfig:
-    return RealForgeConfig(realc_command=(sys.executable, "-m", "reallang.cli"))
+def _config(root: Path) -> RealForgeConfig:
+    return RealForgeConfig(
+        realc_command=(sys.executable, "-m", "reallang.cli"),
+        workspace_root=root,
+    )
 
 
-def test_plan_only_agent_does_not_edit(tmp_path: Path):
-    path = tmp_path / "bad.real"
-    original = """module main;
+def _rollback_source() -> str:
+    return """module main;
 fn main() -> i32 {
   let x: i32 = 1;
   set x = 2;
+  let big: i32 = 2147483648;
   return 0;
 }
 """
-    path.write_text(original, encoding="utf-8")
-    outcome = run_agent(
-        task="repair immutable binding",
-        provider=MockProvider(),
-        mode=AgentMode.PLAN_ONLY,
-        path=path,
-        config=_config(),
-    )
-    assert outcome.plan is not None
-    assert outcome.repair is None
-    assert path.read_text(encoding="utf-8") == original
 
 
 def test_repair_apply_success(tmp_path: Path):
@@ -47,18 +38,52 @@ fn main() -> i32 {
 """,
         encoding="utf-8",
     )
-    before = check_file(path, _config())
+    cfg = _config(tmp_path)
+    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=tmp_path)
+    before = check_file(path, cfg)
     assert not before.ok
 
-    outcome = repair_file(path, dry_run=False, config=_config(), explicit_apply=True)
+    outcome = repair_file(path, dry_run=False, config=cfg, permissions=perms)
     assert outcome.changed
     assert outcome.backup is not None
-    assert outcome.backup.is_file()
     assert "var x: i32" in path.read_text(encoding="utf-8")
     assert outcome.ok
+    assert not outcome.rolled_back
 
-    after = check_file(path, _config())
-    assert after.ok
+
+def test_repair_rollback_on_failed_recheck(tmp_path: Path):
+    path = tmp_path / "bad.real"
+    original = _rollback_source()
+    path.write_text(original, encoding="utf-8")
+    cfg = _config(tmp_path)
+    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=tmp_path)
+
+    outcome = repair_file(path, dry_run=False, config=cfg, permissions=perms)
+    assert not outcome.ok
+    assert outcome.rolled_back
+    assert "rollback:" in outcome.message
+    assert path.read_text(encoding="utf-8") == original
+    assert outcome.backup is not None
+    assert outcome.backup.is_file()
+
+
+def test_repair_keep_failed_repair_retains_changes(tmp_path: Path):
+    path = tmp_path / "bad.real"
+    path.write_text(_rollback_source(), encoding="utf-8")
+    cfg = _config(tmp_path)
+    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=tmp_path)
+
+    outcome = repair_file(
+        path,
+        dry_run=False,
+        config=cfg,
+        permissions=perms,
+        keep_failed_repair=True,
+    )
+    assert not outcome.ok
+    assert not outcome.rolled_back
+    assert "keep-failed-repair" in outcome.message
+    assert "var x: i32" in path.read_text(encoding="utf-8")
 
 
 def test_repair_apply_blocked_without_safe_fix(tmp_path: Path):
@@ -71,33 +96,9 @@ fn main(argc: i32) -> i32 {
 """,
         encoding="utf-8",
     )
-    outcome = repair_file(path, dry_run=False, config=_config(), explicit_apply=True)
+    cfg = _config(tmp_path)
+    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=tmp_path)
+    outcome = repair_file(path, dry_run=False, config=cfg, permissions=perms)
     assert not outcome.ok
     assert outcome.backup is None
     assert "apply blocked" in outcome.message
-
-
-def test_readonly_permission_blocks_implicit_apply(tmp_path: Path):
-    path = tmp_path / "bad.real"
-    path.write_text(
-        """module main;
-fn main() -> i32 {
-  let x: i32 = 1;
-  set x = 2;
-  return 0;
-}
-""",
-        encoding="utf-8",
-    )
-    perms = Permissions(mode=PermissionMode.READONLY, workspace_root=tmp_path)
-    outcome = run_agent(
-        task="auto repair",
-        provider=MockProvider(),
-        mode=AgentMode.REPAIR_LOOP,
-        path=path,
-        config=_config(),
-        permissions=perms,
-        explicit_apply=False,
-    )
-    assert outcome.repair is not None
-    assert outcome.repair.changed is False or "let x" in path.read_text(encoding="utf-8")

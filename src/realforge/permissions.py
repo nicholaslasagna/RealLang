@@ -31,7 +31,7 @@ class Permissions:
         if self.mode != PermissionMode.WORKSPACE_WRITE:
             return False
         if self.workspace_root is None:
-            return True
+            return False
         try:
             path.resolve().relative_to(self.workspace_root.resolve())
         except ValueError:

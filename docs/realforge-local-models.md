@@ -1,50 +1,82 @@
 # RealForge local models
 
-RealForge is **local-first**. It does not require API keys or cloud providers.
-When you want model-assisted planning beyond the built-in `mock` provider, RealForge
-supports optional **local** adapters only.
+RealForge is designed to run with **local LLMs instead of cloud APIs**. Model selection
+is configured in **`.realforge.toml`** at the project root.
+
+RealForge remains **experimental**. Local model adapters can plan and generate RealLang
+source, but **autonomous file editing remains permission-gated**. RealForge does not
+claim to outperform Codex, Claude Code, or Cursor yet.
+
+## Configuration file
+
+### Ollama
+
+```toml
+[model]
+provider = "ollama"
+model = "qwen2.5-coder:32b"
+base_url = "http://localhost:11434"
+```
+
+### OpenAI-compatible local server
+
+For LM Studio, llama.cpp server, vLLM, or similar **local** endpoints:
+
+```toml
+[model]
+provider = "openai_compatible_local"
+model = "local-coder"
+base_url = "http://localhost:1234/v1"
+```
+
+Environment variables still supplement config when `base_url` is omitted:
+
+- `REALFORGE_OLLAMA_URL`
+- `REALFORGE_OPENAI_COMPAT_URL`
+
+## Commands (RealForge 0.2)
+
+```bash
+# Plan from configured provider (defaults to mock when no config file)
+realforge ask --task "review diagnostics for hello.real"
+realforge plan --task "review diagnostics for hello.real"
+
+# Generate RealLang source (dry-run prints only; no file writes)
+realforge generate --task "hello world program" --dry-run
+
+# Explicit mock provider override (used in tests)
+realforge plan --provider mock --task "offline plan"
+```
+
+`generate --apply --output path/to/file.real` writes only with explicit `--apply` and
+`workspace-write` permission mode. Default behavior is dry-run.
 
 ## Built-in mock provider (default)
 
-```bash
-realforge ask --provider mock --task "review diagnostics for hello.real"
-```
+When `.realforge.toml` is absent, RealForge uses the deterministic `mock` provider.
+Tests use `MockProvider` only and never require network access.
 
-`MockProvider` is deterministic and fully offline. It demonstrates the provider
-interface and agent plan format without calling any network service.
+## Ollama adapter
 
-## Ollama (scaffolded)
+`OllamaProvider` calls the local Ollama HTTP API (`/api/chat`) using `[model]` settings.
+No cloud endpoints are contacted.
 
-Ollama runs models locally via HTTP. RealForge 0.1 includes an `OllamaProvider`
-scaffold but does not require Ollama for tests or core workflows.
+## OpenAI-compatible local adapter
 
-Configure the base URL:
+`OpenAICompatibleLocalProvider` calls `/chat/completions` on the configured **local**
+base URL only.
 
-```bash
-export REALFORGE_OLLAMA_URL=http://127.0.0.1:11434
-```
-
-`realforge doctor` reports whether this variable is set. Connectivity probing is not
-implemented in 0.1.
-
-## OpenAI-compatible local servers (scaffolded)
-
-Tools such as LM Studio, llama.cpp server, or vLLM often expose a local
-OpenAI-compatible HTTP API. RealForge includes `OpenAICompatibleLocalProvider` as a
-scaffold for those endpoints — **local servers only**, not cloud OpenAI.
-
-```bash
-export REALFORGE_OPENAI_COMPAT_URL=http://127.0.0.1:1234/v1
-```
-
-## What is intentionally excluded (v0.1)
+## What is intentionally excluded
 
 - Cloud OpenAI, Anthropic, Gemini, or Cursor integrations
-- API key management
-- Automatic file editing from model output without permission gates
+- API key management for cloud services
+- Automatic file editing from model output without `--apply` and permission gates
 
 ## Provider interface
 
-All providers implement `ModelProvider.generate_plan(task) -> AgentPlan` in
-`src/realforge/providers/base.py`. New local adapters should subclass this interface
-and remain testable without network access where possible.
+All providers implement:
+
+- `generate_plan(task) -> AgentPlan`
+- `generate(task) -> GenerationResult`
+
+See `src/realforge/providers/base.py`.

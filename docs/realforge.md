@@ -1,14 +1,35 @@
 # RealForge
 
-RealForge is an experimental **local-first coding-agent platform** for RealLang.
-It sits beside the RealLang compiler and uses **`realc` diagnostics as the feedback
-loop** for conservative repairs, test execution, and (eventually) benchmark-driven
-workflows.
+RealForge is a **local-first coding agent platform built for RealLang**: compiler-guided,
+benchmark-aware, repair-loop native, and designed to run with local LLMs instead of
+cloud APIs.
+
+It sits beside the RealLang compiler and uses **`realc` diagnostics as the primary
+feedback loop** for conservative repairs. Benchmark and test feedback loops are part
+of the architecture and are integrated incrementally.
 
 RealForge does **not** require OpenAI, Anthropic, Gemini, Claude, Codex, Cursor, or
-any cloud provider. Local models are supported through optional adapters (Ollama,
+any cloud provider. Local models are configured through `.realforge.toml` (Ollama or
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
+
+## What RealForge 0.3 adds
+
+RealForge remains **experimental**. It does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.3 hardens workspace safety before expanding agent power:
+
+- **Workspace boundary enforcement** — all writes must stay inside the configured workspace root, including explicit `--apply`
+- **Backup rotation** — numbered backups (`file.real.bak`, `file.real.bak.1`, …) preserve prior backups
+- **Post-apply rollback** — failed recheck after `repair --apply` restores the backup by default; use `--keep-failed-repair` to retain the modified file
+- **Live diagnostic roundtrip tests** against real `realc --check` stderr
+- **Runner permission tests** for destructive-command blocking and readonly vs workspace-write behavior
+
+## What RealForge 0.2 adds
+
+- `.realforge.toml` model configuration
+- Local generation through **Ollama** or **OpenAI-compatible local** HTTP endpoints
+- `realforge ask`, `realforge plan`, and `realforge generate --dry-run`
+- Explicit `--apply` for generated file writes (permission-gated)
 
 ## What RealForge 0.1 does
 
@@ -31,14 +52,28 @@ realforge check examples/hello.real
 # Show proposed repairs without writing
 realforge repair path/to/bad.real --dry-run
 
-# Apply proven-safe repairs with backup
+# Apply proven-safe repairs with backup (rollback on failed recheck by default)
 realforge repair path/to/bad.real --apply
+realforge repair path/to/bad.real --apply --keep-failed-repair
 
-# Plan-only agent demo (mock provider, no file edits)
-realforge ask --provider mock --task "inspect hello.real diagnostics"
+# Plan from configured local provider (mock when no .realforge.toml)
+realforge ask --task "inspect hello.real diagnostics"
+realforge plan --task "inspect hello.real diagnostics"
+
+# Generate RealLang source without writing files
+realforge generate --task "hello world program" --dry-run
 
 # Environment health check
 realforge doctor
+```
+
+Example `.realforge.toml`:
+
+```toml
+[model]
+provider = "ollama"
+model = "qwen2.5-coder:32b"
+base_url = "http://localhost:11434"
 ```
 
 ### Supported automatic repairs (v0.1)
@@ -54,12 +89,18 @@ realforge doctor
 
 ## Safety rules
 
+RealForge is still experimental. Autonomous editing remains permission-gated; local
+model support does not bypass safety checks.
+
 - Default permission mode is **`readonly`** (no implicit file writes or shell commands).
-- `--dry-run` never modifies files.
-- `--apply` always creates `<file>.real.bak` before writing (explicit CLI action).
+- **`--dry-run` never modifies files.**
+- **`--apply` refuses paths outside the workspace root**, even when explicitly requested.
+- **`--apply` creates rotated backups** (`file.real.bak`, `file.real.bak.1`, …) before writing.
+- **Failed recheck after repair rolls back by default**; pass `--keep-failed-repair` to keep the modified file.
 - Only explicitly safe repairs are applied automatically.
 - Destructive shell commands are blocked in `runner.py`.
 - If a repair cannot be proven safe, RealForge reports **manual repair required**.
+- RealForge does **not** claim to outperform Codex, Claude Code, or Cursor yet.
 
 ## Package layout
 

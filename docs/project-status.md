@@ -61,6 +61,17 @@ these as goals rather than proven outcomes.
 - `while condition(...)`
 - builtins: `print_i32`, `print_bool`, `print_str`
 
+## RealForge status
+
+RealForge is an experimental local-first coding agent layer in the same repository.
+As of RealForge 0.3:
+
+- `check`, `repair`, `ask`, `plan`, `generate`, and `doctor` commands exist
+- local model configuration via `.realforge.toml` is supported
+- Ollama and OpenAI-compatible **local** providers are optional; tests use `MockProvider` only
+- workspace boundary enforcement, backup rotation, and post-apply rollback are implemented
+- RealForge does not claim to outperform Codex, Claude Code, or Cursor yet
+
 ## Current quality signals
 
 As of Milestone 11:
