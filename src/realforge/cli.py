@@ -48,6 +48,7 @@ from realforge.update_bundle import (
     list_update_bundle_records,
     mark_update_bundle,
     show_update_bundle_record,
+    verify_update_bundle,
 )
 from realforge.update_bundle_report import MARKABLE_BUNDLE_STATUSES
 
@@ -527,6 +528,18 @@ def main(argv: list[str] | None = None) -> int:
         help="directory containing .realforge.toml (default: current directory)",
     )
 
+    update_bundle_verify = update_bundle_sub.add_parser(
+        "verify",
+        help="verify bundle integrity against source proposal metadata (read-only)",
+    )
+    update_bundle_verify.add_argument("bundle_id", help="update bundle id")
+    update_bundle_verify.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
     update_bundle_mark = update_bundle_sub.add_parser("mark", help="update bundle status metadata only")
     update_bundle_mark.add_argument("bundle_id", help="update bundle id")
     update_bundle_mark.add_argument(
@@ -991,6 +1004,14 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
                 return 0
+            if args.update_bundle_command == "verify":
+                outcome = verify_update_bundle(
+                    bundle_id=args.bundle_id,
+                    workspace_root=workspace_root,
+                    config=config,
+                )
+                print(outcome.message)
+                return 0 if outcome.ok else 1
             if args.update_bundle_command == "mark":
                 outcome = mark_update_bundle(
                     bundle_id=args.bundle_id,

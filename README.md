@@ -50,7 +50,7 @@ improve → experiment → proposal flows without auto-merge. The `eval` harness
 providers on deterministic tasks without editing the main workspace. Staff-only
 `improve-channel` commands (disabled by default) compose eval gates and cycles for a future
 Improve/Update workflow; `update-bundle` packages pending proposals as reviewable update
-candidates without applying them. See
+candidates (with `verify` integrity checks in 1.6) without applying them. See
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md), [staff mode](docs/realforge-staff-mode.md),
 and [update bundles](docs/realforge-update-bundles.md).

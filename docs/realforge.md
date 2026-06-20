@@ -13,6 +13,21 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.6 adds
+
+RealForge 1.6 hardens **update bundle integrity and the staff update flow**:
+
+- **`update-bundle verify`** — read-only integrity checks against source proposal, patch hash, targets, and validation metadata
+- **Status transition rules** — enforced valid paths for `mark`; terminal statuses protected
+- **Unique candidate versions** — `{major}.{minor}-candidate.{date}-{id}`; collision-safe bundle writes
+- **Export hardening** — metadata-only by default; explicit untrusted patch labeling with `--include-patch`
+- **`update-history`** — includes update bundle records with proposal/cycle/eval relationships
+- **`staff-status`** — shows pending proposal count, candidate/approved bundle counts, latest eval score
+
+Update bundles remain metadata only and **not a security boundary by themselves**. The trusted apply path remains proposal hash verification plus `apply-proposal --confirm`.
+
+See [Update bundles (1.5+)](realforge-update-bundles.md).
+
 ## What RealForge 1.5 adds
 
 RealForge 1.5 adds **staff update bundles** — versioned metadata records that package validated pending proposals as reviewable update candidates:
@@ -23,7 +38,7 @@ RealForge 1.5 adds **staff update bundles** — versioned metadata records that 
 
 Update bundles are the backend for a future staff-only “Update available” UI. They do **not** apply changes, auto-merge, or auto-commit. Applying still requires `apply-proposal --confirm`.
 
-See [Update bundles (1.5)](realforge-update-bundles.md).
+See [Update bundles (1.5+)](realforge-update-bundles.md).
 
 ## What RealForge 1.4 adds
 
@@ -271,6 +286,7 @@ realforge update-history
 
 # Staff update bundles (1.5)
 realforge update-bundle create --proposal <proposal_id>
+realforge update-bundle verify <bundle_id>
 realforge update-bundle list
 realforge update-bundle show <bundle_id>
 

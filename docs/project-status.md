@@ -64,7 +64,7 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 1.5:
+As of RealForge 1.6:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -79,6 +79,8 @@ As of RealForge 1.5:
 - `eval`, `eval-list`, and `eval-show` run read-only local provider quality harnesses (1.3); rule-based, not a superiority benchmark
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
+- `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)
+- `staff-status` shows pending proposal/bundle counts and latest eval score (1.6)
 - validation command allowlist and `manual` permission mode (1.2); provider/research output labeled untrusted
 - patch hash chains, validation mode parity, path-safe apply, scoped commits, and stronger rollback (1.1)
 - local model configuration via `.realforge.toml` is supported

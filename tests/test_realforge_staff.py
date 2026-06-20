@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from realforge.config import load_config
+from realforge.experiment_report import CommandResultRecord, ExperimentReport, write_report_json
+from realforge.patch_safety import inspect_patch_file, workspace_content_digest
+from realforge.proposals import propose_merge_from_report
 from realforge.eval_report import eval_report_path
 from realforge.eval_runner import run_eval
 from realforge.providers.mock import MockProvider
@@ -16,6 +19,7 @@ from realforge.update_channel import (
     run_improve_channel_patch,
     run_update_check,
 )
+from realforge.update_bundle import create_update_bundle, mark_update_bundle
 from realforge.update_history import build_update_history, list_update_history
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +114,43 @@ def _experiments_root(tmp_path: Path) -> Path:
     return tmp_path / "experiments"
 
 
+def _pending_proposal(root: Path, tmp_path: Path):
+    patch = tmp_path / "staff-proposal.diff"
+    patch.write_text(_harmless_patch(), encoding="utf-8")
+    inspection = inspect_patch_file(patch, root)
+    report = ExperimentReport(
+        id="expstaffbundle",
+        area="tests",
+        patch_file=str(patch),
+        patch_sha256=inspection.patch_sha256,
+        patch_targets=inspection.patch_targets,
+        validation_mode="quick",
+        workspace_mode="copy",
+        experiment_path=None,
+        validation_commands=(".venv/bin/pytest -q",),
+        command_results=(
+            CommandResultRecord(
+                command=".venv/bin/pytest -q",
+                returncode=0,
+                stdout="",
+                stderr="",
+                passed=True,
+            ),
+        ),
+        passed=True,
+        failures=(),
+        duration_ms=10,
+        kept=False,
+        cleanup_status="removed",
+        main_workspace_modified=False,
+        workspace_content_digest=workspace_content_digest(root),
+        notes=(),
+    )
+    report_path = root / "staff-experiment.json"
+    write_report_json(report, report_path)
+    return propose_merge_from_report(report_path, workspace_root=root, config=_config(root))
+
+
 def test_staff_commands_refuse_when_disabled(tmp_path: Path):
     root = _workspace(tmp_path)
     cfg = _config(root)
@@ -130,7 +171,7 @@ def test_staff_status_disabled_and_enabled(tmp_path: Path):
     root = _workspace(tmp_path)
     disabled = format_staff_status(_config(root))
     assert "Staff mode enabled: False" in disabled
-    assert "auto_apply: False (unsupported in v1.4; always refused)" in disabled
+    assert "unsupported/refused in RealForge 1.6" in disabled
 
     _write_staff_config(root, enabled=True, max_budget=2)
     enabled = format_staff_status(_config(root))
@@ -274,17 +315,24 @@ def test_update_history_lists_eval_cycle_proposal_records(tmp_path: Path):
         provider=MockProvider(cfg),
         temp_root=_experiments_root(tmp_path),
     )
+    bundle = create_update_bundle(
+        proposal_id=patch_outcome.proposal_id,
+        workspace_root=root,
+        config=cfg,
+    )
 
     entries = build_update_history(root)
     kinds = {entry.kind for entry in entries}
     assert "eval" in kinds
     assert "cycle" in kinds
     assert "proposal" in kinds
+    assert "update_bundle" in kinds
     assert patch_outcome.proposal_id is not None
 
     timeline = list_update_history(root)
     assert "update history" in timeline.lower()
     assert eval_outcome.report.id in timeline
+    assert bundle.bundle.id in timeline
 
 
 def test_normal_non_staff_commands_still_work(tmp_path: Path):
@@ -323,6 +371,26 @@ def test_update_check_cli_refuses_without_staff(tmp_path: Path):
     )
     assert proc.returncode == 1
     assert "staff mode is disabled" in proc.stderr
+
+
+def test_staff_status_shows_bundle_and_proposal_counts(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    proposal = _pending_proposal(root, tmp_path)
+    created = create_update_bundle(proposal_id=proposal.id, workspace_root=root, config=cfg)
+    mark_update_bundle(
+        bundle_id=created.bundle.id,
+        status="approved",
+        workspace_root=root,
+        config=cfg,
+    )
+
+    status = format_staff_status(cfg)
+    assert "pending proposals: 1" in status
+    assert "candidate bundles: 0" in status
+    assert "approved bundles: 1" in status
+    assert "unsupported/refused in RealForge 1.6" in status
 
 
 def test_load_staff_config_sections(tmp_path: Path):

@@ -8,6 +8,7 @@ from realforge.cycle_report import cycle_report_path, list_cycle_reports
 from realforge.eval_report import eval_report_path, list_eval_reports
 from realforge.proposal_report import proposal_path
 from realforge.proposals import list_proposals
+from realforge.update_bundle_report import list_update_bundles, update_bundle_path
 
 
 @dataclass(frozen=True)
@@ -31,14 +32,15 @@ def build_update_history(workspace_root: Path) -> tuple[HistoryEntry, ...]:
 
     for report in list_cycle_reports(root):
         path = cycle_report_path(root, report.id)
+        proposal_refs = ",".join(report.proposal_ids) if report.proposal_ids else "-"
         entries.append(
             HistoryEntry(
                 kind="cycle",
                 record_id=report.id,
                 timestamp=_file_timestamp(path) or report.id,
                 summary=(
-                    f"area={report.area} proposal_created={report.proposal_created} "
-                    f"stopped={report.stopped_reason}"
+                    f"area={report.area} proposals={proposal_refs} "
+                    f"proposal_created={report.proposal_created} stopped={report.stopped_reason}"
                 ),
             )
         )
@@ -68,12 +70,27 @@ def build_update_history(workspace_root: Path) -> tuple[HistoryEntry, ...]:
             )
         )
 
+    for bundle in list_update_bundles(root):
+        path = update_bundle_path(root, bundle.id)
+        entries.append(
+            HistoryEntry(
+                kind="update_bundle",
+                record_id=bundle.id,
+                timestamp=bundle.created_at or _file_timestamp(path),
+                summary=(
+                    f"status={bundle.status} candidate={bundle.candidate_version} "
+                    f"proposal={bundle.source_proposal_id} "
+                    f"cycle={bundle.source_cycle_id or '-'} eval={bundle.source_eval_id or '-'}"
+                ),
+            )
+        )
+
     return tuple(sorted(entries, key=lambda item: item.timestamp, reverse=True))
 
 
 def format_update_history(entries: tuple[HistoryEntry, ...]) -> str:
     if not entries:
-        return "No cycle, proposal, or eval records found under .realforge/"
+        return "No cycle, proposal, eval, or update bundle records found under .realforge/"
     lines = ["RealForge update history (read-only timeline):"]
     for entry in entries:
         lines.append(f"  - [{entry.kind}] {entry.timestamp} {entry.record_id} {entry.summary}")

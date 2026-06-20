@@ -48,12 +48,13 @@ realforge update-history
 | `improve-channel --patch-file` | Yes | Enforce config gates → controlled cycle → pending proposal if experiment passes |
 | `update-history` | Yes | Read-only timeline of cycle, proposal, and eval records |
 
-## Update bundles (1.5)
+## Update bundles (1.5+)
 
 After a pending proposal exists, staff can package it as a versioned update candidate:
 
 ```bash
 realforge update-bundle create --proposal <proposal_id>
+realforge update-bundle verify <bundle_id>
 realforge update-bundle list
 realforge update-bundle show <bundle_id>
 realforge update-bundle mark <bundle_id> --status approved
@@ -62,9 +63,16 @@ realforge update-bundle export <bundle_id> --output bundle.json
 
 - Bundles are **metadata only** — they do not apply patches or commit
 - Bundle creation verifies stored patch SHA-256
+- **`verify`** re-checks integrity before review (1.6)
 - Staff approval (`mark`) and proposal apply (`apply-proposal --confirm`) remain separate
+- Bundles are **not a security boundary by themselves** (1.6)
 
-See [Update bundles (1.5)](realforge-update-bundles.md).
+See [Update bundles (1.5+)](realforge-update-bundles.md).
+
+## Staff status and history (1.6)
+
+- `staff-status` shows pending proposal count, candidate/approved bundle counts, and latest eval score
+- `update-history` includes update bundle records alongside cycles, proposals, and evals
 
 ## Improvement flow
 

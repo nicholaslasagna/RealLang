@@ -21,6 +21,40 @@ BUNDLE_STATUSES = frozenset(status.value for status in BundleStatus)
 MARKABLE_BUNDLE_STATUSES = frozenset(
     {BundleStatus.APPROVED.value, BundleStatus.REJECTED.value, BundleStatus.SUPERSEDED.value}
 )
+TERMINAL_BUNDLE_STATUSES = frozenset(
+    {BundleStatus.SUPERSEDED.value, BundleStatus.APPLIED.value}
+)
+ALLOWED_BUNDLE_TRANSITIONS: dict[str, frozenset[str]] = {
+    BundleStatus.CANDIDATE.value: frozenset(
+        {
+            BundleStatus.APPROVED.value,
+            BundleStatus.REJECTED.value,
+            BundleStatus.SUPERSEDED.value,
+        }
+    ),
+    BundleStatus.APPROVED.value: frozenset({BundleStatus.SUPERSEDED.value}),
+    BundleStatus.REJECTED.value: frozenset(),
+    BundleStatus.SUPERSEDED.value: frozenset(),
+    BundleStatus.APPLIED.value: frozenset(),
+}
+
+
+def validate_bundle_status_transition(current: str, new: str, *, force: bool = False) -> None:
+    if current == new:
+        raise ValueError(f"bundle already has status {current}")
+    if current in TERMINAL_BUNDLE_STATUSES:
+        raise ValueError(f"cannot transition from terminal status {current}")
+    if current == BundleStatus.REJECTED.value and new == BundleStatus.APPROVED.value:
+        raise ValueError("rejected bundles cannot become approved in RealForge 1.6")
+    if current == BundleStatus.APPROVED.value and new == BundleStatus.REJECTED.value:
+        if force:
+            raise ValueError("approved -> rejected with --force is unsupported in RealForge 1.6")
+        raise ValueError(
+            "approved bundles cannot become rejected without --force (unsupported in RealForge 1.6)"
+        )
+    allowed = ALLOWED_BUNDLE_TRANSITIONS.get(current, frozenset())
+    if new not in allowed:
+        raise ValueError(f"invalid bundle status transition: {current} -> {new}")
 
 
 @dataclass(frozen=True)
@@ -61,7 +95,7 @@ def bundle_to_dict(bundle: UpdateBundle) -> dict:
     return asdict(bundle)
 
 
-def write_update_bundle(bundle: UpdateBundle, workspace_root: Path) -> Path:
+def write_update_bundle(bundle: UpdateBundle, workspace_root: Path, *, overwrite: bool = False) -> Path:
     root = workspace_root.resolve()
     path = update_bundle_path(root, bundle.id)
     assert_path_in_workspace(path, root)
@@ -70,6 +104,8 @@ def write_update_bundle(bundle: UpdateBundle, workspace_root: Path) -> Path:
         path.resolve().relative_to(updates_root)
     except ValueError as err:
         raise ValueError(f"update bundle write refused outside {updates_root}: {path}") from err
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"update bundle file already exists: {bundle.id}")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(bundle_to_dict(bundle), indent=2) + "\n", encoding="utf-8")
     return path

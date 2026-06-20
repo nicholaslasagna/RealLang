@@ -22,8 +22,9 @@ from realforge.update_bundle import (
     list_update_bundle_records,
     mark_update_bundle,
     show_update_bundle_record,
+    verify_update_bundle,
 )
-from realforge.update_bundle_report import update_bundle_path, updates_dir
+from realforge.update_bundle_report import BundleStatus, load_update_bundle, update_bundle_path, updates_dir, write_update_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -118,6 +119,11 @@ def _pending_proposal(root: Path, tmp_path: Path):
     return proposal
 
 
+def _created_bundle(root: Path, tmp_path: Path, cfg):
+    proposal = _pending_proposal(root, tmp_path)
+    return create_update_bundle(proposal_id=proposal.id, workspace_root=root, config=cfg), proposal
+
+
 def test_update_bundle_commands_refuse_when_staff_disabled(tmp_path: Path):
     root = _workspace(tmp_path)
     cfg = _config(root)
@@ -171,7 +177,12 @@ def test_create_writes_bundle_under_realforge_updates(tmp_path: Path):
     assert path.is_file()
     assert path.resolve().is_relative_to(updates_dir(root).resolve())
     assert outcome.bundle.version_base == __version__
-    assert outcome.bundle.candidate_version == candidate_version_from_base(__version__)
+    assert outcome.bundle.candidate_version == candidate_version_from_base(
+        __version__,
+        bundle_id=outcome.bundle.id,
+        created_at=outcome.bundle.created_at,
+    )
+    assert outcome.bundle.id[:8] in outcome.bundle.candidate_version
     assert outcome.bundle.source_proposal_id == proposal.id
     assert outcome.bundle.patch_sha256 == proposal.copied_patch_sha256
     assert (root / "tests" / "test_example.py").read_text(encoding="utf-8") == source_before
@@ -232,9 +243,12 @@ def test_export_writes_metadata_only_json(tmp_path: Path):
     )
     assert outcome.ok is True
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["id"] == created.bundle.id
-    assert payload["source_proposal_id"] == proposal.id
+    assert payload["bundle"]["id"] == created.bundle.id
+    assert payload["bundle"]["source_proposal_id"] == proposal.id
+    assert payload["metadata_only"] is True
+    assert payload["patch_sha256"] == created.bundle.patch_sha256
     assert "patch_diff" not in payload
+    assert "untrusted_patch" not in payload
 
 
 def test_update_bundle_cli_list_with_staff_config(tmp_path: Path):
@@ -265,3 +279,179 @@ def test_update_bundle_cli_refuses_without_staff(tmp_path: Path):
     )
     assert proc.returncode == 1
     assert "staff mode is disabled" in proc.stderr
+
+
+def test_verify_passes_for_valid_bundle(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    outcome = verify_update_bundle(bundle_id=created.bundle.id, workspace_root=root, config=cfg)
+    assert outcome.ok is True
+    assert "Result: PASS" in outcome.message
+
+
+def test_verify_fails_if_proposal_missing(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, proposal = _created_bundle(root, tmp_path, cfg)
+    (root / ".realforge" / "proposals" / f"{proposal.id}.json").unlink()
+    outcome = verify_update_bundle(bundle_id=created.bundle.id, workspace_root=root, config=cfg)
+    assert outcome.ok is False
+    assert "source_proposal_exists" in outcome.message
+
+
+def test_verify_fails_if_proposal_patch_tampered(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, proposal = _created_bundle(root, tmp_path, cfg)
+    patch_path = root / proposal.patch_file
+    patch_path.write_text("tampered patch\n", encoding="utf-8")
+    outcome = verify_update_bundle(bundle_id=created.bundle.id, workspace_root=root, config=cfg)
+    assert outcome.ok is False
+    assert "proposal_patch_hash" in outcome.message or "bundle_patch_hash" in outcome.message
+
+
+def test_verify_fails_if_bundle_patch_hash_tampered(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    bundle = load_update_bundle(root, created.bundle.id)
+    tampered = replace(bundle, patch_sha256="0" * 64)
+    write_update_bundle(tampered, root, overwrite=True)
+    outcome = verify_update_bundle(bundle_id=created.bundle.id, workspace_root=root, config=cfg)
+    assert outcome.ok is False
+    assert "bundle_patch_hash" in outcome.message
+
+
+def test_verify_fails_if_patch_targets_mismatch(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    bundle = load_update_bundle(root, created.bundle.id)
+    tampered = replace(bundle, patch_targets=("docs/fake.md",))
+    write_update_bundle(tampered, root, overwrite=True)
+    outcome = verify_update_bundle(bundle_id=created.bundle.id, workspace_root=root, config=cfg)
+    assert outcome.ok is False
+    assert "patch_targets_match" in outcome.message
+
+
+def test_invalid_status_transitions_are_rejected(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+
+    mark_update_bundle(
+        bundle_id=created.bundle.id,
+        status="approved",
+        workspace_root=root,
+        config=cfg,
+    )
+    with pytest.raises(UpdateBundleError, match="rejected"):
+        mark_update_bundle(
+            bundle_id=created.bundle.id,
+            status="rejected",
+            workspace_root=root,
+            config=cfg,
+        )
+
+    created2, _proposal2 = _created_bundle(root, tmp_path, cfg)
+    mark_update_bundle(
+        bundle_id=created2.bundle.id,
+        status="superseded",
+        workspace_root=root,
+        config=cfg,
+    )
+    with pytest.raises(UpdateBundleError, match="terminal"):
+        mark_update_bundle(
+            bundle_id=created2.bundle.id,
+            status="approved",
+            workspace_root=root,
+            config=cfg,
+        )
+
+    created3, _proposal3 = _created_bundle(root, tmp_path, cfg)
+    mark_update_bundle(
+        bundle_id=created3.bundle.id,
+        status="rejected",
+        workspace_root=root,
+        config=cfg,
+    )
+    with pytest.raises(UpdateBundleError, match="approved"):
+        mark_update_bundle(
+            bundle_id=created3.bundle.id,
+            status="approved",
+            workspace_root=root,
+            config=cfg,
+        )
+
+
+def test_candidate_version_collision_does_not_overwrite_existing_bundle(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    from realforge.update_bundle import _ensure_unique_bundle_identity
+
+    with pytest.raises(UpdateBundleError, match="candidate version collision"):
+        _ensure_unique_bundle_identity(
+            root,
+            bundle_id="deadbeef0001",
+            candidate_version=created.bundle.candidate_version,
+        )
+
+
+def test_bundle_file_collision_does_not_overwrite(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    bundle = load_update_bundle(root, created.bundle.id)
+    with pytest.raises(FileExistsError):
+        write_update_bundle(bundle, root, overwrite=False)
+
+
+def test_export_metadata_only_excludes_raw_patch(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, _proposal = _created_bundle(root, tmp_path, cfg)
+    output = root / "bundle-export.json"
+    export_update_bundle(
+        bundle_id=created.bundle.id,
+        output=output,
+        workspace_root=root,
+        config=cfg,
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["metadata_only"] is True
+    assert payload["patch_sha256"] == created.bundle.patch_sha256
+    assert "patch_diff" not in payload
+    assert "untrusted_patch" not in payload
+
+
+def test_export_with_patch_includes_untrusted_label_and_hash(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _write_staff_config(root)
+    cfg = _config(root)
+    created, proposal = _created_bundle(root, tmp_path, cfg)
+    output = root / "bundle-export-with-patch.json"
+    export_update_bundle(
+        bundle_id=created.bundle.id,
+        output=output,
+        workspace_root=root,
+        config=cfg,
+        include_patch=True,
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["metadata_only"] is False
+    assert payload["patch_sha256"] == created.bundle.patch_sha256
+    assert "untrusted_patch" in payload
+    assert "UNTRUSTED" in payload["untrusted_patch"]["label"]
+    assert payload["untrusted_patch"]["patch_sha256"] == proposal.copied_patch_sha256
+    assert payload["untrusted_patch"]["patch_diff"]
