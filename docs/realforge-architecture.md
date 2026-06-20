@@ -11,6 +11,30 @@ trust: boundary enforcement, backup rotation, and post-apply rollback.
 RealForge remains experimental and does not claim to outperform Codex, Claude Code,
 or Cursor yet.
 
+## Creative and engine-aware planning (2.1)
+
+RealForge 2.1 adds a planning-only creative layer:
+
+```text
+task → local provider strict JSON → validated creative artifact → print or explicit metadata write
+project path → bounded filesystem scan → EngineProjectProfile → dry-run UnrealCommandPlan
+image path → workspace check → SHA-256/basic metadata → ImageAnalysisReport
+```
+
+| Module | Role |
+|--------|------|
+| `creative/models.py` | Immutable artifact schemas, strict JSON fields, bounded stores |
+| `creative/game_brief.py` | `GameDesignBrief` construction from untrusted provider JSON |
+| `creative/map_design.py` | `MapDesignPlan` construction |
+| `creative/asset_brief.py` | `AssetBrief` construction |
+| `creative/image_report.py` | Metadata/hash-only image reports; no semantic recognition |
+| `creative/engine_profile.py` | Read-only Unreal filesystem detection |
+| `creative/unreal.py` | Dry-run, approval-required Unreal plans |
+
+The creative layer never executes provider command suggestions, generates
+binary assets, opens Unreal, or mutates engine projects. Optional report writes
+are limited to `.realforge/creative/` and `.realforge/engines/`.
+
 ## Workspace awareness (0.4)
 
 RealForge 0.4 adds deterministic workspace indexing before more autonomous behavior:
@@ -287,6 +311,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
 | Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
 | Task benchmarks | `bench_runner.py`, `bench_report.py` | Repeatable task benchmarks with version tracking (1.7) |
+| Creative planning | `creative/` | Structured game/map/asset plans, image metadata, and Unreal dry-run plans (2.1) |
 | Staff | `staff.py`, `update_channel.py`, `update_history.py` | Staff-only improvement/update channel (config-gated; 1.4) |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |

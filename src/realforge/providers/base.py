@@ -37,6 +37,12 @@ class ImproveRequest:
     propose_patch: bool = False
 
 
+@dataclass(frozen=True)
+class CreativeRequest:
+    task: str
+    context: str | None = None
+
+
 class ModelProvider(ABC):
     """Local model adapter interface (no cloud providers)."""
 
@@ -68,4 +74,20 @@ class ModelProvider(ABC):
 
     @abstractmethod
     def generate(self, task: str) -> GenerationResult:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_game_brief(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_map_design(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_asset_brief(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_unreal_plan(self, request: CreativeRequest) -> str:
         raise NotImplementedError

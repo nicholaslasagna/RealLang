@@ -64,7 +64,7 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 2.0:
+As of RealForge 2.1:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -81,6 +81,10 @@ As of RealForge 2.0:
 - `leaderboard` and `leaderboard export` rank saved task benchmark reports for local provider comparison (1.8)
 - `propose-patch --dry-run` asks providers for untrusted unified diff proposals without modifying the main workspace (1.9)
 - `scheduler-status`, `scheduler-run`, `scheduler-list`, and `scheduler-show` provide bounded staff scheduler jobs that produce proposals/bundles without auto-apply (2.0)
+- `creative brief`, `creative map`, and `creative asset` produce structured local-provider planning artifacts labeled untrusted (2.1)
+- `creative image` produces SHA-256 and metadata-only reports; no semantic image recognition is claimed (2.1)
+- `engine scan` detects Unreal project structure without opening or modifying Unreal (2.1)
+- `unreal plan` produces dry-run, human-approval-required plans without executing commands or editing engine projects (2.1)
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)
@@ -94,6 +98,7 @@ As of RealForge 2.0:
 - context-aware planning via `plan --include-context` and `ask --include-context`
 - MockProvider remains the CI-safe default; local providers are optional
 - RealForge does not claim to match frontier coding agents yet
+- RealForge does not generate AAA assets or claim AAA-quality creative output
 
 ## Current quality signals
 

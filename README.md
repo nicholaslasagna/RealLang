@@ -46,6 +46,11 @@ realforge leaderboard
 realforge propose-patch --task "add a comment to README" --provider mock --dry-run
 realforge scheduler-status
 realforge staff-status
+realforge creative brief --provider mock --task "design an asymmetrical horror game"
+realforge creative map --provider mock --task "design Hall 13 abandoned school map"
+realforge creative asset --provider mock --task "design a forest monster statue prop"
+realforge engine scan --path /workspace/MyGame
+realforge unreal plan --path /workspace/MyGame --provider mock --task "plan a map blockout"
 ```
 
 Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
@@ -58,7 +63,13 @@ structured repeatable benchmarks for tracking local providers and RealForge vers
 modifying the main workspace. Staff-only
 `improve-channel` commands (disabled by default) compose eval gates and cycles for a future
 Improve/Update workflow; `update-bundle` packages pending proposals as reviewable update
-candidates (with `verify` integrity checks in 1.6) without applying them. See
+candidates (with `verify` integrity checks in 1.6) without applying them.
+RealForge 2.1 creative commands produce planning artifacts only: they do not generate binary
+assets or modify Unreal projects. Image reports are metadata-only unless a future vision
+provider is added. See [creative planning](docs/realforge-creative.md) and
+[Unreal foundation](docs/realforge-unreal.md).
+
+Related RealForge documents include
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
@@ -170,6 +181,8 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge cycle](docs/realforge-cycle.md)
 - [RealForge eval harness](docs/realforge-evals.md)
 - [RealForge task benchmarks](docs/realforge-task-benchmarks.md)
+- [RealForge creative planning](docs/realforge-creative.md)
+- [RealForge Unreal foundation](docs/realforge-unreal.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)
 - [RealForge update bundles](docs/realforge-update-bundles.md)
 - [Contributing](CONTRIBUTING.md)

@@ -1,8 +1,23 @@
 from __future__ import annotations
 
+import json
+
 from realforge.config import RealForgeConfig
+from realforge.creative.creative_context import (
+    mock_asset_brief_payload,
+    mock_game_brief_payload,
+    mock_map_design_payload,
+    mock_unreal_plan_payload,
+)
 from realforge.planner import AgentPlan, mock_plan_for_task
-from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PatchProposalRequest, PlanRequest
+from realforge.providers.base import (
+    CreativeRequest,
+    GenerationResult,
+    ImproveRequest,
+    ModelProvider,
+    PatchProposalRequest,
+    PlanRequest,
+)
 from realforge.patch_proposal_report import mock_task_patch_proposal
 from realforge.self_improvement_plan import (
     SelfImprovementPlan,
@@ -95,3 +110,15 @@ class MockProvider(ModelProvider):
             provider=self.name,
             model=self.model_name,
         )
+
+    def generate_game_brief(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_game_brief_payload(request.task), sort_keys=True)
+
+    def generate_map_design(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_map_design_payload(request.task), sort_keys=True)
+
+    def generate_asset_brief(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_asset_brief_payload(request.task), sort_keys=True)
+
+    def generate_unreal_plan(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_unreal_plan_payload(request.task), sort_keys=True)

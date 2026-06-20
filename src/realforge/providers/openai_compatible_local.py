@@ -3,8 +3,22 @@ from __future__ import annotations
 from urllib.parse import urljoin
 
 from realforge.config import RealForgeConfig
+from realforge.creative.creative_context import (
+    STRICT_JSON_SYSTEM_PROMPT,
+    build_asset_brief_prompt,
+    build_game_brief_prompt,
+    build_map_design_prompt,
+    build_unreal_plan_prompt,
+)
 from realforge.planner import AgentPlan, parse_plan_response
-from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PatchProposalRequest, PlanRequest
+from realforge.providers.base import (
+    CreativeRequest,
+    GenerationResult,
+    ImproveRequest,
+    ModelProvider,
+    PatchProposalRequest,
+    PlanRequest,
+)
 from realforge.errors import ProviderPlanError
 from realforge.providers.http_util import HTTPProviderError, post_json
 from realforge.providers.prompts import (
@@ -132,4 +146,19 @@ class OpenAICompatibleLocalProvider(ModelProvider):
             content=content,
             provider=self.name,
             model=self.model_name,
+        )
+
+    def generate_game_brief(self, request: CreativeRequest) -> str:
+        return self._chat(STRICT_JSON_SYSTEM_PROMPT, build_game_brief_prompt(request.task))
+
+    def generate_map_design(self, request: CreativeRequest) -> str:
+        return self._chat(STRICT_JSON_SYSTEM_PROMPT, build_map_design_prompt(request.task))
+
+    def generate_asset_brief(self, request: CreativeRequest) -> str:
+        return self._chat(STRICT_JSON_SYSTEM_PROMPT, build_asset_brief_prompt(request.task))
+
+    def generate_unreal_plan(self, request: CreativeRequest) -> str:
+        return self._chat(
+            STRICT_JSON_SYSTEM_PROMPT,
+            build_unreal_plan_prompt(request.task, request.context or "{}"),
         )

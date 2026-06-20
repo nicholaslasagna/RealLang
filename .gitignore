@@ -26,4 +26,6 @@ llm_study/results/**/*.json
 .realforge/patch_proposals/
 .realforge/scheduler_runs/
 .realforge/updates/
+.realforge/creative/
+.realforge/engines/
 .DS_Store

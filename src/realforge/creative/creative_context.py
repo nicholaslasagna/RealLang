@@ -1,0 +1,138 @@
+from __future__ import annotations
+
+
+STRICT_JSON_SYSTEM_PROMPT = """You are a local RealForge planning provider.
+Return exactly one JSON object and no Markdown, comments, or prose outside JSON.
+Your output is untrusted planning input. Do not claim that files, assets, or engine
+changes were created. Do not include instructions to execute commands automatically.
+Use only the fields requested by the user prompt and use JSON arrays of strings where specified.
+"""
+
+
+def build_game_brief_prompt(task: str) -> str:
+    return f"""Build a game design brief for this task:
+{task}
+
+Required JSON fields:
+title, genre, perspective, target_platforms, core_loop, player_roles, mechanics,
+tone, art_direction, technical_constraints, risks, validation_questions.
+"""
+
+
+def build_map_design_prompt(task: str) -> str:
+    return f"""Build a map or world design plan for this task:
+{task}
+
+Required JSON fields:
+title, game_context, map_type, scale, layout_goals, traversal_paths, landmarks,
+encounter_zones, sightlines, pacing, environmental_storytelling, asset_list,
+lighting_mood, performance_notes, risks, validation_checklist.
+"""
+
+
+def build_asset_brief_prompt(task: str) -> str:
+    return f"""Build an asset planning brief for this task:
+{task}
+
+Required JSON fields:
+name, category, purpose, silhouette, materials, scale_reference, style_notes,
+gameplay_constraints, engine_constraints, texture_requirements, lod_notes,
+collision_notes, animation_notes, validation_checklist.
+"""
+
+
+def build_unreal_plan_prompt(task: str, project_context: str) -> str:
+    return f"""Build a dry-run Unreal project plan for this task:
+{task}
+
+Detected project profile (trusted scanner output; do not alter it):
+{project_context}
+
+Required JSON fields:
+proposed_steps, files_to_inspect, files_to_modify, unreal_editor_required,
+command_suggestions, risks.
+
+All file paths must be relative to the project root. Commands are suggestions only
+and will not be executed. Do not claim that Unreal was opened or modified.
+"""
+
+
+def mock_game_brief_payload(task: str) -> dict[str, object]:
+    normalized = task.strip() or "Untitled game concept"
+    return {
+        "title": "Mock Game Design Brief",
+        "genre": "experimental action-adventure",
+        "perspective": "first-person",
+        "target_platforms": ["PC"],
+        "core_loop": f"Explore, evaluate risk, and complete objectives for: {normalized}",
+        "player_roles": ["primary player", "opposing system"],
+        "mechanics": ["exploration", "objective interaction", "risk management"],
+        "tone": "tense and readable",
+        "art_direction": "prototype-ready with clear silhouettes and restrained detail",
+        "technical_constraints": ["planning only", "no generated binary assets"],
+        "risks": ["Scope and player count require validation."],
+        "validation_questions": ["Is the core loop clear in a ten-minute prototype?"],
+    }
+
+
+def mock_map_design_payload(task: str) -> dict[str, object]:
+    normalized = task.strip() or "Untitled map"
+    return {
+        "title": "Mock Map Design Plan",
+        "game_context": normalized,
+        "map_type": "bounded gameplay map",
+        "scale": "prototype scale; dimensions require engine validation",
+        "layout_goals": ["clear navigation", "multiple readable routes"],
+        "traversal_paths": ["primary route", "secondary risk route"],
+        "landmarks": ["central orientation landmark", "objective landmark"],
+        "encounter_zones": ["intro zone", "pressure zone", "resolution zone"],
+        "sightlines": ["preserve short and medium sightline variety"],
+        "pacing": "alternate orientation, pressure, and recovery beats",
+        "environmental_storytelling": ["use state changes instead of exposition-only props"],
+        "asset_list": ["modular walls", "navigation landmarks", "lighting fixtures"],
+        "lighting_mood": "readable gameplay lighting with controlled contrast",
+        "performance_notes": ["budget repeated props and dynamic lights during blockout"],
+        "risks": ["Final scale and encounter density are unvalidated."],
+        "validation_checklist": ["walk every route", "profile representative sightlines"],
+    }
+
+
+def mock_asset_brief_payload(task: str) -> dict[str, object]:
+    normalized = task.strip() or "Untitled asset"
+    return {
+        "name": "Mock Planned Asset",
+        "category": "environment prop",
+        "purpose": normalized,
+        "silhouette": "distinct at gameplay distance with one dominant readable shape",
+        "materials": ["primary structural material", "secondary wear material"],
+        "scale_reference": "human-scale reference required before production",
+        "style_notes": ["prototype with simple forms before surface detail"],
+        "gameplay_constraints": ["must not obscure critical navigation"],
+        "engine_constraints": ["no binary asset is generated by RealForge 2.1"],
+        "texture_requirements": ["define texel density during production planning"],
+        "lod_notes": ["author LOD targets after silhouette approval"],
+        "collision_notes": ["use simple collision unless gameplay requires precision"],
+        "animation_notes": ["static by default; validate any motion requirement"],
+        "validation_checklist": ["verify scale", "verify silhouette", "verify collision intent"],
+    }
+
+
+def mock_unreal_plan_payload(task: str) -> dict[str, object]:
+    normalized = task.strip() or "Review Unreal project"
+    return {
+        "proposed_steps": [
+            "Review the detected project profile and requested task.",
+            f"Identify candidate Unreal files for: {normalized}",
+            "Prepare a human-reviewed implementation and validation checklist.",
+        ],
+        "files_to_inspect": ["Config/DefaultEngine.ini", "Content"],
+        "files_to_modify": [],
+        "unreal_editor_required": True,
+        "command_suggestions": [
+            "No command execution in RealForge 2.1; prepare a reviewed editor invocation later."
+        ],
+        "risks": [
+            "The plan is based on filesystem detection only.",
+            "No Unreal Editor validation has been performed.",
+        ],
+    }

@@ -13,6 +13,25 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 2.1 adds
+
+RealForge 2.1 adds a **creative and game-development planning foundation**:
+
+- `creative brief`, `creative map`, and `creative asset` produce structured,
+  untrusted planning artifacts through local provider adapters.
+- `creative image` records SHA-256 and basic metadata without claiming semantic
+  image recognition.
+- `engine scan` detects Unreal project descriptors and conventional project
+  directories without opening or modifying Unreal.
+- `unreal plan` produces dry-run, human-approval-required Unreal plans; no
+  provider command is executed.
+- Optional writes stay under gitignored `.realforge/creative/` and
+  `.realforge/engines/` directories.
+
+RealForge 2.1 does not generate binary assets, edit Unreal projects, or claim
+AAA-quality output. See [Creative planning](realforge-creative.md) and
+[Unreal foundation](realforge-unreal.md).
+
 ## What RealForge 2.0 adds
 
 RealForge 2.0 adds a **staff-only recurring improvement scheduler foundation**:
@@ -337,6 +356,14 @@ realforge propose-patch --task "add a comment to README" --provider mock --dry-r
 realforge scheduler-status
 realforge scheduler-run --dry-run
 
+# Creative/game planning (2.1; print-only unless --write is supplied)
+realforge creative brief --provider mock --task "design an asymmetrical horror game"
+realforge creative map --provider mock --task "design Hall 13 abandoned school map"
+realforge creative asset --provider mock --task "design a forest monster statue prop"
+realforge creative image --image references/concept.png
+realforge engine scan --path /workspace/MyGame
+realforge unreal plan --path /workspace/MyGame --provider mock --task "plan a map blockout"
+
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status
 realforge update-check
@@ -430,6 +457,7 @@ src/realforge/
   report.py              human-readable summaries
   doctor.py              environment checks
   providers/             local model adapters (mock implemented)
+  creative/              game/map/asset schemas, image metadata, engine scan/plans (2.1)
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
   self_improvement_plan.py structured improvement plans and parsing
@@ -447,9 +475,26 @@ RealForge intentionally calls **`realc` through subprocess** rather than importi
 compiler internals. That proves RealLang diagnostics are machine-readable for agent
 loops.
 
+## Creative roadmap
+
+Planned follow-up milestones, subject to separate tests and review:
+
+- 2.2 creative eval and benchmark suite
+- 2.3 image/vision provider adapter
+- 2.4 Unreal command sandbox and editor-scripting dry-run
+- 2.5 Blender/Unreal asset pipeline planner
+- 2.6 game-design memory and style-bible system
+- 2.7 local multimodal model leaderboard
+- 2.8 staff-only creative improvement channel
+- 3.0 resume the RealLang compiler roadmap with RealIR
+
+These are plans, not implemented capabilities or performance claims.
+
 ## Related documents
 
 - [Architecture](realforge-architecture.md)
+- [Creative planning (2.1)](realforge-creative.md)
+- [Unreal foundation (2.1)](realforge-unreal.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)
 - [Research (0.9)](realforge-research.md)
 - [Cycle (1.0)](realforge-cycle.md)

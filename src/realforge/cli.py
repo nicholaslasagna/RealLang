@@ -5,6 +5,18 @@ import sys
 from pathlib import Path
 
 from realforge.agent_loop import AgentMode, check_file, repair_file, run_agent
+from realforge.creative.asset_brief import build_asset_brief
+from realforge.creative.engine_profile import scan_engine_project
+from realforge.creative.game_brief import build_game_design_brief
+from realforge.creative.image_report import build_image_analysis_report
+from realforge.creative.map_design import build_map_design_plan
+from realforge.creative.models import (
+    CreativeError,
+    format_artifact,
+    write_creative_artifact,
+    write_engine_artifact,
+)
+from realforge.creative.unreal import build_unreal_command_plan
 from realforge.config import load_config
 from realforge.config_file import ConfigFileError
 from realforge.doctor import format_doctor_report, run_doctor
@@ -56,6 +68,7 @@ from realforge.update_bundle import (
     verify_update_bundle,
 )
 from realforge.update_bundle_report import MARKABLE_BUNDLE_STATUSES
+from realforge.workspace import WorkspaceError
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
@@ -538,6 +551,90 @@ def main(argv: list[str] | None = None) -> int:
         help="output JSON path (must stay inside workspace)",
     )
 
+    creative = sub.add_parser(
+        "creative",
+        help="create untrusted game-design planning artifacts (2.1)",
+    )
+    creative_sub = creative.add_subparsers(dest="creative_command", required=True)
+    for command_name, help_text in (
+        ("brief", "build a structured game design brief"),
+        ("map", "build a structured map or world design plan"),
+        ("asset", "build a structured asset brief"),
+    ):
+        creative_command = creative_sub.add_parser(command_name, help=help_text)
+        creative_command.add_argument("--task", required=True, help="creative planning task")
+        creative_command.add_argument(
+            "--provider",
+            default=None,
+            help="override model provider (default: configured provider or mock)",
+        )
+        creative_command.add_argument(
+            "--write",
+            action="store_true",
+            help="write JSON under .realforge/creative/ (default: print only)",
+        )
+        creative_command.add_argument(
+            "--config-root",
+            type=Path,
+            default=None,
+            help="workspace containing .realforge.toml (default: current directory)",
+        )
+
+    creative_image = creative_sub.add_parser(
+        "image",
+        help="record image hash and metadata without semantic vision claims",
+    )
+    creative_image.add_argument("--image", type=Path, required=True, help="image inside workspace")
+    creative_image.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/creative/images/ (default: print only)",
+    )
+    creative_image.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    engine = sub.add_parser("engine", help="scan engine projects without opening or modifying them")
+    engine_sub = engine.add_subparsers(dest="engine_command", required=True)
+    engine_scan = engine_sub.add_parser("scan", help="detect a local engine project (Unreal in 2.1)")
+    engine_scan.add_argument("--path", type=Path, required=True, help="project path inside workspace")
+    engine_scan.add_argument(
+        "--write",
+        action="store_true",
+        help="write profile JSON under .realforge/engines/ (default: print only)",
+    )
+    engine_scan.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    unreal = sub.add_parser("unreal", help="build dry-run Unreal plans without engine mutation")
+    unreal_sub = unreal.add_subparsers(dest="unreal_command", required=True)
+    unreal_plan = unreal_sub.add_parser("plan", help="build an untrusted dry-run Unreal command plan")
+    unreal_plan.add_argument("--path", type=Path, required=True, help="Unreal project path inside workspace")
+    unreal_plan.add_argument("--task", required=True, help="requested Unreal planning task")
+    unreal_plan.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider (default: configured provider or mock)",
+    )
+    unreal_plan.add_argument(
+        "--write",
+        action="store_true",
+        help="write plan JSON under .realforge/engines/plans/ (default: print only)",
+    )
+    unreal_plan.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
     sub.add_parser(
@@ -773,6 +870,79 @@ def main(argv: list[str] | None = None) -> int:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
+
+    if args.command == "creative":
+        workspace_root = config.workspace_root or Path.cwd()
+        try:
+            if args.creative_command == "image":
+                artifact = build_image_analysis_report(
+                    args.image,
+                    workspace_root=workspace_root,
+                )
+                written = (
+                    write_creative_artifact(artifact, workspace_root, "images")
+                    if args.write
+                    else None
+                )
+            else:
+                provider = _resolve_cli_provider(args, config)
+                if args.creative_command == "brief":
+                    artifact = build_game_design_brief(args.task, provider)
+                    category = "briefs"
+                elif args.creative_command == "map":
+                    artifact = build_map_design_plan(args.task, provider)
+                    category = "maps"
+                else:
+                    artifact = build_asset_brief(args.task, provider)
+                    category = "assets"
+                written = (
+                    write_creative_artifact(artifact, workspace_root, category)
+                    if args.write
+                    else None
+                )
+        except (CreativeError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_artifact(artifact))
+        if written is not None:
+            print(f"written: {written}")
+        return 0
+
+    if args.command == "engine":
+        workspace_root = config.workspace_root or Path.cwd()
+        try:
+            profile = scan_engine_project(args.path, workspace_root=workspace_root)
+            written = write_engine_artifact(profile, workspace_root) if args.write else None
+        except (CreativeError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_artifact(profile))
+        if written is not None:
+            print(f"written: {written}")
+        return 0
+
+    if args.command == "unreal":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            plan = build_unreal_command_plan(
+                args.path,
+                args.task,
+                provider,
+                workspace_root=workspace_root,
+            )
+            written = (
+                write_engine_artifact(plan, workspace_root, category="plans")
+                if args.write
+                else None
+            )
+        except (CreativeError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_artifact(plan))
+        if written is not None:
+            print(f"written: {written}")
+        return 0
 
     if args.command == "check":
         if not args.file.is_file():
