@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from realforge.multimodal.models import (
     ImageGenerationRequest,
+    ImageIterationPlan,
+    ImagePromptSpec,
     MultimodalCapabilities,
     VisionRequest,
 )
@@ -48,6 +50,37 @@ class ImagePromptProviderOutput:
     risks: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class ImageWorkflowRequest:
+    task: str
+    intended_use: str
+    target_style: str
+    aspect_ratio: str
+    output_count: int
+
+
+@dataclass(frozen=True)
+class ImageJobProviderOutput:
+    title: str
+    negative_prompt_strategy: tuple[str, ...]
+    iteration_plan: ImageIterationPlan
+    selection_criteria: tuple[str, ...]
+    safety_notes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PromptPackProviderOutput:
+    title: str
+    variants: tuple[str, ...]
+    style_tokens: tuple[str, ...]
+    camera_notes: tuple[str, ...]
+    lighting_notes: tuple[str, ...]
+    material_notes: tuple[str, ...]
+    composition_notes: tuple[str, ...]
+    engine_use_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+
+
 class MultimodalProvider(ABC):
     """Separate optional adapter interface for multimodal workflows."""
 
@@ -75,3 +108,17 @@ class MultimodalProvider(ABC):
 
     def embed_text(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
         raise UnsupportedCapabilityError(self.name, "embeddings")
+
+    def build_image_job(
+        self,
+        request: ImageWorkflowRequest,
+        prompt_spec: ImagePromptSpec,
+    ) -> ImageJobProviderOutput:
+        raise UnsupportedCapabilityError(self.name, "image generation job planning")
+
+    def build_prompt_pack(
+        self,
+        request: ImageWorkflowRequest,
+        prompt_spec: ImagePromptSpec,
+    ) -> PromptPackProviderOutput:
+        raise UnsupportedCapabilityError(self.name, "image prompt-pack planning")

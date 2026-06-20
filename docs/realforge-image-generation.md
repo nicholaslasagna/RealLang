@@ -25,3 +25,20 @@ schema, and `--write` stores JSON under
 Prompt specifications require human review before use with any future image
 provider. Generated results from future tools will need separate provenance,
 content validation, and benchmark coverage.
+
+## RealForge 2.4 planner
+
+RealForge 2.4 retains `image prompt` and adds job specs, prompt packs, reference
+boards, and iteration plans:
+
+```bash
+realforge image job --provider mock --task "plan a forest creature concept"
+realforge image prompt-pack --provider mock --task "build forest creature prompt variants"
+realforge image references --task "record approved references" --image references/creature.png
+realforge image iterate --job <saved-job-id>
+```
+
+These commands still do not generate images. Provenance metadata records prompt
+and reference hashes for the planning artifact; it is not proof that a future
+provider generated or preserved a particular image. See
+[Image workflows](realforge-image-workflows.md) for schemas and storage paths.

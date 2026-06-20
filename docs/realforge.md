@@ -26,6 +26,23 @@ Provider, research, patch, plan, and generated artifact output remains untrusted
 until validated. Commands default to read-only or dry-run behavior, and no feature
 may silently apply, merge, or commit changes.
 
+## What RealForge 2.4 adds
+
+RealForge 2.4 adds an **image-generation workflow planner** on the 2.3
+multimodal interface:
+
+- `image job` creates a job spec with prompt specs, iteration criteria, safety
+  notes, selection criteria, and provenance metadata.
+- `image prompt-pack` creates a base prompt, negative prompt, and reviewable
+  variants.
+- `image references` hashes bounded local images into a metadata-only reference
+  board without semantic analysis.
+- `image iterate` reads a saved job and emits a separate iteration report; it
+  does not mutate the job.
+
+All outputs are untrusted planning artifacts. No command generates a binary
+image or calls a live image API. See [Image workflows](realforge-image-workflows.md).
+
 ## What RealForge 2.3 adds
 
 RealForge 2.3 adds a **multimodal-ready provider interface**:
@@ -411,6 +428,12 @@ realforge multimodal capabilities --provider mock
 realforge vision analyze --image references/concept.png --task "review image" --provider mock
 realforge image prompt --task "design a concept image" --provider mock
 
+# Image workflow planning (2.4; no binary generation)
+realforge image job --task "plan a concept image workflow" --provider mock
+realforge image prompt-pack --task "build prompt variants" --provider mock
+realforge image references --task "record references" --image references/concept.png
+realforge image iterate --job <saved-job-id>
+
 # Creative/game planning (2.1; print-only unless --write is supplied)
 realforge creative brief --provider mock --task "design an asymmetrical horror game"
 realforge creative map --provider mock --task "design Hall 13 abandoned school map"
@@ -515,7 +538,7 @@ src/realforge/
   capabilities.py        capability domain registry and safety metadata (2.2)
   interaction.py         slash-command grammar for future clients (2.2)
   settings_surface.py    effective settings and safety doctor reports (2.2)
-  multimodal/            optional vision/image workflow provider interfaces (2.3)
+  multimodal/            vision interfaces and image workflow planning (2.3-2.4)
   creative/              game/map/asset schemas, image metadata, engine scan/plans (2.1)
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
@@ -540,7 +563,7 @@ Planned follow-up milestones, subject to separate tests and review:
 
 - 2.2 interaction model, capability registry, and settings surfaces (implemented)
 - 2.3 multimodal provider interfaces for optional text, vision, image, and embedding adapters (implemented)
-- 2.4 image-generation workflow planner with provenance metadata
+- 2.4 image-generation workflow planner with provenance metadata (implemented)
 - 2.5 optional vision/image-understanding adapter with untrusted semantic reports
 - 2.6 Unreal/Blender engine and asset pipeline planning
 - 2.7 general agent skill benchmark suite across code, creative, image, engine, and safety domains
@@ -557,6 +580,7 @@ These are plans, not implemented capabilities or performance claims.
 - [Multimodal providers (2.3)](realforge-multimodal.md)
 - [Vision reports (2.3)](realforge-vision.md)
 - [Image-generation planning (2.3)](realforge-image-generation.md)
+- [Image workflows (2.4)](realforge-image-workflows.md)
 - [Creative planning (2.1)](realforge-creative.md)
 - [Unreal foundation (2.1)](realforge-unreal.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)

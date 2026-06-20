@@ -65,6 +65,17 @@ from realforge.multimodal.generation_report import (
 )
 from realforge.multimodal.image_inputs import ImageInputError
 from realforge.multimodal.image_outputs import format_report_json, write_multimodal_report
+from realforge.multimodal.image_workflow import (
+    ImageWorkflowError,
+    build_image_generation_job,
+    build_prompt_pack,
+    build_reference_board,
+    format_image_job,
+    format_iteration_report,
+    format_prompt_pack,
+    format_reference_board,
+    load_image_iteration_plan,
+)
 from realforge.multimodal.provider_base import MultimodalProviderError
 from realforge.multimodal.registry import (
     format_multimodal_capabilities,
@@ -759,7 +770,7 @@ def main(argv: list[str] | None = None) -> int:
         help="workspace containing .realforge.toml (default: current directory)",
     )
 
-    image = sub.add_parser("image", help="build image-generation workflow artifacts (2.3)")
+    image = sub.add_parser("image", help="build image-generation workflow artifacts (2.4)")
     image_sub = image.add_subparsers(dest="image_command", required=True)
     image_prompt = image_sub.add_parser("prompt", help="build an untrusted prompt specification only")
     image_prompt.add_argument("--task", required=True, help="image prompt task")
@@ -784,6 +795,78 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="workspace containing .realforge.toml (default: current directory)",
     )
+
+    image_job = image_sub.add_parser("job", help="build an untrusted image generation job")
+    image_job.add_argument("--task", required=True, help="image workflow task")
+    image_job.add_argument("--provider", default=None, help="multimodal provider (default: mock)")
+    image_job.add_argument("--intended-use", default="concept exploration")
+    image_job.add_argument("--target-style", default="purpose-driven concept art")
+    image_job.add_argument("--aspect-ratio", default="1:1")
+    image_job.add_argument("--output-count", type=int, default=4)
+    image_job.add_argument(
+        "--reference-image",
+        type=Path,
+        action="append",
+        default=[],
+        help="optional workspace-bounded reference image; may be repeated",
+    )
+    image_job.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/image_jobs/",
+    )
+    image_job.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    image_job.add_argument("--config-root", type=Path, default=None)
+
+    prompt_pack = image_sub.add_parser(
+        "prompt-pack",
+        help="build an untrusted prompt pack with deterministic variants",
+    )
+    prompt_pack.add_argument("--task", required=True, help="image prompt-pack task")
+    prompt_pack.add_argument("--provider", default=None, help="multimodal provider (default: mock)")
+    prompt_pack.add_argument("--intended-use", default="concept exploration")
+    prompt_pack.add_argument("--target-style", default="purpose-driven concept art")
+    prompt_pack.add_argument("--aspect-ratio", default="1:1")
+    prompt_pack.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/prompt_packs/",
+    )
+    prompt_pack.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    prompt_pack.add_argument("--config-root", type=Path, default=None)
+
+    image_iterate = image_sub.add_parser(
+        "iterate",
+        help="load a saved image job and emit a separate iteration plan",
+    )
+    image_iterate.add_argument("--job", required=True, help="saved 12-character image job id")
+    image_iterate.add_argument(
+        "--write",
+        action="store_true",
+        help="write a separate JSON report under .realforge/multimodal/iterations/",
+    )
+    image_iterate.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    image_iterate.add_argument("--config-root", type=Path, default=None)
+
+    image_references = image_sub.add_parser(
+        "references",
+        help="hash workspace-bounded images into a metadata-only reference board",
+    )
+    image_references.add_argument("--task", required=True, help="reference board task")
+    image_references.add_argument(
+        "--image",
+        type=Path,
+        action="append",
+        required=True,
+        help="workspace-bounded image; may be repeated",
+    )
+    image_references.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/reference_boards/",
+    )
+    image_references.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    image_references.add_argument("--config-root", type=Path, default=None)
 
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
@@ -1076,26 +1159,72 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "image":
         workspace_root = config.workspace_root or Path.cwd()
-        provider = _resolve_cli_multimodal_provider(args, config)
         try:
-            report = build_image_prompt_spec(
-                args.task,
-                provider,
-                brief=args.brief,
-                style_notes=tuple(args.style_note),
-                target_use_case=args.target_use_case,
-            )
+            if args.image_command == "prompt":
+                provider = _resolve_cli_multimodal_provider(args, config)
+                report = build_image_prompt_spec(
+                    args.task,
+                    provider,
+                    brief=args.brief,
+                    style_notes=tuple(args.style_note),
+                    target_use_case=args.target_use_case,
+                )
+                category = "image_prompts"
+                formatted = format_image_prompt_spec(report)
+            elif args.image_command == "job":
+                provider = _resolve_cli_multimodal_provider(args, config)
+                report = build_image_generation_job(
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                    intended_use=args.intended_use,
+                    target_style=args.target_style,
+                    aspect_ratio=args.aspect_ratio,
+                    output_count=args.output_count,
+                    reference_image_paths=tuple(args.reference_image),
+                )
+                category = "image_jobs"
+                formatted = format_image_job(report)
+            elif args.image_command == "prompt-pack":
+                provider = _resolve_cli_multimodal_provider(args, config)
+                report = build_prompt_pack(
+                    args.task,
+                    provider,
+                    intended_use=args.intended_use,
+                    target_style=args.target_style,
+                    aspect_ratio=args.aspect_ratio,
+                )
+                category = "prompt_packs"
+                formatted = format_prompt_pack(report)
+            elif args.image_command == "iterate":
+                report = load_image_iteration_plan(args.job, workspace_root=workspace_root)
+                category = "iterations"
+                formatted = format_iteration_report(report)
+            else:
+                report = build_reference_board(
+                    args.task,
+                    tuple(args.image),
+                    workspace_root=workspace_root,
+                )
+                category = "reference_boards"
+                formatted = format_reference_board(report)
             written = (
-                write_multimodal_report(report, workspace_root, category="image_prompts")
+                write_multimodal_report(report, workspace_root, category=category)
                 if args.write
                 else None
             )
-        except (MultimodalProviderError, ValueError, WorkspaceError) as err:
+        except (
+            ImageInputError,
+            ImageWorkflowError,
+            MultimodalProviderError,
+            ValueError,
+            WorkspaceError,
+        ) as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
-        print(format_report_json(report) if args.json else format_image_prompt_spec(report))
+        print(format_report_json(report) if args.json else formatted)
         if written is not None:
-            print(f"written: {written}")
+            print(f"written: {written}", file=sys.stderr if args.json else sys.stdout)
         return 0
 
     if args.command == "creative":

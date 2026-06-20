@@ -90,3 +90,8 @@ RealForge 2.3 updates the image and vision capability entries with
 `multimodal capabilities`, `vision analyze`, and prompt-spec-only `image prompt`
 commands. These remain structured, untrusted workflows and do not add an
 interactive shell or binary image generation.
+
+RealForge 2.4 expands the image capability entry with `image job`,
+`image prompt-pack`, `image references`, and `image iterate`. The `/image`
+grammar maps to `image job`; it still executes nothing by itself. Every 2.4
+artifact is untrusted and binary image generation remains unimplemented.

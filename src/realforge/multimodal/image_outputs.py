@@ -7,7 +7,16 @@ from pathlib import Path
 from realforge.workspace import assert_path_in_workspace
 
 
-MULTIMODAL_CATEGORIES = frozenset({"vision", "image_prompts"})
+MULTIMODAL_CATEGORIES = frozenset(
+    {
+        "vision",
+        "image_prompts",
+        "image_jobs",
+        "prompt_packs",
+        "iterations",
+        "reference_boards",
+    }
+)
 
 
 def report_to_dict(report: object) -> dict[str, object]:

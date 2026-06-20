@@ -47,7 +47,7 @@ def _inspect_header(path: Path) -> tuple[str, int | None, int | None, dict[str, 
         metadata["format"] = "webp"
         return "image/webp", None, None, metadata
     raise ImageInputError(
-        "unsupported image format; RealForge 2.3 accepts PNG, GIF, JPEG, or WebP inputs"
+        "unsupported image format; RealForge accepts PNG, GIF, JPEG, or WebP inputs"
     )
 
 

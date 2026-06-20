@@ -37,3 +37,10 @@ with a clear unsupported-capability error; no live server is required.
 The interface is intentionally separate from the existing text provider base.
 Future adapters can implement multimodal support without forcing every text
 provider or test environment to install vision dependencies.
+
+## Image workflow planning in 2.4
+
+RealForge 2.4 composes the prompt-spec provider path into image job specs and
+prompt packs. It also adds local reference boards and saved-job iteration plans.
+The mock provider supplies deterministic planning fields for tests; it does not
+call an image model. See [Image workflows](realforge-image-workflows.md).

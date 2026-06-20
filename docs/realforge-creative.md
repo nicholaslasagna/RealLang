@@ -43,6 +43,11 @@ RealForge 2.3 adds a separate `realforge vision analyze` provider-interface
 path. The existing `creative image` command remains metadata-only and does not
 silently invoke that provider path. See [Vision reports](realforge-vision.md).
 
+RealForge 2.4 adds a separate image workflow planner for job specs, prompt
+packs, metadata-only reference boards, and iteration plans. It does not alter
+the 2.1 creative artifact formats or generate binary assets. See
+[Image workflows](realforge-image-workflows.md).
+
 ## Safety boundary
 
 - Creative artifacts are plans, not evidence that a game or asset exists.

@@ -64,6 +64,21 @@ Multimodal interfaces do not alter the existing text provider contract. A text
 provider without an explicit multimodal adapter reports unsupported capabilities
 and fails before input/provider execution.
 
+## Image workflow planner (2.4)
+
+```text
+task + bounded references → prompt-spec provider path → validated planner output
+                          → job/prompt pack/reference board → print or explicit JSON write
+
+saved job → validated local load → separate iteration report
+```
+
+`multimodal/image_workflow.py` composes the 2.3 prompt-spec pathway into typed
+planning artifacts. Reference files are hashed and never modified. Prompt hashes
+record the exact planned prompt fields, but do not prove that a future image model
+used them or authenticate any generated image. Saved-job iteration validates a
+bounded 12-character identifier and never rewrites the source job.
+
 ## Creative and engine-aware planning (2.1)
 
 RealForge 2.1 adds a planning-only creative layer:
@@ -357,7 +372,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 |-------|--------|------|
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Capabilities | `capabilities.py`, `interaction.py`, `settings_surface.py` | Domain registry and future workbench interaction surfaces (2.2) |
-| Multimodal | `multimodal/` | Optional provider capabilities, bounded image inputs, and untrusted reports (2.3) |
+| Multimodal | `multimodal/` | Optional provider capabilities, bounded image inputs, and untrusted image workflow reports (2.3-2.4) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |

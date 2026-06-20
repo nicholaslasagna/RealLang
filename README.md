@@ -54,6 +54,9 @@ realforge settings doctor
 realforge multimodal capabilities --provider mock
 realforge vision analyze --image references/concept.png --task "review image" --provider mock
 realforge image prompt --task "design a concept image" --provider mock
+realforge image job --task "plan a concept image workflow" --provider mock
+realforge image prompt-pack --task "build prompt variants" --provider mock
+realforge image references --task "record references" --image references/concept.png
 realforge creative brief --provider mock --task "design an asymmetrical horror game"
 realforge creative map --provider mock --task "design Hall 13 abandoned school map"
 realforge creative asset --provider mock --task "design a forest monster statue prop"
@@ -76,12 +79,16 @@ RealForge 2.1 creative commands produce planning artifacts only: they do not gen
 assets or modify Unreal projects. Image reports are metadata-only unless a future vision
 provider is added. See [creative planning](docs/realforge-creative.md) and
 [Unreal foundation](docs/realforge-unreal.md).
+RealForge 2.4 adds untrusted image job specs, prompt packs, reference boards, and
+iteration plans. These are JSON planning artifacts; no binary image-generation
+adapter exists. See [image workflows](docs/realforge-image-workflows.md).
 
 Related RealForge documents include
 [interaction and capabilities](docs/realforge-interaction.md),
 [multimodal providers](docs/realforge-multimodal.md),
 [vision reports](docs/realforge-vision.md),
 [image-generation planning](docs/realforge-image-generation.md),
+[image workflows](docs/realforge-image-workflows.md),
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
@@ -197,6 +204,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge multimodal providers](docs/realforge-multimodal.md)
 - [RealForge vision reports](docs/realforge-vision.md)
 - [RealForge image-generation planning](docs/realforge-image-generation.md)
+- [RealForge image workflows](docs/realforge-image-workflows.md)
 - [RealForge creative planning](docs/realforge-creative.md)
 - [RealForge Unreal foundation](docs/realforge-unreal.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)

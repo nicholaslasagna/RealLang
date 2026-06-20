@@ -65,7 +65,7 @@ these as goals rather than proven outcomes.
 
 RealForge is an experimental local-first AI engineering layer in the same repository.
 It is developing as a general environment rather than a
-single-purpose coding or game-design tool. As of RealForge 2.3:
+single-purpose coding or game-design tool. As of RealForge 2.4:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -92,6 +92,10 @@ single-purpose coding or game-design tool. As of RealForge 2.3:
 - `multimodal capabilities` reports optional provider support without making model/network calls (2.3)
 - `vision analyze` produces untrusted, capability-gated reports from bounded image inputs (2.3)
 - `image prompt` produces untrusted prompt specifications only; no binary generation exists (2.3)
+- `image job` produces untrusted job specs with prompt hashes, reference hashes, and human-review iteration criteria (2.4)
+- `image prompt-pack` produces untrusted prompt variants and negative-prompt planning (2.4)
+- `image references` produces metadata-only reference boards from bounded local images (2.4)
+- `image iterate` emits a separate plan from a saved job without mutating that job (2.4)
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)

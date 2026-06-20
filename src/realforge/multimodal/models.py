@@ -87,6 +87,84 @@ class ImagePromptSpec:
     untrusted: bool = True
 
 
+@dataclass(frozen=True)
+class ImageIterationPlan:
+    rounds: int
+    evaluation_criteria: tuple[str, ...]
+    refinement_prompts: tuple[str, ...]
+    reject_criteria: tuple[str, ...]
+    human_review_required: bool = True
+
+
+@dataclass(frozen=True)
+class ImageProvenanceRecord:
+    source: str
+    provider: str
+    model: str | None
+    prompt_hash: str
+    reference_image_hashes: tuple[str, ...]
+    created_at: str
+    notes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PromptPack:
+    id: str
+    title: str
+    base_prompt: str
+    negative_prompt: str
+    variants: tuple[str, ...]
+    style_tokens: tuple[str, ...]
+    camera_notes: tuple[str, ...]
+    lighting_notes: tuple[str, ...]
+    material_notes: tuple[str, ...]
+    composition_notes: tuple[str, ...]
+    engine_use_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageGenerationJob:
+    id: str
+    created_at: str
+    title: str
+    task: str
+    intended_use: str
+    target_style: str
+    aspect_ratio: str
+    output_count: int
+    prompt_specs: tuple[ImagePromptSpec, ...]
+    reference_images: tuple[ImageInput, ...]
+    negative_prompt_strategy: tuple[str, ...]
+    iteration_plan: ImageIterationPlan
+    selection_criteria: tuple[str, ...]
+    safety_notes: tuple[str, ...]
+    provenance: ImageProvenanceRecord
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageReferenceBoard:
+    id: str
+    task: str
+    references: tuple[ImageInput, ...]
+    reference_hashes: tuple[str, ...]
+    style_summary: str
+    constraints: tuple[str, ...]
+    limitations: tuple[str, ...]
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageIterationReport:
+    id: str
+    created_at: str
+    job_id: str
+    plan: ImageIterationPlan
+    untrusted: bool = True
+
+
 def new_report_id() -> str:
     return uuid.uuid4().hex[:12]
 

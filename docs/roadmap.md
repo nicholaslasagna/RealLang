@@ -111,7 +111,7 @@ test-backed capability slices:
 - 2.1 - creative/game/engine planning foundation
 - 2.2 - capability registry, slash-command grammar, and settings surfaces
 - 2.3 - multimodal provider interface (implemented scaffold)
-- 2.4 - image-generation workflow planner
+- 2.4 - image-generation workflow planner (implemented; planning artifacts only)
 - 2.5 - optional vision/image-understanding adapter
 - 2.6 - Unreal/Blender engine and asset pipeline planner
 - 2.7 - general agent skill benchmark suite

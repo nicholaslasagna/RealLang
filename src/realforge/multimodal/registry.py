@@ -45,7 +45,7 @@ class TextOnlyMultimodalProvider(MultimodalProvider):
             max_images=None,
             max_image_bytes=None,
             notes=(
-                "Existing text provider has no RealForge multimodal adapter in 2.3.",
+                "Existing text provider has no RealForge multimodal adapter.",
                 "No network request is made by capability inspection.",
             ),
             experimental=True,

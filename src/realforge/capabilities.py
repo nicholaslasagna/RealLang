@@ -96,16 +96,20 @@ def build_capability_registry(config: RealForgeConfig) -> CapabilityRegistry:
         Capability(
             domain="image",
             status="experimental",
-            safety_level="prompt-spec-only",
+            safety_level="planning-only",
             commands=(
                 "realforge creative image --image <workspace-path>",
                 "realforge image prompt --task <task>",
+                "realforge image job --task <task>",
+                "realforge image prompt-pack --task <task>",
+                "realforge image iterate --job <job-id>",
+                "realforge image references --task <task> --image <workspace-path>",
             ),
             writes_files=True,
             requires_staff=False,
             requires_network=False,
-            description="Image metadata plus untrusted prompt specifications; no binary generation.",
-            next_suggested_command='realforge image prompt --task "describe an image workflow"',
+            description="Image metadata, prompt packs, job specs, and iteration plans; no binary generation.",
+            next_suggested_command='realforge image job --task "describe an image workflow"',
         ),
         Capability(
             domain="vision",
