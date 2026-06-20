@@ -8,23 +8,31 @@ from pathlib import Path
 
 from realforge.config import RealForgeConfig
 from realforge.experiment import build_validation_commands, run_validation_commands
-from realforge.experiment_report import ExperimentReport, load_report_json
-from realforge.git_utils import (
-    apply_patch_to_directory,
-    is_workspace_dirty,
-    parse_patch_paths,
-    snapshot_working_tree,
-    working_tree_changed,
+from realforge.experiment_report import (
+    ExperimentReport,
+    LegacyExperimentReportError,
+    load_report_json,
+)
+from realforge.git_utils import apply_patch_to_directory, is_git_repo, is_workspace_dirty
+from realforge.patch_safety import (
+    PatchSafetyError,
+    build_patch_backups,
+    inspect_patch_file,
+    rollback_patch_backups,
+    verify_patch_sha256,
 )
 from realforge.permissions import PermissionMode, Permissions
 from realforge.proposal_report import (
+    LegacyProposalError,
     MergeProposal,
     ProposalStatus,
     format_propose_merge_outcome,
     format_proposal_summary,
     load_proposal_json,
+    proposal_dir,
     proposal_path,
     proposals_dir,
+    stored_patch_path,
     utc_now_iso,
     write_proposal_json,
 )
@@ -32,6 +40,10 @@ from realforge.runner import CommandResult, run_command
 from realforge.workspace import assert_can_write, assert_path_in_workspace, create_backup
 
 COMMIT_AUTHOR = "Imagicast Studios <reallang@users.noreply.github.com>"
+APPLY_WARNING = (
+    "WARNING: apply-proposal will modify main workspace files listed in patch targets. "
+    "Review show-proposal output and the stored patch before continuing."
+)
 CommandRunner = Callable[..., CommandResult]
 
 
@@ -51,13 +63,17 @@ def _validation_summary(report: ExperimentReport) -> str:
         return "no validation command results recorded"
     passed = sum(1 for item in report.command_results if item.passed)
     total = len(report.command_results)
-    return f"{passed}/{total} validation commands passed in experiment {report.id}"
+    return (
+        f"{passed}/{total} validation commands passed in experiment {report.id} "
+        f"(mode={report.validation_mode})"
+    )
 
 
 def _default_risks(report: ExperimentReport) -> tuple[str, ...]:
     risks = [
         "Patch was validated in isolation; main workspace context may differ.",
         "Model-generated or hand-edited patches remain untrusted until reviewed.",
+        "Proposal JSON and stored patch files are security-sensitive metadata.",
     ]
     for note in report.notes:
         if note not in risks:
@@ -67,8 +83,9 @@ def _default_risks(report: ExperimentReport) -> tuple[str, ...]:
 
 def _default_rollback_plan() -> str:
     return (
-        "If post-apply validation fails, RealForge restores pre-apply file contents from "
-        "in-memory backups. Review git status before committing."
+        "If post-apply validation fails, RealForge restores patch target files from pre-apply "
+        "backups for text files. Rollback remains best-effort where OS/git limitations apply. "
+        "Review git status before committing."
     )
 
 
@@ -81,6 +98,13 @@ def _assert_proposal_write_path(path: Path, workspace_root: Path) -> None:
         raise ProposalError(f"proposal write refused outside {proposals_root}: {path}") from err
 
 
+def _load_experiment_report(report_path: Path) -> ExperimentReport:
+    try:
+        return load_report_json(report_path)
+    except LegacyExperimentReportError as err:
+        raise ProposalError(str(err)) from err
+
+
 def propose_merge_from_report(
     report_path: Path,
     *,
@@ -89,7 +113,7 @@ def propose_merge_from_report(
 ) -> MergeProposal:
     workspace_root = workspace_root.resolve()
     report_path = report_path.resolve()
-    report = load_report_json(report_path)
+    report = _load_experiment_report(report_path)
 
     if not report.passed:
         raise ProposalError("experiment report did not pass validation")
@@ -97,20 +121,34 @@ def propose_merge_from_report(
         raise ProposalError("experiment report indicates the main workspace was modified")
     if not report.patch_file:
         raise ProposalError("experiment report has no patch_file metadata")
+    if not report.patch_sha256:
+        raise ProposalError("experiment report has no patch_sha256 metadata")
+    if not report.patch_targets:
+        raise ProposalError("experiment report has no patch_targets metadata")
 
     source_patch = Path(report.patch_file).resolve()
     if not source_patch.is_file():
         raise ProposalError(f"patch file not found: {source_patch}")
 
+    try:
+        verify_patch_sha256(source_patch, report.patch_sha256)
+        inspection = inspect_patch_file(source_patch, workspace_root, config=config)
+    except PatchSafetyError as err:
+        raise ProposalError(str(err)) from err
+
+    if inspection.patch_targets != report.patch_targets:
+        raise ProposalError("patch targets in experiment report do not match current patch file")
+
     proposal_id = uuid.uuid4().hex[:12]
-    target_dir = proposals_dir(workspace_root)
-    stored_patch = target_dir / f"{proposal_id}.patch"
+    target_dir = proposal_dir(workspace_root, proposal_id)
+    stored_patch = stored_patch_path(workspace_root, proposal_id)
     proposal_json = proposal_path(workspace_root, proposal_id)
     _assert_proposal_write_path(stored_patch, workspace_root)
     _assert_proposal_write_path(proposal_json, workspace_root)
 
     target_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_patch, stored_patch)
+    verify_patch_sha256(stored_patch, report.patch_sha256)
 
     proposal = MergeProposal(
         id=proposal_id,
@@ -118,6 +156,10 @@ def propose_merge_from_report(
         title=f"Merge proposal: {report.area} experiment {report.id}",
         source_report=str(report_path),
         patch_file=str(stored_patch.relative_to(workspace_root)),
+        copied_patch_sha256=report.patch_sha256,
+        patch_targets=inspection.patch_targets,
+        validation_mode=report.validation_mode,
+        workspace_content_digest=report.workspace_content_digest,
         validation_summary=_validation_summary(report),
         passed=True,
         risks=_default_risks(report),
@@ -134,7 +176,10 @@ def list_proposals(workspace_root: Path) -> tuple[MergeProposal, ...]:
         return ()
     proposals: list[MergeProposal] = []
     for path in sorted(root.glob("*.json")):
-        proposals.append(load_proposal_json(path))
+        try:
+            proposals.append(load_proposal_json(path))
+        except LegacyProposalError:
+            continue
     return tuple(proposals)
 
 
@@ -142,7 +187,10 @@ def show_proposal(workspace_root: Path, proposal_id: str) -> MergeProposal:
     path = proposal_path(workspace_root.resolve(), proposal_id)
     if not path.is_file():
         raise ProposalError(f"proposal not found: {proposal_id}")
-    return load_proposal_json(path)
+    try:
+        return load_proposal_json(path)
+    except LegacyProposalError as err:
+        raise ProposalError(str(err)) from err
 
 
 def _save_proposal(workspace_root: Path, proposal: MergeProposal) -> None:
@@ -151,46 +199,23 @@ def _save_proposal(workspace_root: Path, proposal: MergeProposal) -> None:
     write_proposal_json(proposal, path)
 
 
-def _backup_patch_targets(
+def _git_commit_patch_targets(
     workspace_root: Path,
-    patch_file: Path,
-) -> dict[Path, str | None]:
-    backups: dict[Path, str | None] = {}
-    for rel in parse_patch_paths(patch_file):
-        path = workspace_root / rel
-        backups[path] = path.read_text(encoding="utf-8") if path.is_file() else None
-    return backups
-
-
-def _rollback_patch_targets(backups: dict[Path, str | None]) -> None:
-    for path, content in backups.items():
-        if content is None:
-            if path.exists():
-                path.unlink()
-        else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
-
-
-def _create_rotated_backups(
-    workspace_root: Path,
-    patch_file: Path,
+    patch_targets: tuple[str, ...],
+    message: str,
     *,
-    permissions: Permissions,
-    suffix: str,
-) -> list[Path]:
-    created: list[Path] = []
-    for rel in parse_patch_paths(patch_file):
-        path = workspace_root / rel
-        if path.is_file():
-            assert_can_write(path, permissions)
-            created.append(create_backup(path, suffix))
-    return created
+    config: RealForgeConfig,
+) -> str:
+    if not patch_targets:
+        raise ProposalError("cannot commit: patch_targets is empty")
 
-
-def _git_commit(workspace_root: Path, message: str, *, config: RealForgeConfig) -> str:
     perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace_root)
-    add_result = run_command(("git", "add", "-A"), config=config, permissions=perms, cwd=workspace_root)
+    add_result = run_command(
+        ("git", "add", "--", *patch_targets),
+        config=config,
+        permissions=perms,
+        cwd=workspace_root,
+    )
     if add_result.returncode != 0:
         raise ProposalError(add_result.stderr.strip() or add_result.stdout.strip() or "git add failed")
 
@@ -212,7 +237,7 @@ def _git_commit(workspace_root: Path, message: str, *, config: RealForgeConfig) 
 
     rev = run_command(("git", "rev-parse", "HEAD"), config=config, permissions=perms, cwd=workspace_root)
     if rev.returncode != 0:
-        raise ProposalError("git rev-parse HEAD failed after commit")
+        raise ProposalError("git rev-parse HEAD after commit failed")
     return rev.stdout.strip()
 
 
@@ -236,18 +261,47 @@ def apply_proposal(
         raise ProposalError(f"proposal {proposal_id} is not pending (status={proposal.status})")
     if not proposal.passed:
         raise ProposalError("proposal is not based on a passed experiment")
+    if not proposal.patch_targets:
+        raise ProposalError("proposal has no patch_targets metadata")
 
     patch_path = (root / proposal.patch_file).resolve()
     if not patch_path.is_file():
         raise ProposalError(f"patch file not found: {patch_path}")
 
-    if is_workspace_dirty(root, config=cfg):
+    try:
+        verify_patch_sha256(patch_path, proposal.copied_patch_sha256)
+        inspection = inspect_patch_file(patch_path, root, config=cfg)
+    except PatchSafetyError as err:
+        raise ProposalError(str(err)) from err
+
+    if inspection.patch_targets != proposal.patch_targets:
+        raise ProposalError("stored patch targets do not match proposal metadata")
+
+    baseline_digest = proposal.workspace_content_digest
+    if not is_git_repo(root):
+        if not baseline_digest:
+            raise ProposalError(
+                "non-git workspace requires workspace_content_digest in proposal metadata"
+            )
+        if is_workspace_dirty(root, config=cfg, baseline_digest=baseline_digest):
+            raise ProposalError(
+                "main workspace content changed since experiment; re-run experiment before applying"
+            )
+    elif is_workspace_dirty(root, config=cfg):
         raise ProposalError("main workspace has uncommitted changes; commit or stash before applying")
 
     perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=root)
-    before_snapshot = snapshot_working_tree(root)
-    backups = _backup_patch_targets(root, patch_path)
-    validation_commands = build_validation_commands("quick", root, config=cfg)
+    try:
+        backups = build_patch_backups(
+            root,
+            patch_targets=inspection.patch_targets,
+            deleted_targets=inspection.deleted_targets,
+            new_targets=inspection.new_targets,
+        )
+    except PatchSafetyError as err:
+        raise ProposalError(str(err)) from err
+
+    validation_commands = build_validation_commands(proposal.validation_mode, root, config=cfg)
 
     apply_result = apply_patch_to_directory(patch_path, root, config=cfg)
     if apply_result.returncode != 0:
@@ -260,7 +314,12 @@ def apply_proposal(
             ok=False,
         )
 
-    _create_rotated_backups(root, patch_path, permissions=perms, suffix=cfg.backup_suffix)
+    for rel in inspection.patch_targets:
+        path = root / rel
+        if path.is_file():
+            assert_can_write(path, perms)
+            create_backup(path, cfg.backup_suffix)
+
     command_results, failures = run_validation_commands(
         validation_commands,
         workspace=root,
@@ -269,27 +328,40 @@ def apply_proposal(
     )
 
     if failures:
-        _rollback_patch_targets(backups)
+        rollback = rollback_patch_backups(backups, root)
         failed = replace(proposal, status=ProposalStatus.FAILED.value, applied_at=utc_now_iso())
         _save_proposal(root, failed)
-        lines = ["RealForge apply-proposal failed; changes rolled back", f"Proposal ID: {proposal_id}"]
+        lines = [
+            "RealForge apply-proposal failed; rollback attempted",
+            f"Proposal ID: {proposal_id}",
+        ]
         for failure in failures:
-            lines.append(f"  - {failure}")
+            lines.append(f"  - validation: {failure}")
+        if not rollback.ok:
+            lines.append("ROLLBACK INCOMPLETE:")
+            for error in rollback.errors:
+                lines.append(f"  - {error}")
+        else:
+            lines.append("Rollback restored patch target files.")
         return ApplyProposalOutcome(proposal=failed, message="\n".join(lines), ok=False)
-
-    after_snapshot = snapshot_working_tree(root)
-    if working_tree_changed(before_snapshot, after_snapshot) is False:
-        pass
 
     commit_hash: str | None = None
     if commit:
         try:
-            commit_hash = _git_commit(root, proposal.title, config=cfg)
+            commit_hash = _git_commit_patch_targets(
+                root,
+                proposal.patch_targets,
+                proposal.title,
+                config=cfg,
+            )
         except ProposalError as err:
-            _rollback_patch_targets(backups)
+            rollback = rollback_patch_backups(backups, root)
             failed = replace(proposal, status=ProposalStatus.FAILED.value, applied_at=utc_now_iso())
             _save_proposal(root, failed)
-            return ApplyProposalOutcome(proposal=failed, message=str(err), ok=False)
+            message = str(err)
+            if not rollback.ok:
+                message += "\nROLLBACK INCOMPLETE:\n" + "\n".join(f"  - {item}" for item in rollback.errors)
+            return ApplyProposalOutcome(proposal=failed, message=message, ok=False)
 
     applied = replace(
         proposal,
@@ -300,10 +372,13 @@ def apply_proposal(
     _save_proposal(root, applied)
 
     lines = [
+        APPLY_WARNING,
         "RealForge apply-proposal succeeded",
         f"Proposal ID: {proposal_id}",
         f"Patch applied: {proposal.patch_file}",
+        f"Validation mode: {proposal.validation_mode}",
         "Post-apply validation passed.",
+        "Note: apply passed ≠ committed unless --commit was used.",
     ]
     if commit_hash:
         lines.append(f"Commit: {commit_hash}")
@@ -317,12 +392,17 @@ def apply_proposal(
     return ApplyProposalOutcome(proposal=applied, message="\n".join(lines), ok=True)
 
 
+def format_apply_warning(proposal_id: str) -> str:
+    return "\n".join([APPLY_WARNING, f"Proposal ID: {proposal_id}"])
+
+
 def format_list_proposals(proposals: tuple[MergeProposal, ...]) -> str:
     if not proposals:
         return "No merge proposals found in .realforge/proposals/"
     lines = ["RealForge merge proposals:"]
     for proposal in proposals:
         lines.append(
-            f"  - {proposal.id} [{proposal.status}] {proposal.title} patch={proposal.patch_file}"
+            f"  - {proposal.id} [{proposal.status}] {proposal.title} "
+            f"mode={proposal.validation_mode} patch={proposal.patch_file}"
         )
     return "\n".join(lines)

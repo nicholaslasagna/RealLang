@@ -32,6 +32,7 @@ class CycleReport:
     experiment_reports: tuple[str, ...]
     proposal_ids: tuple[str, ...]
     passed: bool
+    proposal_created: bool
     stopped_reason: str
     next_steps: tuple[str, ...]
     duration_ms: int
@@ -97,6 +98,7 @@ def load_cycle_report(workspace_root: Path, cycle_id: str) -> CycleReport:
         experiment_reports=tuple(str(item) for item in data.get("experiment_reports", [])),
         proposal_ids=tuple(str(item) for item in data.get("proposal_ids", [])),
         passed=bool(data.get("passed", False)),
+        proposal_created=bool(data.get("proposal_created", data.get("passed", False))),
         stopped_reason=str(data.get("stopped_reason", "")),
         next_steps=tuple(str(item) for item in data.get("next_steps", [])),
         duration_ms=int(data.get("duration_ms", 0)),
@@ -121,7 +123,8 @@ def format_cycle_report(report: CycleReport) -> str:
         f"ID: {report.id}",
         f"Area: {report.area}",
         f"Budget: {report.budget}",
-        f"Passed: {report.passed}",
+        f"Proposal created: {report.proposal_created}",
+        f"Cycle complete: {report.passed}",
         f"Stopped: {report.stopped_reason}",
         f"Duration: {report.duration_ms} ms",
         f"Main workspace modified: {report.main_workspace_modified}",
@@ -145,6 +148,18 @@ def format_cycle_report(report: CycleReport) -> str:
         lines.append("Proposal IDs:")
         for proposal_id in report.proposal_ids:
             lines.append(f"  - {proposal_id}")
+    if report.proposal_created:
+        lines.append(
+            "Summary: Cycle produced a passed experiment and pending proposal. "
+            "The main workspace was not modified."
+        )
+    elif report.passed:
+        lines.append("Summary: Cycle completed without creating a proposal.")
+    else:
+        lines.append(
+            "Summary: Cycle did not produce an applicable proposal. "
+            "Experiment pass ≠ merge; proposal created ≠ applied."
+        )
     if report.next_steps:
         lines.append("Next steps:")
         for step in report.next_steps:

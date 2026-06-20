@@ -167,6 +167,7 @@ def test_cycle_with_passing_patch_creates_proposal_without_apply(tmp_path: Path)
     )
 
     assert outcome.report is not None
+    assert outcome.report.proposal_created is True
     assert outcome.report.passed is True
     assert outcome.report.proposal_ids
     assert target.read_text(encoding="utf-8") == original
@@ -264,6 +265,22 @@ def test_cycle_report_written_under_workspace_bound_cycles(tmp_path: Path):
     assert payload["main_workspace_modified"] is False
 
 
+def test_cycle_cli_output_does_not_imply_main_repo_improved(tmp_path: Path):
+    root = _workspace(tmp_path)
+    _init_git(root)
+    patch = _write_patch(tmp_path / "good.diff", _harmless_patch())
+    cfg = RealForgeConfig(realc_command=(sys.executable, "-m", "reallang.cli"), workspace_root=root)
+    outcome = run_cycle_patch(
+        area="tests",
+        patch_file=patch,
+        workspace_root=root,
+        config=cfg,
+        temp_root=_experiments_root(tmp_path),
+    )
+    assert "passed experiment and pending proposal" in outcome.message
+    assert "the main workspace was not modified" in outcome.message.lower()
+
+
 def test_cycle_cli_dry_run(tmp_path: Path):
     root = _workspace(tmp_path)
     proc = subprocess.run(
@@ -287,3 +304,4 @@ def test_cycle_cli_dry_run(tmp_path: Path):
     )
     assert proc.returncode == 0, proc.stderr
     assert "cycle dry-run" in proc.stdout.lower()
+    assert "plan generated" in proc.stdout.lower()

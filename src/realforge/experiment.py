@@ -11,6 +11,7 @@ from realforge.config import RealForgeConfig
 from realforge.experiment_report import (
     CommandResultRecord,
     ExperimentReport,
+    VALIDATION_MODES,
     format_experiment_report,
     write_report_json,
 )
@@ -22,6 +23,7 @@ from realforge.git_utils import (
     snapshot_working_tree,
     working_tree_changed,
 )
+from realforge.patch_safety import PatchSafetyError, inspect_patch_file, workspace_content_digest
 from realforge.permissions import PermissionMode, Permissions
 from realforge.providers.base import ModelProvider
 from realforge.runner import CommandResult, run_command
@@ -30,8 +32,6 @@ from realforge.self_improvement_plan import SelfImprovementPlan, format_improvem
 
 ValidationMode = str
 CommandRunner = Callable[..., CommandResult]
-
-VALIDATION_MODES = frozenset({"quick", "examples", "benchmarks"})
 
 
 @dataclass(frozen=True)
@@ -86,7 +86,7 @@ def format_dry_run_message(
     validation_commands: tuple[tuple[str, ...], ...],
 ) -> str:
     lines = [
-        "RealForge experiment dry-run (no workspace created)",
+        "RealForge experiment dry-run (plan generated; no validation executed)",
         "",
         format_improvement_plan(plan),
         "",
@@ -184,13 +184,26 @@ def run_experiment_patch(
     cfg = config or RealForgeConfig(realc_command=(sys.executable, "-m", "reallang.cli"), workspace_root=workspace_root)
     main_root = (cfg.workspace_root or workspace_root).resolve()
     patch_file = patch_file.resolve()
+    if validation_mode not in VALIDATION_MODES:
+        raise ValueError(f"unknown validation mode: {validation_mode}")
     experiment_id = uuid.uuid4().hex[:12]
     started = time.monotonic()
     failures: list[str] = []
     notes: list[str] = [
         "Patch applied only inside isolated experiment workspace.",
         "Human approval is required before merging any changes to the main workspace.",
+        "Experiment pass does not merge or apply changes to the main workspace.",
     ]
+    patch_sha256: str | None = None
+    patch_targets: tuple[str, ...] = ()
+    workspace_digest = workspace_content_digest(main_root)
+
+    try:
+        inspection = inspect_patch_file(patch_file, main_root, config=cfg)
+        patch_sha256 = inspection.patch_sha256
+        patch_targets = inspection.patch_targets
+    except PatchSafetyError as err:
+        failures.append(str(err))
 
     before_snapshot = snapshot_working_tree(main_root)
     workspace = None
@@ -202,34 +215,37 @@ def run_experiment_patch(
     passed = False
 
     try:
-        workspace = create_experiment_workspace(main_root, config=cfg, temp_root=temp_root)
-        experiment_id = workspace.experiment_id
-        experiment_path = str(workspace.workspace_path)
-        workspace_mode = workspace.mode
-        validation_commands = build_validation_commands(validation_mode, workspace.workspace_path, config=cfg)
+        if not failures:
+            workspace = create_experiment_workspace(main_root, config=cfg, temp_root=temp_root)
+            experiment_id = workspace.experiment_id
+            experiment_path = str(workspace.workspace_path)
+            workspace_mode = workspace.mode
+            validation_commands = build_validation_commands(
+                validation_mode, workspace.workspace_path, config=cfg
+            )
 
-        apply_result = apply_unified_patch(patch_file, workspace, config=cfg)
-        if apply_result.returncode != 0:
-            detail = apply_result.stderr.strip() or apply_result.stdout.strip() or "patch apply failed"
-            failures.append(f"patch apply failed: {detail}")
-            command_results = (
-                CommandResultRecord(
-                    command=_command_to_str(apply_result.cmd),
-                    returncode=apply_result.returncode,
-                    stdout=apply_result.stdout,
-                    stderr=apply_result.stderr,
-                    passed=False,
-                ),
-            )
-        else:
-            command_results, validation_failures = _run_validation_commands(
-                validation_commands,
-                workspace=workspace.workspace_path,
-                config=cfg,
-                command_runner=command_runner,
-            )
-            failures.extend(validation_failures)
-            passed = not failures
+            apply_result = apply_unified_patch(patch_file, workspace, config=cfg)
+            if apply_result.returncode != 0:
+                detail = apply_result.stderr.strip() or apply_result.stdout.strip() or "patch apply failed"
+                failures.append(f"patch apply failed: {detail}")
+                command_results = (
+                    CommandResultRecord(
+                        command=_command_to_str(apply_result.cmd),
+                        returncode=apply_result.returncode,
+                        stdout=apply_result.stdout,
+                        stderr=apply_result.stderr,
+                        passed=False,
+                    ),
+                )
+            else:
+                command_results, validation_failures = _run_validation_commands(
+                    validation_commands,
+                    workspace=workspace.workspace_path,
+                    config=cfg,
+                    command_runner=command_runner,
+                )
+                failures.extend(validation_failures)
+                passed = not failures
     except Exception as err:  # noqa: BLE001 - surface experiment setup failures safely
         failures.append(str(err))
 
@@ -256,6 +272,9 @@ def run_experiment_patch(
         id=experiment_id,
         area=area,
         patch_file=str(patch_file),
+        patch_sha256=patch_sha256,
+        patch_targets=patch_targets,
+        validation_mode=validation_mode,
         workspace_mode=workspace_mode,
         experiment_path=experiment_path,
         validation_commands=tuple(_command_to_str(cmd) for cmd in validation_commands),
@@ -266,6 +285,7 @@ def run_experiment_patch(
         kept=kept,
         cleanup_status=cleanup_status,
         main_workspace_modified=main_modified,
+        workspace_content_digest=workspace_digest,
         notes=tuple(notes),
     )
     if output_json is not None:

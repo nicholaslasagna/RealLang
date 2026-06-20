@@ -145,8 +145,8 @@ def test_experiment_dry_run_cli(tmp_path: Path):
         cwd=str(root),
     )
     assert proc.returncode == 0, proc.stderr
-    assert "Would run validation" in proc.stdout
-    assert "No experiment workspace was created" in proc.stdout
+    assert "plan generated" in proc.stdout.lower()
+    assert "no validation executed" in proc.stdout.lower()
 
 
 def test_patch_experiment_applies_in_copy_workspace_only(tmp_path: Path):

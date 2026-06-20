@@ -97,6 +97,22 @@ research --url --allow-domain → snapshot + metadata → plan --include-researc
 
 See [Research (0.9)](realforge-research.md).
 
+## Proposal integrity hardening (1.1)
+
+RealForge 1.1 strengthens the experiment → proposal → apply trust boundary:
+
+```text
+patch SHA-256 at experiment → verify at propose-merge → copy to .realforge/proposals/<id>/patch.diff
+  → verify at apply → path-safe targets → backup patch_targets → validate (same mode) → scoped commit
+```
+
+- `patch_safety.py` computes hashes, validates targets, and manages rollback backups
+- `ExperimentReport` stores `patch_sha256`, `patch_targets`, `validation_mode`, and `workspace_content_digest`
+- `MergeProposal` stores `copied_patch_sha256`, `patch_targets`, and `validation_mode`
+- Legacy experiment/proposal JSON without 1.1 fields is **rejected** (no silent downgrade)
+- Rollback is **stronger than 1.0** but still best-effort where OS/git limitations apply
+- RealForge still does **not** auto-merge
+
 ## Controlled improvement cycles (1.0)
 
 RealForge 1.0 composes planning, experiments, and proposals into bounded cycles:
@@ -134,7 +150,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |
 | Repair | `repair_rules.py`, `patcher.py` | Conservative rule-based fixes; backup before writes |
-| Safety | `permissions.py` | `readonly` (default), `ask`, `workspace-write` |
+| Safety | `permissions.py`, `patch_safety.py` | Permission modes; patch hash chain, target validation, rollback backups |
 | Memory | `memory.py` | Session notes for multi-step loops (v0.1 in-process only) |
 | Report | `report.py`, `doctor.py` | Human-readable summaries and environment checks |
 

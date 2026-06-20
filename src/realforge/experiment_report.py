@@ -4,6 +4,8 @@ import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+VALIDATION_MODES = frozenset({"quick", "examples", "benchmarks"})
+
 
 @dataclass(frozen=True)
 class CommandResultRecord:
@@ -19,6 +21,9 @@ class ExperimentReport:
     id: str
     area: str
     patch_file: str | None
+    patch_sha256: str | None
+    patch_targets: tuple[str, ...]
+    validation_mode: str
     workspace_mode: str
     experiment_path: str | None
     validation_commands: tuple[str, ...]
@@ -29,7 +34,12 @@ class ExperimentReport:
     kept: bool
     cleanup_status: str
     main_workspace_modified: bool
+    workspace_content_digest: str | None
     notes: tuple[str, ...]
+
+
+class LegacyExperimentReportError(ValueError):
+    pass
 
 
 def format_experiment_report(report: ExperimentReport) -> str:
@@ -38,6 +48,7 @@ def format_experiment_report(report: ExperimentReport) -> str:
         f"ID: {report.id}",
         f"Area: {report.area}",
         f"Passed: {report.passed}",
+        f"Validation mode: {report.validation_mode}",
         f"Workspace mode: {report.workspace_mode}",
         f"Duration: {report.duration_ms} ms",
         f"Main workspace modified: {report.main_workspace_modified}",
@@ -46,6 +57,14 @@ def format_experiment_report(report: ExperimentReport) -> str:
     ]
     if report.patch_file:
         lines.append(f"Patch file: {report.patch_file}")
+    if report.patch_sha256:
+        lines.append(f"Patch SHA-256: {report.patch_sha256}")
+    if report.patch_targets:
+        lines.append("Patch targets:")
+        for target in report.patch_targets:
+            lines.append(f"  - {target}")
+    if report.workspace_content_digest:
+        lines.append(f"Workspace content digest: {report.workspace_content_digest}")
     if report.experiment_path:
         lines.append(f"Experiment path: {report.experiment_path}")
     if report.validation_commands:
@@ -65,6 +84,7 @@ def format_experiment_report(report: ExperimentReport) -> str:
         lines.append("Notes:")
         for note in report.notes:
             lines.append(f"  - {note}")
+    lines.append("Note: experiment pass does not merge or apply changes to the main workspace.")
     return "\n".join(lines)
 
 
@@ -82,6 +102,23 @@ def load_report_json(path: Path) -> ExperimentReport:
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("experiment report JSON must be an object")
+
+    validation_mode = str(data.get("validation_mode", "")).strip()
+    if not validation_mode:
+        raise LegacyExperimentReportError(
+            "experiment report missing validation_mode (RealForge 1.1+ required)"
+        )
+    if validation_mode not in VALIDATION_MODES:
+        raise ValueError(f"unknown validation mode in experiment report: {validation_mode}")
+
+    patch_sha256 = data.get("patch_sha256")
+    if patch_sha256 is not None:
+        patch_sha256 = str(patch_sha256).strip() or None
+    if data.get("patch_file") and not patch_sha256:
+        raise LegacyExperimentReportError(
+            "experiment report missing patch_sha256 (RealForge 1.1+ required)"
+        )
+
     command_results = tuple(
         CommandResultRecord(
             command=str(item.get("command", "")),
@@ -97,6 +134,9 @@ def load_report_json(path: Path) -> ExperimentReport:
         id=str(data.get("id", "")).strip(),
         area=str(data.get("area", "")).strip(),
         patch_file=data.get("patch_file"),
+        patch_sha256=patch_sha256,
+        patch_targets=tuple(str(item) for item in data.get("patch_targets", [])),
+        validation_mode=validation_mode,
         workspace_mode=str(data.get("workspace_mode", "")).strip(),
         experiment_path=data.get("experiment_path"),
         validation_commands=tuple(str(item) for item in data.get("validation_commands", [])),
@@ -107,5 +147,6 @@ def load_report_json(path: Path) -> ExperimentReport:
         kept=bool(data.get("kept", False)),
         cleanup_status=str(data.get("cleanup_status", "")).strip(),
         main_workspace_modified=bool(data.get("main_workspace_modified", False)),
+        workspace_content_digest=data.get("workspace_content_digest"),
         notes=tuple(str(item) for item in data.get("notes", [])),
     )

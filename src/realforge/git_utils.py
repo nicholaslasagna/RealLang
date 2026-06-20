@@ -167,28 +167,40 @@ def apply_patch_to_directory(
     )
 
 
-def is_workspace_dirty(workspace_root: Path, *, config: RealForgeConfig | None = None) -> bool:
+def is_workspace_dirty(
+    workspace_root: Path,
+    *,
+    config: RealForgeConfig | None = None,
+    baseline_digest: str | None = None,
+) -> bool:
     workspace_root = workspace_root.resolve()
-    if not is_git_repo(workspace_root):
-        return False
-    perms = Permissions(mode=PermissionMode.READONLY, workspace_root=workspace_root)
-    result = run_command(
-        ("git", "status", "--porcelain"),
-        config=config,
-        permissions=perms,
-        cwd=workspace_root,
-    )
-    if result.returncode != 0:
+    if is_git_repo(workspace_root):
+        perms = Permissions(mode=PermissionMode.READONLY, workspace_root=workspace_root)
+        result = run_command(
+            ("git", "status", "--porcelain"),
+            config=config,
+            permissions=perms,
+            cwd=workspace_root,
+        )
+        if result.returncode != 0:
+            return True
+        lines = [
+            line
+            for line in result.stdout.splitlines()
+            if line.strip() and not _is_realforge_metadata_path(line)
+        ]
+        return bool(lines)
+
+    if baseline_digest is None:
         return True
-    lines = [
-        line
-        for line in result.stdout.splitlines()
-        if line.strip() and not _is_realforge_proposal_path(line)
-    ]
-    return bool(lines)
+
+    from realforge.patch_safety import workspace_content_digest
+
+    current = workspace_content_digest(workspace_root)
+    return current != baseline_digest
 
 
-def _is_realforge_proposal_path(porcelain_line: str) -> bool:
+def _is_realforge_metadata_path(porcelain_line: str) -> bool:
     path = porcelain_line[3:].strip()
     if " -> " in path:
         path = path.split(" -> ", 1)[1]

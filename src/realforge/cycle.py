@@ -102,7 +102,7 @@ def run_cycle_dry_run(
     validation_commands = build_validation_commands(validation_mode, workspace_root, config=config)
 
     lines = [
-        "RealForge cycle dry-run (no experiment, no proposal, no file writes)",
+        "RealForge cycle dry-run (plan generated; no validation executed)",
         f"Area: {area}",
         f"Budget: {budget}",
         "",
@@ -117,6 +117,7 @@ def run_cycle_dry_run(
             *[f"  - {' '.join(cmd)}" for cmd in validation_commands],
             "",
             "No experiment workspace created. No merge proposal created.",
+            "Dry-run generated a plan only; validation was not executed.",
         ]
     )
     return CycleOutcome(report=None, message="\n".join(lines), ok=True)
@@ -231,6 +232,7 @@ def run_cycle_patch(
         safety_notes.append("Cycle aborted safety checks due to unexpected main workspace changes.")
 
     duration_ms = int((time.monotonic() - started) * 1000)
+    proposal_created = bool(proposal_ids) and passed and not main_modified
     report = CycleReport(
         id=cycle_id,
         area=area,
@@ -240,7 +242,8 @@ def run_cycle_patch(
         patch_file=str(patch_file),
         experiment_reports=tuple(experiment_report_paths),
         proposal_ids=tuple(proposal_ids),
-        passed=passed and not main_modified,
+        passed=proposal_created,
+        proposal_created=proposal_created,
         stopped_reason=stopped_reason,
         next_steps=tuple(next_steps),
         duration_ms=duration_ms,
@@ -257,7 +260,7 @@ def format_cycle_list(reports: tuple[CycleReport, ...]) -> str:
     lines = ["RealForge cycle reports:"]
     for report in reports:
         lines.append(
-            f"  - {report.id} area={report.area} passed={report.passed} stopped={report.stopped_reason}"
+            f"  - {report.id} area={report.area} proposal_created={report.proposal_created} stopped={report.stopped_reason}"
         )
     return "\n".join(lines)
 

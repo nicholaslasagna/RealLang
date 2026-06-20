@@ -4,13 +4,27 @@ RealForge self-improvement is **experimental**. Version **0.6** added dry-run pl
 untrusted patch display. Version **0.7** added isolated experiment workspaces. Version
 **0.8** adds **approval-gated merge proposals** — successful experiments can become
 reviewable proposals, but nothing merges automatically. Version **0.9** adds
-**permissioned internet research** — explicit HTTPS fetches with domain allowlists,
-local snapshots, and optional planning context. Version **1.0** adds **controlled
-recursive improvement cycles** that compose improve → experiment → proposal flows
-with bounded budgets and mandatory human approval before apply.
+**permissioned internet research**. Version **1.0** adds **controlled recursive improvement
+cycles**. Version **1.1** **hardens proposal integrity** with patch hash chains, validation
+mode parity, path-safe apply, scoped commits, and stronger rollback.
 
-RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or
-Mythos yet. Local models may be used, but **model output is untrusted**.
+RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or Mythos yet.
+Local models may be used, but **model output is untrusted**.
+
+## What 1.1 adds
+
+- Patch **SHA-256 hash chain** from experiment → proposal → apply; tampered patches are blocked
+- **`validation_mode` parity** — apply reruns the same mode that passed in the experiment
+- **Path-safe patch targets** — rejects traversal, `.git/`, and `.realforge/` writes from patches
+- **`patch_targets`** stored in reports/proposals; used for backup, rollback, and `git add`
+- **Non-git dirty checks** via `workspace_content_digest` (no silent skip)
+- **Legacy reports/proposals** without 1.1 metadata are rejected
+- Clearer status wording:
+  - experiment pass **≠** merge
+  - proposal created **≠** applied
+  - apply passed **≠** committed (unless `--commit`)
+- Rollback is stronger than 1.0 but still best-effort where OS/git limits apply
+- RealForge still does **not** auto-merge
 
 ## What 1.0 adds
 
@@ -30,6 +44,22 @@ See [Cycle (1.0)](realforge-cycle.md).
 
 See [Research (0.9)](realforge-research.md).
 
+## Approval-gated merge proposals (0.8, hardened in 1.1)
+
+RealForge 0.8 turns successful experiments into reviewable merge proposals. Version 1.1
+adds patch hash chains, validation mode parity, path-safe targets, scoped commits, and
+stronger rollback:
+
+```text
+passed ExperimentReport → propose-merge → .realforge/proposals/<id>/patch.diff → show-proposal → apply-proposal --confirm → validate (same mode) → optional --commit (patch targets only)
+```
+
+- `proposals.py` validates experiment reports and stores pending proposals
+- `apply-proposal` requires `--confirm`, verifies patch hashes, blocks dirty workspaces, and rolls back on failed validation
+- Proposal patches are copied into `.realforge/proposals/<id>/patch.diff` with `copied_patch_sha256` metadata
+- Changes remain uncommitted by default; `--commit` stages only `patch_targets`
+- Proposal JSON and patch files are **security-sensitive** — treat `.realforge/proposals/` like credentials
+
 ## What 0.8 adds
 
 ```text
@@ -39,8 +69,8 @@ passed ExperimentReport → propose-merge → pending proposal → apply-proposa
 - `realforge propose-merge --report <experiment_report.json>` — requires `passed=true` and clean main workspace metadata
 - `realforge list-proposals` / `realforge show-proposal <id>` — read-only review
 - `realforge apply-proposal <id> --confirm` — applies patch to main workspace with backup/rollback
-- Post-apply validation reruns quick checks; failure rolls back automatically
-- `--commit` commits only after validation passes (default leaves changes uncommitted)
+- Post-apply validation reruns the experiment's validation mode (1.1+); failure rolls back patch targets
+- `--commit` commits only patch targets after validation passes (1.1+); default leaves changes uncommitted
 - Dirty main workspaces are blocked (`.realforge/` metadata is ignored)
 - No auto-merge; human `--confirm` is mandatory
 

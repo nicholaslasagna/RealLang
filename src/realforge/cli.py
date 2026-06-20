@@ -27,6 +27,7 @@ from realforge.experiment import (
 from realforge.proposals import (
     ProposalError,
     apply_proposal,
+    format_apply_warning,
     format_list_proposals,
     list_proposals,
     propose_merge_from_report,
@@ -593,6 +594,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "apply-proposal":
         try:
+            print(format_apply_warning(args.proposal_id))
             outcome = apply_proposal(
                 args.proposal_id,
                 workspace_root=config.workspace_root or Path.cwd(),

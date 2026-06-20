@@ -1,11 +1,24 @@
-# RealForge cycle (1.0)
+# RealForge cycle (1.0+)
 
 RealForge 1.0 adds a **controlled recursive improvement cycle** that composes existing
-safety-gated capabilities into one orchestration command. Cycles are **bounded**, do not
-auto-merge, and still require explicit human approval before any main-workspace apply.
+safety-gated capabilities into one orchestration command. RealForge 1.1 clarifies cycle
+wording and hardens the proposal/apply pipeline those cycles feed into.
+
+Cycles are **bounded**, do not auto-merge, and still require explicit human approval
+before any main-workspace apply.
 
 RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or Mythos yet.
 This is a **local-first agent architecture**, not a frontier-model superiority claim.
+
+## What 1.1 clarifies
+
+- Cycle reports include **`proposal_created`** — when true, the message is:
+  *“Cycle produced a passed experiment and pending proposal. The main workspace was not modified.”*
+- **`Cycle complete`** (formerly easy to misread as “repo improved”) does **not** mean merged or applied
+- Dry-run cycles say **plan generated**; validation is **not** executed in dry-run mode
+- Successful cycles still end at a **pending proposal**; run `apply-proposal --confirm` manually
+
+See [Self-improvement](realforge-self-improvement.md) for hash chains, validation parity, and rollback details.
 
 ## What 1.0 adds
 

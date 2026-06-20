@@ -13,6 +13,29 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.1 adds
+
+RealForge 1.1 **hardens proposal integrity** before adding more autonomy:
+
+- **Patch hash chain** — `patch_sha256` in experiment reports binds to `copied_patch_sha256` in proposals; apply verifies the stored patch has not changed
+- **Validation mode parity** — apply reruns the same `quick|examples|benchmarks` mode that passed in the experiment (legacy reports without `validation_mode` are rejected)
+- **Path-safe patches** — rejects absolute paths, `..` traversal, `.git/`, and `.realforge/` targets before copy/apply
+- **Patch target detection** — uses `git apply --numstat` / `--check` when git is available; improved unified-diff parsing otherwise; targets stored in reports and proposals
+- **Commit scope** — `git add -- <patch_targets>` instead of `git add -A`
+- **Dirty workspace** — git repos block on uncommitted source changes (`.realforge/` metadata ignored); non-git repos compare workspace content digests from experiment time
+- **Rollback hardening** — backups/rollback use full `patch_targets` (modified, new, deleted text files); incomplete rollback is reported loudly
+- **Clearer UX** — cycles report `proposal_created`; dry-run output says **plan generated**, not validated; `show-proposal` displays hash, mode, and targets
+
+Important distinctions (unchanged, now documented more clearly):
+
+- **Experiment pass ≠ merge**
+- **Proposal created ≠ applied**
+- **Apply passed ≠ committed** unless `--commit`
+- **Model output remains untrusted**
+- **Proposal JSON and stored patch files are security-sensitive**
+
+RealForge still does **not** auto-merge.
+
 ## What RealForge 1.0 adds
 
 RealForge 1.0 adds a **controlled recursive improvement cycle** that composes existing
