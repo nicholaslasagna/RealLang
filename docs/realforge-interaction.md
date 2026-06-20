@@ -85,3 +85,8 @@ parsing terminal text. Human-readable output remains the default.
 The optional `realforge interact` loop is deferred. It should only be added as
 a separate vertical slice with no-write defaults, explicit provider calls, and
 no hidden autonomy.
+
+RealForge 2.3 updates the image and vision capability entries with
+`multimodal capabilities`, `vision analyze`, and prompt-spec-only `image prompt`
+commands. These remain structured, untrusted workflows and do not add an
+interactive shell or binary image generation.

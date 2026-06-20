@@ -19,6 +19,7 @@ OUTPUT_DIRECTORIES = (
     ".realforge/updates/",
     ".realforge/creative/",
     ".realforge/engines/",
+    ".realforge/multimodal/",
 )
 
 

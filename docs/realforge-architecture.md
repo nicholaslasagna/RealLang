@@ -39,6 +39,31 @@ context → provider → structured output → validation → sandbox/report
 These modules expose dataclasses to terminal formatters and JSON output so a
 future GUI or TUI can use the same report data without weakening safety gates.
 
+## Multimodal provider interface (2.3)
+
+```text
+workspace image → bounded ImageInput → VisionRequest → optional provider
+                → untrusted VisionAnalysis → print or explicit JSON write
+
+image task → ImageGenerationRequest(output_mode=prompt_spec) → optional provider
+           → untrusted ImagePromptSpec → print or explicit JSON write
+```
+
+| Module | Role |
+|--------|------|
+| `multimodal/models.py` | Capability, input, request, and report schemas |
+| `multimodal/provider_base.py` | Separate optional multimodal provider interface |
+| `multimodal/mock.py` | Deterministic test adapter; no semantic recognition or binary generation |
+| `multimodal/registry.py` | Mock and text-only adapter resolution/capability reporting |
+| `multimodal/image_inputs.py` | Workspace, format, hash, metadata, and size validation |
+| `multimodal/vision_report.py` | Capability-gated untrusted vision reports |
+| `multimodal/generation_report.py` | Prompt-spec-only image workflow reports |
+| `multimodal/image_outputs.py` | JSON serialization and bounded report storage |
+
+Multimodal interfaces do not alter the existing text provider contract. A text
+provider without an explicit multimodal adapter reports unsupported capabilities
+and fails before input/provider execution.
+
 ## Creative and engine-aware planning (2.1)
 
 RealForge 2.1 adds a planning-only creative layer:
@@ -332,6 +357,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 |-------|--------|------|
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Capabilities | `capabilities.py`, `interaction.py`, `settings_surface.py` | Domain registry and future workbench interaction surfaces (2.2) |
+| Multimodal | `multimodal/` | Optional provider capabilities, bounded image inputs, and untrusted reports (2.3) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |

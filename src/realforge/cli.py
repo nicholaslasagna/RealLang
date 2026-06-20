@@ -59,6 +59,19 @@ from realforge.eval_report import EVAL_SUITES
 from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks, show_bench_task
 from realforge.bench_report import BENCH_SUITES
 from realforge.leaderboard import export_leaderboard, run_leaderboard
+from realforge.multimodal.generation_report import (
+    build_image_prompt_spec,
+    format_image_prompt_spec,
+)
+from realforge.multimodal.image_inputs import ImageInputError
+from realforge.multimodal.image_outputs import format_report_json, write_multimodal_report
+from realforge.multimodal.provider_base import MultimodalProviderError
+from realforge.multimodal.registry import (
+    format_multimodal_capabilities,
+    format_multimodal_capabilities_json,
+    resolve_multimodal_provider,
+)
+from realforge.multimodal.vision_report import analyze_image, format_vision_analysis
 from realforge.patch_proposal import PatchProposalError, run_propose_patch
 from realforge.scheduler import SchedulerError, format_scheduler_status, list_scheduler, run_scheduler, show_scheduler_run
 from realforge.settings_surface import (
@@ -140,6 +153,14 @@ def _load_cli_config(args: argparse.Namespace):
 def _resolve_cli_provider(args: argparse.Namespace, config):
     try:
         return resolve_provider(config, args.provider)
+    except ValueError as err:
+        print(f"error: {err}", file=sys.stderr)
+        raise SystemExit(1) from err
+
+
+def _resolve_cli_multimodal_provider(args: argparse.Namespace, config):
+    try:
+        return resolve_multimodal_provider(config, getattr(args, "provider", None))
     except ValueError as err:
         print(f"error: {err}", file=sys.stderr)
         raise SystemExit(1) from err
@@ -696,6 +717,74 @@ def main(argv: list[str] | None = None) -> int:
         help="workspace containing .realforge.toml (default: current directory)",
     )
 
+    multimodal = sub.add_parser(
+        "multimodal",
+        help="inspect optional multimodal provider capabilities (2.3)",
+    )
+    multimodal_sub = multimodal.add_subparsers(dest="multimodal_command", required=True)
+    multimodal_capabilities = multimodal_sub.add_parser(
+        "capabilities",
+        help="show provider text/vision/image/embedding support without calling a model",
+    )
+    multimodal_capabilities.add_argument(
+        "--provider",
+        default=None,
+        help="multimodal provider (default: configured provider or mock)",
+    )
+    multimodal_capabilities.add_argument(
+        "--json",
+        action="store_true",
+        help="print machine-readable JSON",
+    )
+    multimodal_capabilities.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    vision = sub.add_parser("vision", help="run untrusted provider-backed vision reports (2.3)")
+    vision_sub = vision.add_subparsers(dest="vision_command", required=True)
+    vision_analyze = vision_sub.add_parser("analyze", help="analyze one workspace-bounded image")
+    vision_analyze.add_argument("--image", type=Path, required=True, help="image inside workspace")
+    vision_analyze.add_argument("--task", required=True, help="vision analysis task")
+    vision_analyze.add_argument("--context", default=None, help="optional bounded context note")
+    vision_analyze.add_argument("--provider", default=None, help="multimodal provider (default: mock)")
+    vision_analyze.add_argument("--write", action="store_true", help="write report JSON under .realforge/multimodal/vision/")
+    vision_analyze.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    vision_analyze.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    image = sub.add_parser("image", help="build image-generation workflow artifacts (2.3)")
+    image_sub = image.add_subparsers(dest="image_command", required=True)
+    image_prompt = image_sub.add_parser("prompt", help="build an untrusted prompt specification only")
+    image_prompt.add_argument("--task", required=True, help="image prompt task")
+    image_prompt.add_argument("--brief", default=None, help="optional brief text")
+    image_prompt.add_argument(
+        "--style-note",
+        action="append",
+        default=[],
+        help="optional style note; may be repeated",
+    )
+    image_prompt.add_argument("--target-use-case", default=None, help="optional intended use case")
+    image_prompt.add_argument("--provider", default=None, help="multimodal provider (default: mock)")
+    image_prompt.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/image_prompts/",
+    )
+    image_prompt.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    image_prompt.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
     sub.add_parser(
@@ -949,6 +1038,64 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if report.ok else 1
         settings_report = build_effective_settings(config)
         print(format_settings_json(settings_report) if args.json else format_settings(settings_report))
+        return 0
+
+    if args.command == "multimodal":
+        provider = _resolve_cli_multimodal_provider(args, config)
+        capabilities = provider.capabilities()
+        print(
+            format_multimodal_capabilities_json(capabilities)
+            if args.json
+            else format_multimodal_capabilities(capabilities)
+        )
+        return 0
+
+    if args.command == "vision":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_multimodal_provider(args, config)
+        try:
+            report = analyze_image(
+                args.image,
+                args.task,
+                provider,
+                workspace_root=workspace_root,
+                context=args.context,
+            )
+            written = (
+                write_multimodal_report(report, workspace_root, category="vision")
+                if args.write
+                else None
+            )
+        except (ImageInputError, MultimodalProviderError, ValueError, WorkspaceError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_report_json(report) if args.json else format_vision_analysis(report))
+        if written is not None:
+            print(f"written: {written}")
+        return 0
+
+    if args.command == "image":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_multimodal_provider(args, config)
+        try:
+            report = build_image_prompt_spec(
+                args.task,
+                provider,
+                brief=args.brief,
+                style_notes=tuple(args.style_note),
+                target_use_case=args.target_use_case,
+            )
+            written = (
+                write_multimodal_report(report, workspace_root, category="image_prompts")
+                if args.write
+                else None
+            )
+        except (MultimodalProviderError, ValueError, WorkspaceError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_report_json(report) if args.json else format_image_prompt_spec(report))
+        if written is not None:
+            print(f"written: {written}")
         return 0
 
     if args.command == "creative":

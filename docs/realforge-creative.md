@@ -39,6 +39,10 @@ Without a future vision provider, reports state that no semantic image
 identification was performed and that manual notes are required. Image files
 are never modified, and paths outside the workspace are rejected.
 
+RealForge 2.3 adds a separate `realforge vision analyze` provider-interface
+path. The existing `creative image` command remains metadata-only and does not
+silently invoke that provider path. See [Vision reports](realforge-vision.md).
+
 ## Safety boundary
 
 - Creative artifacts are plans, not evidence that a game or asset exists.
