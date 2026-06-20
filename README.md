@@ -24,9 +24,10 @@ The [llm_study/](llm_study/) directory provides the **methodology and scoring ha
 
 ## RealForge
 
-[RealForge](docs/realforge.md) is a **local-first coding agent platform built for RealLang**:
-compiler-guided, benchmark-aware, repair-loop native, and designed to run with local
-LLMs instead of cloud APIs.
+[RealForge](docs/realforge.md) is an experimental **local-first AI engineering
+environment**: a compiler-guided, benchmark-aware agent platform for coding,
+research, creative planning, evaluation, and staff-approved improvement workflows.
+RealLang is its first compiler integration, not its only long-term capability domain.
 
 It uses `realc` diagnostics, safe patching, and local model adapters configured via
 `.realforge.toml` (see [local model adapters](docs/realforge-local-models.md)).
@@ -46,6 +47,10 @@ realforge leaderboard
 realforge propose-patch --task "add a comment to README" --provider mock --dry-run
 realforge scheduler-status
 realforge staff-status
+realforge capabilities
+realforge slash
+realforge settings
+realforge settings doctor
 realforge creative brief --provider mock --task "design an asymmetrical horror game"
 realforge creative map --provider mock --task "design Hall 13 abandoned school map"
 realforge creative asset --provider mock --task "design a forest monster statue prop"
@@ -70,6 +75,7 @@ provider is added. See [creative planning](docs/realforge-creative.md) and
 [Unreal foundation](docs/realforge-unreal.md).
 
 Related RealForge documents include
+[interaction and capabilities](docs/realforge-interaction.md),
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
@@ -181,6 +187,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge cycle](docs/realforge-cycle.md)
 - [RealForge eval harness](docs/realforge-evals.md)
 - [RealForge task benchmarks](docs/realforge-task-benchmarks.md)
+- [RealForge interaction and capabilities](docs/realforge-interaction.md)
 - [RealForge creative planning](docs/realforge-creative.md)
 - [RealForge Unreal foundation](docs/realforge-unreal.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)

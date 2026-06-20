@@ -102,3 +102,23 @@ Larger suite; optional Assembly baselines
 ## Milestone 18 - run LLM reliability study
 
 Execute `llm_study` across agents; aggregate first-try and repair metrics
+
+## RealForge platform roadmap
+
+RealForge grows as a local-first AI engineering environment through separate,
+test-backed capability slices:
+
+- 2.1 - creative/game/engine planning foundation
+- 2.2 - capability registry, slash-command grammar, and settings surfaces
+- 2.3 - multimodal provider interface
+- 2.4 - image-generation workflow planner
+- 2.5 - optional vision/image-understanding adapter
+- 2.6 - Unreal/Blender engine and asset pipeline planner
+- 2.7 - general agent skill benchmark suite
+- 2.8 - local model tournament by capability domain
+- 2.9 - staff update UI backend expansion; no auto-apply
+- 3.0 - resume RealLang RealIR design and implementation
+
+Each domain must preserve untrusted inputs, dry-run defaults, structured
+reports, validation before trust, explicit writes, and human approval for
+destructive actions.

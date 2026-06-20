@@ -1,8 +1,10 @@
 # RealForge architecture
 
-RealForge is a local-first coding agent platform built for RealLang: **compiler-guided**,
-**benchmark-aware**, **repair-loop native**, and designed for local LLMs rather than
-cloud APIs.
+RealForge is an experimental local-first AI engineering environment: a
+**compiler-guided**, **benchmark-aware**, **repair-loop native**, and
+**multimodal-ready** agent platform. RealLang is the first compiler integration;
+code, research, creative, image, engine, evaluation, and staff workflows are
+capability domains over the same trust architecture.
 
 Current releases are small, test-backed vertical slices that grow incrementally without
 rewriting RealLang or requiring cloud endpoints. RealForge 0.3 hardens workspace
@@ -10,6 +12,32 @@ trust: boundary enforcement, backup rotation, and post-apply rollback.
 
 RealForge remains experimental and does not claim to outperform Codex, Claude Code,
 or Cursor yet.
+
+## Shared capability loop
+
+Every capability domain should plug into the same bounded flow:
+
+```text
+context → provider → structured output → validation → sandbox/report
+        → staff approval when required → optional apply/update
+```
+
+- Provider and research input remains untrusted.
+- Generated patches, plans, and future assets remain untrusted until validated.
+- Normal flows are read-only or dry-run first.
+- Reports are both human-readable and machine-readable where implemented.
+- Destructive actions require explicit approval; there is no auto-merge or auto-commit.
+
+## Interaction and capability registry (2.2)
+
+| Module | Role |
+|--------|------|
+| `capabilities.py` | Capability domains, status, safety level, command, write/staff/network metadata |
+| `interaction.py` | Slash-command grammar; no interactive shell or command execution |
+| `settings_surface.py` | Read-only effective settings and `PASS`/`WARN`/`BLOCKED` sanity checks |
+
+These modules expose dataclasses to terminal formatters and JSON output so a
+future GUI or TUI can use the same report data without weakening safety gates.
 
 ## Creative and engine-aware planning (2.1)
 
@@ -303,6 +331,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Layer | Module | Role |
 |-------|--------|------|
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
+| Capabilities | `capabilities.py`, `interaction.py`, `settings_surface.py` | Domain registry and future workbench interaction surfaces (2.2) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |

@@ -115,6 +115,8 @@ Staff mode is the **foundation** for a future staff-only Improve/Update UX. It d
 - Enable unrestricted autonomous self-editing
 - Prove RealForge is better than Codex, Claude Code, Cursor, Mythos, or other frontier tools
 
-The long-term goal remains a **local-first, self-improving, compiler-guided agent platform** with bounded, evaluated, approval-gated cycles.
+The long-term goal remains a **local-first AI engineering environment** with
+compiler-guided workflows and bounded, evaluated, approval-gated improvement
+cycles.
 
 See also [RealForge](realforge.md), [cycles](realforge-cycle.md), and [evals](realforge-evals.md).

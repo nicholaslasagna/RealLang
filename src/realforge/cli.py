@@ -5,6 +5,11 @@ import sys
 from pathlib import Path
 
 from realforge.agent_loop import AgentMode, check_file, repair_file, run_agent
+from realforge.capabilities import (
+    build_capability_registry,
+    format_capabilities,
+    format_capabilities_json,
+)
 from realforge.creative.asset_brief import build_asset_brief
 from realforge.creative.engine_profile import scan_engine_project
 from realforge.creative.game_brief import build_game_design_brief
@@ -24,6 +29,7 @@ from realforge.generation import run_generate
 from realforge.index.context_builder import build_context
 from realforge.index.file_index import format_index_report, scan_workspace, write_index_cache
 from realforge.index.symbols import format_symbol_table, scan_workspace_symbols
+from realforge.interaction import build_slash_registry, format_slash_commands, format_slash_json
 from realforge.permissions import PermissionMode, Permissions
 from realforge.providers import resolve_provider
 from realforge.errors import ProviderPlanError
@@ -55,6 +61,14 @@ from realforge.bench_report import BENCH_SUITES
 from realforge.leaderboard import export_leaderboard, run_leaderboard
 from realforge.patch_proposal import PatchProposalError, run_propose_patch
 from realforge.scheduler import SchedulerError, format_scheduler_status, list_scheduler, run_scheduler, show_scheduler_run
+from realforge.settings_surface import (
+    build_effective_settings,
+    format_settings,
+    format_settings_doctor,
+    format_settings_doctor_json,
+    format_settings_json,
+    run_settings_doctor,
+)
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
@@ -134,7 +148,7 @@ def _resolve_cli_provider(args: argparse.Namespace, config):
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="realforge",
-        description="RealForge — local-first coding agent platform built for RealLang",
+        description="RealForge — local-first AI engineering environment built around RealLang",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -635,6 +649,53 @@ def main(argv: list[str] | None = None) -> int:
         help="workspace containing .realforge.toml (default: current directory)",
     )
 
+    capabilities = sub.add_parser(
+        "capabilities",
+        help="list capability domains, safety levels, and next commands (2.2)",
+    )
+    capabilities.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    capabilities.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    slash = sub.add_parser(
+        "slash",
+        help="show slash-command grammar for future interactive clients (2.2)",
+    )
+    slash.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    slash.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
+    settings = sub.add_parser("settings", help="show effective read-only RealForge settings (2.2)")
+    settings.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    settings.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+    settings_sub = settings.add_subparsers(dest="settings_command")
+    settings_doctor = settings_sub.add_parser("doctor", help="validate settings safety and boundaries")
+    settings_doctor.add_argument(
+        "--json",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="print machine-readable JSON",
+    )
+    settings_doctor.add_argument(
+        "--config-root",
+        type=Path,
+        default=argparse.SUPPRESS,
+        help="workspace containing .realforge.toml (default: current directory)",
+    )
+
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
     sub.add_parser(
@@ -870,6 +931,25 @@ def main(argv: list[str] | None = None) -> int:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
+
+    if args.command == "capabilities":
+        registry = build_capability_registry(config)
+        print(format_capabilities_json(registry) if args.json else format_capabilities(registry))
+        return 0
+
+    if args.command == "slash":
+        registry = build_slash_registry(staff_mode_enabled=config.staff.enabled)
+        print(format_slash_json(registry) if args.json else format_slash_commands(registry))
+        return 0
+
+    if args.command == "settings":
+        if args.settings_command == "doctor":
+            report = run_settings_doctor(config)
+            print(format_settings_doctor_json(report) if args.json else format_settings_doctor(report))
+            return 0 if report.ok else 1
+        settings_report = build_effective_settings(config)
+        print(format_settings_json(settings_report) if args.json else format_settings(settings_report))
+        return 0
 
     if args.command == "creative":
         workspace_root = config.workspace_root or Path.cwd()

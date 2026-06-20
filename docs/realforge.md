@@ -1,8 +1,9 @@
 # RealForge
 
-RealForge is a **local-first coding agent platform built for RealLang**: compiler-guided,
-benchmark-aware, repair-loop native, and designed to run with local LLMs instead of
-cloud APIs.
+RealForge is an experimental **local-first AI engineering environment**: a
+compiler-guided, benchmark-aware agent platform for coding, research, creative
+planning, provider evaluation, and staff-approved improvement workflows. RealLang
+is its first compiler integration, not the limit of the platform.
 
 It sits beside the RealLang compiler and uses **`realc` diagnostics as the primary
 feedback loop** for conservative repairs. Benchmark and test feedback loops are part
@@ -12,6 +13,33 @@ RealForge does **not** require OpenAI, Anthropic, Gemini, Claude, Codex, Cursor,
 any cloud provider. Local models are configured through `.realforge.toml` (Ollama or
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
+
+RealForge is not only a coding assistant and not only a game-design assistant.
+Capability domains share one trust-oriented loop:
+
+```text
+context → provider → structured output → validation → sandbox/report
+        → staff approval when required → optional apply/update
+```
+
+Provider, research, patch, plan, and generated artifact output remains untrusted
+until validated. Commands default to read-only or dry-run behavior, and no feature
+may silently apply, merge, or commit changes.
+
+## What RealForge 2.2 adds
+
+RealForge 2.2 adds the interaction foundation for a future workbench:
+
+- `capabilities` lists code, docs, research, creative, image, vision, engine,
+  assets, eval, self-improvement, and scheduler domains with safety metadata.
+- `slash` defines slash-command mappings without starting an interactive shell
+  or executing commands.
+- `settings` shows effective read-only configuration and safety gates.
+- `settings doctor` reports `PASS`, `WARN`, and `BLOCKED` configuration checks.
+- New report surfaces support `--json` for future GUI/TUI clients.
+- Staff shortcuts remain hidden while staff mode is disabled.
+
+See [Interaction and capabilities (2.2)](realforge-interaction.md).
 
 ## What RealForge 2.1 adds
 
@@ -356,6 +384,12 @@ realforge propose-patch --task "add a comment to README" --provider mock --dry-r
 realforge scheduler-status
 realforge scheduler-run --dry-run
 
+# Interaction and capability surfaces (2.2; read-only)
+realforge capabilities
+realforge slash
+realforge settings
+realforge settings doctor
+
 # Creative/game planning (2.1; print-only unless --write is supplied)
 realforge creative brief --provider mock --task "design an asymmetrical horror game"
 realforge creative map --provider mock --task "design Hall 13 abandoned school map"
@@ -457,6 +491,9 @@ src/realforge/
   report.py              human-readable summaries
   doctor.py              environment checks
   providers/             local model adapters (mock implemented)
+  capabilities.py        capability domain registry and safety metadata (2.2)
+  interaction.py         slash-command grammar for future clients (2.2)
+  settings_surface.py    effective settings and safety doctor reports (2.2)
   creative/              game/map/asset schemas, image metadata, engine scan/plans (2.1)
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
@@ -475,24 +512,26 @@ RealForge intentionally calls **`realc` through subprocess** rather than importi
 compiler internals. That proves RealLang diagnostics are machine-readable for agent
 loops.
 
-## Creative roadmap
+## Platform roadmap
 
 Planned follow-up milestones, subject to separate tests and review:
 
-- 2.2 creative eval and benchmark suite
-- 2.3 image/vision provider adapter
-- 2.4 Unreal command sandbox and editor-scripting dry-run
-- 2.5 Blender/Unreal asset pipeline planner
-- 2.6 game-design memory and style-bible system
-- 2.7 local multimodal model leaderboard
-- 2.8 staff-only creative improvement channel
-- 3.0 resume the RealLang compiler roadmap with RealIR
+- 2.2 interaction model, capability registry, and settings surfaces (implemented)
+- 2.3 multimodal provider interfaces for optional text, vision, image, and embedding adapters
+- 2.4 image-generation workflow planner with provenance metadata
+- 2.5 optional vision/image-understanding adapter with untrusted semantic reports
+- 2.6 Unreal/Blender engine and asset pipeline planning
+- 2.7 general agent skill benchmark suite across code, creative, image, engine, and safety domains
+- 2.8 local model tournament and capability-domain leaderboards
+- 2.9 staff update UI backend expansion with capability-specific queues
+- 3.0 resume the RealLang compiler roadmap with RealIR design and implementation
 
 These are plans, not implemented capabilities or performance claims.
 
 ## Related documents
 
 - [Architecture](realforge-architecture.md)
+- [Interaction and capabilities (2.2)](realforge-interaction.md)
 - [Creative planning (2.1)](realforge-creative.md)
 - [Unreal foundation (2.1)](realforge-unreal.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)
