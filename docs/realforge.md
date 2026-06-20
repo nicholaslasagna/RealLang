@@ -13,6 +13,20 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.6 adds
+
+RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.6 adds a **dry-run self-improvement proposal loop**:
+
+- `realforge improve --dry-run` — structured self-improvement plan from workspace context
+- `realforge improve --area safety|tests|docs|compiler|realforge --dry-run` — area-focused proposals
+- `realforge improve --area ... --propose-patch --dry-run` — print untrusted unified diff only
+- `SelfImprovementPlan` includes validation commands, rollback plan, and human-approval flags
+- Invalid provider JSON raises `ProviderPlanError` and stops safely
+- No file writes, no automatic patch apply, no automatic commits
+
+See [Self-improvement (0.6)](realforge-self-improvement.md) for safety boundaries and future milestones.
+
 ## What RealForge 0.5 adds
 
 RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
@@ -86,6 +100,11 @@ realforge plan --task "explain hello.real" --include-context --provider mock
 realforge ask --task "summarize project" --include-context --provider mock
 realforge plan --task "..." --include-context --max-context-chars 8000 --permission readonly
 
+# Self-improvement proposals (dry-run only in 0.6)
+realforge improve --dry-run
+realforge improve --area tests --dry-run
+realforge improve --area realforge --propose-patch --dry-run
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -153,6 +172,8 @@ src/realforge/
   doctor.py              environment checks
   providers/             local model adapters (mock implemented)
   index/                 workspace scan, symbols, context builder
+  self_improve.py        dry-run self-improvement orchestration (0.6)
+  self_improvement_plan.py structured improvement plans and parsing
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing
@@ -162,6 +183,7 @@ loops.
 ## Related documents
 
 - [Architecture](realforge-architecture.md)
+- [Self-improvement (0.6)](realforge-self-improvement.md)
 - [Local models](realforge-local-models.md)
 - [Language semantics](language-semantics.md)
 - [LLM study framework](../llm_study/README.md)

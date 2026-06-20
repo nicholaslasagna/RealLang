@@ -16,6 +16,8 @@ from realforge.permissions import PermissionMode, Permissions
 from realforge.providers import resolve_provider
 from realforge.errors import ProviderPlanError
 from realforge.report import format_check_fail, format_check_pass
+from realforge.self_improve import run_improve
+from realforge.self_improvement_plan import IMPROVE_AREAS
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) -> None:
@@ -129,6 +131,41 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=12000,
         help="maximum context size in characters (default: 12000)",
+    )
+
+    improve = sub.add_parser("improve", help="propose self-improvement plans (dry-run only in 0.6)")
+    improve.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print a structured improvement proposal without modifying files (required in 0.6)",
+    )
+    improve.add_argument(
+        "--area",
+        choices=sorted(IMPROVE_AREAS),
+        default="realforge",
+        help="focus area for context and plan (default: realforge)",
+    )
+    improve.add_argument(
+        "--propose-patch",
+        action="store_true",
+        help="include an untrusted unified diff proposal (display only)",
+    )
+    improve.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider (default: [model].provider from .realforge.toml or mock)",
+    )
+    improve.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    improve.add_argument(
+        "--max-context-chars",
+        type=int,
+        default=12000,
+        help="maximum context size for improvement planning (default: 12000)",
     )
 
     args = parser.parse_args(argv)
@@ -245,6 +282,25 @@ def main(argv: list[str] | None = None) -> int:
             max_chars=args.max_chars,
         )
         print(bundle.text)
+        return 0
+
+    if args.command == "improve":
+        if not args.dry_run:
+            print("error: improve requires --dry-run in RealForge 0.6 (plan-only mode)", file=sys.stderr)
+            return 1
+        provider = _resolve_cli_provider(args, config)
+        try:
+            outcome = run_improve(
+                area=args.area,
+                provider=provider,
+                workspace_root=config.workspace_root or Path.cwd(),
+                propose_patch=args.propose_patch,
+                max_context_chars=args.max_context_chars,
+            )
+        except ProviderPlanError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
         return 0
 
     parser.error("unknown command")

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from realforge.permissions import PermissionMode
 from realforge.planner import AgentPlan
+from realforge.self_improvement_plan import SelfImprovementPlan
 
 
 @dataclass(frozen=True)
@@ -22,6 +23,13 @@ class PlanRequest:
     permission_mode: PermissionMode = PermissionMode.READONLY
 
 
+@dataclass(frozen=True)
+class ImproveRequest:
+    area: str
+    context: str
+    propose_patch: bool = False
+
+
 class ModelProvider(ABC):
     """Local model adapter interface (no cloud providers)."""
 
@@ -37,6 +45,14 @@ class ModelProvider(ABC):
 
     @abstractmethod
     def generate_plan(self, request: PlanRequest) -> AgentPlan:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_improvement_plan(self, request: ImproveRequest) -> SelfImprovementPlan:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_patch_proposal(self, request: ImproveRequest, plan: SelfImprovementPlan) -> str:
         raise NotImplementedError
 
     @abstractmethod

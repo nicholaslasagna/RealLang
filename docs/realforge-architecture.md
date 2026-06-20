@@ -39,6 +39,23 @@ scan workspace → build context bundle → provider plan JSON → structured Ag
 - `ask`/`plan` never execute `commands_to_run` or modify `files_to_modify`
 - MockProvider remains the deterministic CI-safe default; local providers are optional
 
+## Self-improvement proposals (0.6)
+
+RealForge 0.6 adds a **dry-run-only** self-improvement loop:
+
+```text
+scan workspace → build improvement context → provider JSON plan → print proposal
+                                                      ↘ optional untrusted diff
+```
+
+- `self_improve.py` orchestrates area-focused context and provider calls
+- `self_improvement_plan.py` defines `SelfImprovementPlan` parsing and formatting
+- `improve --dry-run` never writes files or runs validation commands
+- `--propose-patch` prints unified diff text labeled as untrusted; RealForge does not apply it
+- Recursive improvement still requires sandboxing, scoring, rollback, and human approval (future)
+
+See [Self-improvement (0.6)](realforge-self-improvement.md).
+
 ## Control flow
 
 ```text
@@ -51,6 +68,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 |-------|--------|------|
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
+| Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

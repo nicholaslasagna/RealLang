@@ -64,15 +64,18 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 0.3:
+As of RealForge 0.6:
 
-- `check`, `repair`, `ask`, `plan`, `generate`, and `doctor` commands exist
+- `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
+- `improve --dry-run` proposes structured self-improvement plans without modifying files
+- optional `--propose-patch --dry-run` prints untrusted unified diffs only
 - local model configuration via `.realforge.toml` is supported
 - Ollama and OpenAI-compatible **local** providers are optional; tests use `MockProvider` only
 - workspace boundary enforcement, backup rotation, and post-apply rollback are implemented
-- workspace indexing, symbol tables, and bounded context bundles are available (`index`, `symbols`, `context`)
-- context-aware planning via `plan --include-context` and `ask --include-context` (planning is not editing)
+- workspace indexing, symbol tables, and bounded context bundles are available
+- context-aware planning via `plan --include-context` and `ask --include-context`
 - MockProvider remains the CI-safe default; local providers are optional
+- RealForge does not claim to match frontier coding agents yet
 
 ## Current quality signals
 
