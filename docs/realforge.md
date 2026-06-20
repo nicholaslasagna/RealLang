@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.2 adds
+
+RealForge 1.2 hardens **command execution and permission boundaries**:
+
+- **`manual` permission mode** replaces misleading `ask` (alias retained); manual mode does not prompt interactively—it blocks shell execution like readonly
+- **Validation command allowlist** — RealForge executes only allowlisted validation commands by default (pytest, `git diff --check`, `realc --check`, benchmark smoke runner in benchmarks mode); arbitrary shell is blocked even in `workspace-write`
+- **Provider commands are suggestions only** — plan/improvement `commands_to_run` / `validation_commands` are never executed automatically
+- **Untrusted input labeling** — provider plans, patches, and research summaries include explicit untrusted-content boundaries in CLI/prompt context
+- **Validation environment** — validation subprocesses strip sensitive env vars (`*_TOKEN`, `*_SECRET`, `*_KEY`, `AWS_*`, etc.); validation still executes project code and is **not** a security sandbox
+- **Future work:** network sandboxing for validation (TODO; not implemented in 1.2)
+
+RealForge still requires human `--confirm` before applying proposals. RealForge still does not auto-merge.
+
 ## What RealForge 1.1 adds
 
 RealForge 1.1 **hardens proposal integrity** before adding more autonomy:
@@ -266,7 +279,8 @@ src/realforge/
   repair_rules.py        conservative repair planning
   patcher.py             backup + apply guards
   diffing.py             unified diff for dry-run
-  permissions.py         readonly / ask / workspace-write gates
+  permissions.py         readonly / manual / workspace-write gates
+  command_policy.py      validation command allowlist and shell policy
   memory.py              in-process session notes
   report.py              human-readable summaries
   doctor.py              environment checks

@@ -29,7 +29,12 @@ class AgentPlan:
 
 def format_plan(plan: AgentPlan, *, brief: bool = False) -> str:
     title = "RealForge plan" if not brief else "RealForge answer"
-    lines = [title, f"Task: {plan.task}", f"Summary: {plan.summary}"]
+    lines = [
+        "UNTRUSTED PROVIDER OUTPUT (not verified by RealForge)",
+        title,
+        f"Task: {plan.task}",
+        f"Summary: {plan.summary}",
+    ]
     if plan.used_context:
         lines.append("Context: included")
     lines.append("Steps:")
@@ -49,7 +54,7 @@ def _format_plan_fields(plan: AgentPlan) -> list[str]:
     if plan.files_to_modify:
         lines.append(f"Files to modify: {', '.join(plan.files_to_modify)}")
     if plan.commands_to_run:
-        lines.append("Commands to run:")
+        lines.append("Suggested commands (not executed automatically):")
         for cmd in plan.commands_to_run:
             lines.append(f"  - {cmd}")
     if plan.risks:
@@ -57,7 +62,7 @@ def _format_plan_fields(plan: AgentPlan) -> list[str]:
         for risk in plan.risks:
             lines.append(f"  - {risk}")
     lines.append(f"Requires write permission: {plan.requires_write_permission}")
-    lines.append("Note: planning does not edit files or run commands.")
+    lines.append("Note: provider output is untrusted; RealForge does not verify or run suggested commands.")
     return lines
 
 

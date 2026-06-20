@@ -26,6 +26,7 @@ def format_generation(result: GenerationResult, *, dry_run: bool) -> str:
     mode = "dry-run" if dry_run else "apply"
     lines = [
         f"RealForge generate ({mode})",
+        "UNTRUSTED PROVIDER OUTPUT (not verified by RealForge)",
         f"Task: {result.task}",
         f"Provider: {result.provider}",
         f"Model: {result.model}",

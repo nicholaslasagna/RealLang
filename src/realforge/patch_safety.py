@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path, PurePosixPath
 
+from realforge.command_policy import patch_apply_permissions
 from realforge.config import RealForgeConfig
 from realforge.git_utils import is_git_repo
 from realforge.permissions import PermissionMode, Permissions
@@ -187,7 +188,7 @@ def detect_patch_targets_git(
     *,
     config: RealForgeConfig | None = None,
 ) -> tuple[str, ...]:
-    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace_root)
+    perms = patch_apply_permissions(workspace_root)
     check = run_command(
         ("git", "apply", "--check", str(patch_file.resolve())),
         config=config,

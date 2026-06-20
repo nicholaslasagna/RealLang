@@ -67,7 +67,7 @@ def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, 
             "--permission",
             choices=[mode.value for mode in PermissionMode],
             default=PermissionMode.READONLY.value,
-            help="permission mode for planning (default: readonly)",
+            help="permission mode for planning: readonly, manual (review-only; no shell), workspace-write (file edits only)",
         )
     if research:
         parser.add_argument(

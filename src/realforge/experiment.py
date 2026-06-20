@@ -23,10 +23,10 @@ from realforge.git_utils import (
     snapshot_working_tree,
     working_tree_changed,
 )
+from realforge.command_policy import validation_permissions
 from realforge.patch_safety import PatchSafetyError, inspect_patch_file, workspace_content_digest
-from realforge.permissions import PermissionMode, Permissions
+from realforge.runner import CommandResult, run_validation_command
 from realforge.providers.base import ModelProvider
-from realforge.runner import CommandResult, run_command
 from realforge.self_improve import run_improve
 from realforge.self_improvement_plan import SelfImprovementPlan, format_improvement_plan
 
@@ -131,16 +131,17 @@ def _run_validation_commands(
     *,
     workspace: Path,
     config: RealForgeConfig,
-    command_runner: CommandRunner,
+    command_runner: CommandRunner | None = None,
 ) -> tuple[tuple[CommandResultRecord, ...], tuple[str, ...]]:
-    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace)
+    perms = validation_permissions(workspace)
     records: list[CommandResultRecord] = []
     failures: list[str] = []
+    runner = command_runner or run_validation_command
     for cmd in commands:
+        cmd_text = _command_to_str(cmd)
         try:
-            result = command_runner(cmd, config=config, permissions=perms, cwd=workspace)
+            result = runner(cmd, config=config, permissions=perms, cwd=workspace)
         except Exception as err:  # noqa: BLE001 - report experiment failures safely
-            cmd_text = _command_to_str(cmd)
             failures.append(f"{cmd_text}: {err}")
             records.append(
                 CommandResultRecord(
@@ -149,10 +150,12 @@ def _run_validation_commands(
                     stdout="",
                     stderr=str(err),
                     passed=False,
+                    ran=False,
+                    allowed_by_policy=False,
+                    disposition="blocked",
                 )
             )
             continue
-        cmd_text = _command_to_str(result.cmd)
         passed = result.returncode == 0
         if not passed:
             detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
@@ -164,6 +167,9 @@ def _run_validation_commands(
                 stdout=result.stdout,
                 stderr=result.stderr,
                 passed=passed,
+                ran=result.ran,
+                allowed_by_policy=result.allowed_by_policy,
+                disposition=result.disposition.value,
             )
         )
     return tuple(records), tuple(failures)
@@ -178,7 +184,7 @@ def run_experiment_patch(
     validation_mode: ValidationMode = "quick",
     keep: bool = False,
     output_json: Path | None = None,
-    command_runner: CommandRunner = run_command,
+    command_runner: CommandRunner = run_validation_command,
     temp_root: Path | None = None,
 ) -> ExperimentReport:
     cfg = config or RealForgeConfig(realc_command=(sys.executable, "-m", "reallang.cli"), workspace_root=workspace_root)
@@ -193,6 +199,7 @@ def run_experiment_patch(
         "Patch applied only inside isolated experiment workspace.",
         "Human approval is required before merging any changes to the main workspace.",
         "Experiment pass does not merge or apply changes to the main workspace.",
+        "Validation commands execute allowlisted project tests/tools only; they are not a security sandbox.",
     ]
     patch_sha256: str | None = None
     patch_targets: tuple[str, ...] = ()
@@ -302,7 +309,7 @@ def run_validation_commands(
     *,
     workspace: Path,
     config: RealForgeConfig,
-    command_runner: CommandRunner = run_command,
+    command_runner: CommandRunner = run_validation_command,
 ) -> tuple[tuple[CommandResultRecord, ...], tuple[str, ...]]:
     return _run_validation_commands(
         commands,

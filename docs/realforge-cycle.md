@@ -20,6 +20,12 @@ This is a **local-first agent architecture**, not a frontier-model superiority c
 
 See [Self-improvement](realforge-self-improvement.md) for hash chains, validation parity, and rollback details.
 
+## What 1.2 adds
+
+- Validation during cycles/experiments uses an **allowlisted command policy** only
+- Provider/model output and research summaries are labeled **untrusted** in CLI and prompt context
+- `manual` permission mode replaces misleading `ask` for review-only workflows
+
 ## What 1.0 adds
 
 ```text

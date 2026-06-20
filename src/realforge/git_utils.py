@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from realforge.command_policy import patch_apply_permissions
 from realforge.config import RealForgeConfig
 from realforge.permissions import PermissionMode, Permissions
 from realforge.runner import CommandResult, run_command
@@ -151,7 +152,7 @@ def apply_patch_to_directory(
     if "---" not in text and "diff --git" not in text:
         raise ValueError("patch must be a unified diff")
 
-    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace_root)
+    perms = patch_apply_permissions(workspace_root)
     if is_git_repo(workspace_root):
         return run_command(
             ("git", "apply", "--whitespace=nowarn", str(patch_file)),

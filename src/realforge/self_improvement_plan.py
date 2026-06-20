@@ -216,7 +216,8 @@ def mock_patch_proposal(area: str) -> str:
 
 def format_improvement_plan(plan: SelfImprovementPlan) -> str:
     lines = [
-        "RealForge self-improvement proposal (dry-run only)",
+        "UNTRUSTED PROVIDER OUTPUT (not verified by RealForge)",
+        "RealForge self-improvement proposal (dry-run only; not validated)",
         f"Title: {plan.title}",
         f"Area: {plan.area}",
         f"Problem: {plan.problem_statement}",
@@ -240,7 +241,7 @@ def format_improvement_plan(plan: SelfImprovementPlan) -> str:
         for item in plan.tests_to_add:
             lines.append(f"  - {item}")
     if plan.validation_commands:
-        lines.append("Validation commands:")
+        lines.append("Suggested validation commands (not executed automatically):")
         for cmd in plan.validation_commands:
             lines.append(f"  - {cmd}")
     if plan.risks:
@@ -252,5 +253,5 @@ def format_improvement_plan(plan: SelfImprovementPlan) -> str:
         lines.append("Success criteria:")
         for item in plan.success_criteria:
             lines.append(f"  - {item}")
-    lines.append("Note: planning does not edit files or run commands.")
+    lines.append("Note: provider output is untrusted; planning does not edit files or run commands.")
     return "\n".join(lines)

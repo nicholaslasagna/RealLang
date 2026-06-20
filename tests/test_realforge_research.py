@@ -12,7 +12,7 @@ from realforge.config import RealForgeConfig
 from realforge.permissions import PermissionMode, Permissions
 from realforge.providers.mock import MockProvider
 from realforge.research import ResearchError, build_research_context, list_research, run_research_fetch, show_research
-from realforge.research.fetcher import FetchResult, fetch_https_url
+from realforge.research.fetcher import FetchResult, RESEARCH_UNTRUSTED_BOUNDARY, fetch_https_url
 from realforge.research.safety import ResearchSafetyError, validate_research_url
 from realforge.research.store import load_research_record, record_dir, research_root
 
@@ -216,6 +216,7 @@ def test_plan_include_research_uses_summary_not_raw_html(tmp_path: Path):
     )
     assert provider.last_plan_request is not None
     context = provider.last_plan_request.context or ""
+    assert RESEARCH_UNTRUSTED_BOUNDARY in context
     assert "Important docs summary text" in context
     assert "[research:" in context
     assert "<html>" not in context

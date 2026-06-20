@@ -55,7 +55,7 @@ def test_improve_dry_run_produces_structured_plan(tmp_path: Path):
     assert outcome.plan.area == "realforge"
     assert outcome.plan.validation_commands
     assert outcome.plan.rollback_plan
-    assert "Validation commands:" in outcome.message
+    assert "Suggested validation commands" in outcome.message
     assert "Rollback plan:" in outcome.message
     assert provider.last_improve_request is not None
     assert "Improvement Area Focus" in provider.last_improve_request.context

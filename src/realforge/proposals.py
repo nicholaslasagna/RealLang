@@ -21,6 +21,7 @@ from realforge.patch_safety import (
     rollback_patch_backups,
     verify_patch_sha256,
 )
+from realforge.command_policy import patch_apply_permissions, proposal_git_permissions, validation_permissions
 from realforge.permissions import PermissionMode, Permissions
 from realforge.proposal_report import (
     LegacyProposalError,
@@ -209,7 +210,7 @@ def _git_commit_patch_targets(
     if not patch_targets:
         raise ProposalError("cannot commit: patch_targets is empty")
 
-    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace_root)
+    perms = proposal_git_permissions(workspace_root)
     add_result = run_command(
         ("git", "add", "--", *patch_targets),
         config=config,

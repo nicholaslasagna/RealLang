@@ -97,6 +97,23 @@ research --url --allow-domain → snapshot + metadata → plan --include-researc
 
 See [Research (0.9)](realforge-research.md).
 
+## Command policy and permissions (1.2)
+
+RealForge 1.2 replaces broad `workspace-write` shell access with an explicit **validation command allowlist**:
+
+| Category | Examples | When allowed |
+|----------|----------|--------------|
+| Validation | pytest, `git diff --check`, `realc --check`, benchmark smoke | `allow_validation_commands=True` during experiments/apply validation |
+| Git read-only | `git status`, `git diff`, `git rev-parse` | readonly/manual/workspace-write |
+| Patch apply | `git apply`, `patch -p1` | `allow_patch_apply=True` during proposal apply |
+| Proposal git | `git add -- <targets>`, `git commit` | `allow_proposal_git_writes=True` during `--commit` |
+
+- **`manual` mode** (formerly `ask`) is review-only; it does **not** prompt interactively
+- Provider-generated commands in plans/improvement proposals are **suggestions only**
+- Research summaries injected into planning context are labeled **untrusted external content**
+- Validation subprocesses strip common secret env vars but still execute **project test/code** (not a sandbox)
+- TODO (future): network sandboxing for validation commands
+
 ## Proposal integrity hardening (1.1)
 
 RealForge 1.1 strengthens the experiment → proposal → apply trust boundary:
@@ -150,7 +167,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |
 | Repair | `repair_rules.py`, `patcher.py` | Conservative rule-based fixes; backup before writes |
-| Safety | `permissions.py`, `patch_safety.py` | Permission modes; patch hash chain, target validation, rollback backups |
+| Safety | `permissions.py`, `command_policy.py`, `patch_safety.py` | Permission modes; validation allowlist; patch integrity |
 | Memory | `memory.py` | Session notes for multi-step loops (v0.1 in-process only) |
 | Report | `report.py`, `doctor.py` | Human-readable summaries and environment checks |
 
@@ -176,9 +193,9 @@ Used internally and by `realforge repair`. Flow:
 
 | Mode | Shell | File writes |
 |------|-------|-------------|
-| `readonly` | `realc --check` only | blocked |
-| `ask` | blocked in v0.1 (future prompt) | blocked |
-| `workspace-write` | allowed (non-destructive) | allowed only inside workspace root |
+| `readonly` | allowlisted read/check commands only | blocked |
+| `manual` | same as readonly (no interactive prompt) | blocked |
+| `workspace-write` | allowlisted validation/patch/git commands only | allowed inside workspace root |
 
 CLI `--apply` requires `workspace-write` mode and a target path inside the workspace root.
 Explicit `--apply` does not bypass workspace boundaries.

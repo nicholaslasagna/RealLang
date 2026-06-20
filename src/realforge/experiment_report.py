@@ -14,6 +14,9 @@ class CommandResultRecord:
     stdout: str
     stderr: str
     passed: bool
+    ran: bool = True
+    allowed_by_policy: bool = True
+    disposition: str = "ran"
 
 
 @dataclass(frozen=True)
@@ -74,8 +77,16 @@ def format_experiment_report(report: ExperimentReport) -> str:
     if report.command_results:
         lines.append("Command results:")
         for result in report.command_results:
+            if not result.allowed_by_policy or result.disposition == "blocked":
+                lines.append(f"  - [BLOCKED] {result.command}")
+                continue
+            if not result.ran or result.disposition == "skipped":
+                lines.append(f"  - [SKIPPED] {result.command}")
+                continue
             status = "PASS" if result.passed else "FAIL"
-            lines.append(f"  - [{status}] {result.command} (exit {result.returncode})")
+            lines.append(
+                f"  - [RAN/{status}] {result.command} (exit {result.returncode}; allowlisted validation)"
+            )
     if report.failures:
         lines.append("Failures:")
         for failure in report.failures:
@@ -126,6 +137,9 @@ def load_report_json(path: Path) -> ExperimentReport:
             stdout=str(item.get("stdout", "")),
             stderr=str(item.get("stderr", "")),
             passed=bool(item.get("passed", False)),
+            ran=bool(item.get("ran", True)),
+            allowed_by_policy=bool(item.get("allowed_by_policy", True)),
+            disposition=str(item.get("disposition", "ran")),
         )
         for item in data.get("command_results", [])
         if isinstance(item, dict)
