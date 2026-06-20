@@ -56,6 +56,20 @@ scan workspace → build improvement context → provider JSON plan → print pr
 
 See [Self-improvement (0.6)](realforge-self-improvement.md).
 
+## Isolated experiments (0.7)
+
+RealForge 0.7 evaluates saved unified diffs in temporary workspaces outside the main repo:
+
+```text
+snapshot main workspace → create worktree/copy → apply patch → validate → report → cleanup
+```
+
+- `experiment.py` orchestrates patch application and validation presets
+- `git_utils.py` prefers `git worktree` and falls back to directory copy
+- `experiment_report.py` records command results, cleanup, and main-workspace integrity
+- `--patch-file` is required for apply mode; model patches must be saved to disk first
+- No auto-merge exists; human approval is still required
+
 ## Control flow
 
 ```text
@@ -69,6 +83,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
+| Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

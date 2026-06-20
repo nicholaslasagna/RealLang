@@ -19,8 +19,11 @@ class PermissionError(Exception):
 class Permissions:
     mode: PermissionMode = PermissionMode.READONLY
     workspace_root: Path | None = None
+    allow_git_worktree_admin: bool = False
 
     def can_run_shell(self, cmd: tuple[str, ...]) -> bool:
+        if self.allow_git_worktree_admin and _is_git_worktree_admin(cmd):
+            return True
         if self.mode == PermissionMode.WORKSPACE_WRITE:
             return True
         if self.mode == PermissionMode.ASK:
@@ -47,3 +50,7 @@ def _is_realc_check(cmd: tuple[str, ...]) -> bool:
     if len(cmd) >= 2 and cmd[-2].endswith(".real"):
         return True
     return "--check" in cmd and any("realc" in part or "reallang.cli" in part for part in cmd)
+
+
+def _is_git_worktree_admin(cmd: tuple[str, ...]) -> bool:
+    return len(cmd) >= 2 and cmd[0] == "git" and cmd[1] == "worktree"

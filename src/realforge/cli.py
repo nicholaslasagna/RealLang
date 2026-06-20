@@ -18,6 +18,12 @@ from realforge.errors import ProviderPlanError
 from realforge.report import format_check_fail, format_check_pass
 from realforge.self_improve import run_improve
 from realforge.self_improvement_plan import IMPROVE_AREAS
+from realforge.experiment import (
+    VALIDATION_MODES,
+    format_patch_outcome,
+    run_experiment_dry_run,
+    run_experiment_patch,
+)
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) -> None:
@@ -168,6 +174,59 @@ def main(argv: list[str] | None = None) -> int:
         help="maximum context size for improvement planning (default: 12000)",
     )
 
+    experiment = sub.add_parser("experiment", help="evaluate patches in isolated workspaces (0.7)")
+    experiment.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print improvement plan and validation steps without creating a workspace",
+    )
+    experiment.add_argument(
+        "--area",
+        choices=sorted(IMPROVE_AREAS),
+        default="tests",
+        help="focus area for planning and reporting (default: tests)",
+    )
+    experiment.add_argument(
+        "--patch-file",
+        type=Path,
+        default=None,
+        help="unified diff to apply only inside an isolated experiment workspace",
+    )
+    experiment.add_argument(
+        "--validation",
+        choices=sorted(VALIDATION_MODES),
+        default="quick",
+        help="validation preset (default: quick)",
+    )
+    experiment.add_argument(
+        "--keep",
+        action="store_true",
+        help="keep experiment workspace after run",
+    )
+    experiment.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="write ExperimentReport JSON to this path",
+    )
+    experiment.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider for --dry-run (default: mock)",
+    )
+    experiment.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    experiment.add_argument(
+        "--max-context-chars",
+        type=int,
+        default=12000,
+        help="maximum context size for --dry-run planning (default: 12000)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command in {"check", "repair", "doctor", "index", "symbols", "context"}:
@@ -302,6 +361,48 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(outcome.message)
         return 0
+
+    if args.command == "experiment":
+        workspace_root = config.workspace_root or Path.cwd()
+        if args.dry_run and args.patch_file is not None:
+            print("error: experiment --dry-run cannot be combined with --patch-file", file=sys.stderr)
+            return 1
+        if args.dry_run:
+            provider = _resolve_cli_provider(args, config)
+            try:
+                outcome = run_experiment_dry_run(
+                    area=args.area,
+                    provider=provider,
+                    workspace_root=workspace_root,
+                    validation_mode=args.validation,
+                    max_context_chars=args.max_context_chars,
+                )
+            except ProviderPlanError as err:
+                print(f"error: {err}", file=sys.stderr)
+                return 1
+            print(outcome.message)
+            return 0
+        if args.patch_file is None:
+            print("error: experiment requires --dry-run or --patch-file", file=sys.stderr)
+            return 1
+        if not args.patch_file.is_file():
+            print(f"error: patch file not found: {args.patch_file}", file=sys.stderr)
+            return 1
+        try:
+            report = run_experiment_patch(
+                area=args.area,
+                patch_file=args.patch_file,
+                workspace_root=workspace_root,
+                config=config,
+                validation_mode=args.validation,
+                keep=args.keep,
+                output_json=args.output,
+            )
+        except (ValueError, FileNotFoundError, RuntimeError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_patch_outcome(report))
+        return 0 if report.passed else 1
 
     parser.error("unknown command")
     return 2

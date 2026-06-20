@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.7 adds
+
+RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.7 adds **isolated experiment workspaces**:
+
+- `realforge experiment --area tests --dry-run` — print plan and validation steps without creating a workspace
+- `realforge experiment --area tests --patch-file change.diff` — apply patch only in an isolated git worktree or copied workspace
+- Validation runs inside the experiment workspace through `runner.py` (pytest, optional examples/benchmark checks)
+- `ExperimentReport` records pass/fail, command results, cleanup status, and `main_workspace_modified`
+- No auto-merge; human approval is still required
+
+See [Self-improvement](realforge-self-improvement.md) for the full safety model.
+
 ## What RealForge 0.6 adds
 
 RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
@@ -105,6 +118,11 @@ realforge improve --dry-run
 realforge improve --area tests --dry-run
 realforge improve --area realforge --propose-patch --dry-run
 
+# Isolated experiments (0.7)
+realforge experiment --area tests --dry-run
+realforge experiment --area tests --patch-file /path/to/change.diff --validation quick
+realforge experiment --area tests --patch-file change.diff --keep --output report.json
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -174,6 +192,9 @@ src/realforge/
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
   self_improvement_plan.py structured improvement plans and parsing
+  experiment.py          isolated patch experiments and validation (0.7)
+  experiment_report.py   ExperimentReport JSON and formatting
+  git_utils.py           git worktree / copy workspace helpers
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing

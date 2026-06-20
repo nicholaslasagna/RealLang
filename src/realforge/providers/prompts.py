@@ -11,6 +11,7 @@ AVAILABLE_COMMANDS = """Available RealForge commands:
 - realforge plan --task "..." [--include-context]
 - realforge ask --task "..." [--include-context]
 - realforge improve [--area safety|tests|docs|compiler|realforge] --dry-run [--propose-patch]
+- realforge experiment [--area ...] --dry-run | --patch-file <change.diff> [--validation quick|examples|benchmarks] [--keep] [--output report.json]
 - realforge generate --task "..." --dry-run|--apply --output <file.real>
 - realforge doctor"""
 
