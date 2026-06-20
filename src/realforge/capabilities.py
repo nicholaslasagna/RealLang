@@ -166,11 +166,12 @@ def build_capability_registry(config: RealForgeConfig) -> CapabilityRegistry:
                 "realforge eval --provider mock --suite smoke",
                 "realforge bench-tasks --provider mock --suite smoke",
                 "realforge leaderboard",
+                "realforge skill-bench --provider mock --suite smoke",
             ),
             writes_files=True,
             requires_staff=False,
             requires_network=False,
-            description="Rule-based provider evaluations, repeatable task benchmarks, and leaderboards.",
+            description="Rule-based provider evaluations, repeatable task benchmarks, cross-domain skill benchmarks, and leaderboards.",
             next_suggested_command="realforge eval --provider mock --suite smoke",
         ),
         Capability(

@@ -26,6 +26,23 @@ Provider, research, patch, plan, and generated artifact output remains untrusted
 until validated. Commands default to read-only or dry-run behavior, and no feature
 may silently apply, merge, or commit changes.
 
+## What RealForge 2.7 adds
+
+RealForge 2.7 adds a **general agent skill benchmark suite** — a broad, cross-domain
+benchmark over every major capability domain:
+
+- `skill-bench` runs `code`, `docs`, `research`, `creative`, `image`, `vision`,
+  `engine`, `asset`, `safety`, and `self-improve` suites (plus `smoke` and `all`).
+- `skill-bench-list` and `skill-bench-show` read saved reports under
+  `.realforge/skill_benchmarks/` (gitignored; written only with `--write`).
+
+Reports are **internal, rule-based, and not scientific proof of superiority**. They
+help compare local providers and RealForge versions across domains and form the
+foundation for future local-model tournaments. Provider output remains untrusted, no
+main workspace file is mutated, and image/vision/engine/asset tasks run in ephemeral
+temp directories with no Unreal, Blender, image model, or vision model required and no
+binary images or assets generated. See [Skill benchmarks](realforge-skill-benchmarks.md).
+
 ## What RealForge 2.6 adds
 
 RealForge 2.6 adds **planning-only engine and asset pipelines**:

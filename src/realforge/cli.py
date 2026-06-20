@@ -58,6 +58,13 @@ from realforge.eval_runner import EvalError, list_evals, run_eval, show_eval
 from realforge.eval_report import EVAL_SUITES
 from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks, show_bench_task
 from realforge.bench_report import BENCH_SUITES
+from realforge.skill_bench_runner import (
+    SkillBenchError,
+    list_skill_bench,
+    run_skill_bench,
+    show_skill_bench,
+)
+from realforge.skill_bench_report import SKILL_SUITES
 from realforge.leaderboard import export_leaderboard, run_leaderboard
 from realforge.multimodal.generation_report import (
     build_image_prompt_spec,
@@ -564,6 +571,40 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("bench-task-list", help="list saved task benchmark reports (read-only)")
     bench_task_show = sub.add_parser("bench-task-show", help="show a saved task benchmark report (read-only)")
     bench_task_show.add_argument("benchmark_id", help="task benchmark report id")
+
+    skill_bench = sub.add_parser(
+        "skill-bench",
+        help="run cross-domain general agent skill benchmarks (2.7)",
+    )
+    skill_bench.add_argument(
+        "--provider",
+        default=None,
+        help="model provider to benchmark (default: mock)",
+    )
+    skill_bench.add_argument(
+        "--suite",
+        choices=sorted(SKILL_SUITES),
+        default="smoke",
+        help="skill benchmark suite (default: smoke)",
+    )
+    skill_bench.add_argument(
+        "--write",
+        action="store_true",
+        help="write SkillBenchmarkReport JSON under .realforge/skill_benchmarks/",
+    )
+    skill_bench.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    sub.add_parser("skill-bench-list", help="list saved skill benchmark reports (read-only)")
+    skill_bench_show = sub.add_parser(
+        "skill-bench-show",
+        help="show a saved skill benchmark report (read-only)",
+    )
+    skill_bench_show.add_argument("benchmark_id", help="skill benchmark report id")
 
     def _add_leaderboard_filters(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
@@ -1237,6 +1278,8 @@ def main(argv: list[str] | None = None) -> int:
         "eval-show",
         "bench-task-list",
         "bench-task-show",
+        "skill-bench-list",
+        "skill-bench-show",
         "leaderboard",
         "scheduler-status",
         "scheduler-list",
@@ -1251,6 +1294,7 @@ def main(argv: list[str] | None = None) -> int:
         "cycle",
         "eval",
         "bench-tasks",
+        "skill-bench",
         "propose-patch",
         "scheduler-run",
         "update-check",
@@ -1911,6 +1955,37 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "bench-task-show":
         try:
             print(show_bench_task(config.workspace_root or Path.cwd(), args.benchmark_id))
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "skill-bench":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        multimodal_provider = _resolve_cli_multimodal_provider(args, config)
+        try:
+            outcome = run_skill_bench(
+                provider=provider,
+                multimodal_provider=multimodal_provider,
+                suite=args.suite,
+                workspace_root=workspace_root,
+                config=config,
+                write=args.write,
+            )
+        except SkillBenchError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "skill-bench-list":
+        print(list_skill_bench(config.workspace_root or Path.cwd()))
+        return 0
+
+    if args.command == "skill-bench-show":
+        try:
+            print(show_skill_bench(config.workspace_root or Path.cwd(), args.benchmark_id))
         except FileNotFoundError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1

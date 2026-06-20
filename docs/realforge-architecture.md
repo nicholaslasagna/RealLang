@@ -339,6 +339,30 @@ realforge leaderboard export --output leaderboard.json
 
 See [Local model leaderboard (1.8)](realforge-leaderboard.md).
 
+## Cross-domain skill benchmarks (2.7)
+
+RealForge 2.7 adds a broad, rule-based **skill benchmark** over every capability domain:
+
+```text
+realforge skill-bench --provider mock --suite smoke|all|code|docs|research|creative|
+                                              image|vision|engine|asset|safety|self-improve
+  → SkillBenchmarkReport (print or --write to .realforge/skill_benchmarks/)
+realforge skill-bench-list / skill-bench-show <id>
+```
+
+| Module | Role |
+|--------|------|
+| `skill_bench_runner.py` | Per-domain task orchestration, weighted rule-based scoring, temp-dir fake-asset/project setup, shared plan-safety detection |
+| `skill_bench_report.py` | `SkillBenchmarkReport` / `SkillTaskResult` JSON, storage, list/show formatters |
+
+- Reuses existing creative, multimodal, and pipeline builders plus `eval_safety` helpers; adds no new provider surface
+- Image/vision/engine/asset tasks run inside ephemeral temp directories — no Unreal, Blender, image, or vision model is required, and no binary image or asset is generated
+- Per-domain `domain_scores`; the deterministic mock scores high but not perfectly (vision honestly earns no semantic-analysis credit)
+- Stored separately from `bench-tasks`; does not change the existing leaderboard
+- Not proof of superiority over frontier commercial tools
+
+See [Skill benchmarks (2.7)](realforge-skill-benchmarks.md).
+
 ## Patch proposals (1.9)
 
 RealForge 1.9 adds task-driven untrusted patch proposals:
@@ -422,6 +446,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
 | Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
 | Task benchmarks | `bench_runner.py`, `bench_report.py` | Repeatable task benchmarks with version tracking (1.7) |
+| Skill benchmarks | `skill_bench_runner.py`, `skill_bench_report.py` | Broad cross-domain rule-based skill benchmarks (2.7) |
 | Creative planning | `creative/` | Structured game/map/asset plans, image metadata, and Unreal dry-run plans (2.1) |
 | Asset pipelines | `pipeline/` | Untrusted, approval-gated Unreal/Blender/engine planning reports (2.6) |
 | Staff | `staff.py`, `update_channel.py`, `update_history.py` | Staff-only improvement/update channel (config-gated; 1.4) |

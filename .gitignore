@@ -23,6 +23,7 @@ llm_study/results/**/*.json
 .realforge/cycles/
 .realforge/evals/
 .realforge/task_benchmarks/
+.realforge/skill_benchmarks/
 .realforge/patch_proposals/
 .realforge/scheduler_runs/
 .realforge/updates/

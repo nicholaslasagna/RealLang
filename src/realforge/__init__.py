@@ -1,3 +1,3 @@
 """RealForge — local-first AI engineering environment built around RealLang."""
 
-__version__ = "2.6.0"
+__version__ = "2.7.0"

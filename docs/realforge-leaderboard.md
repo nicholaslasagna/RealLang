@@ -84,8 +84,14 @@ Export JSON contains **metadata only** (rankings or trend summaries). It does no
 | `realforge eval` | Quick provider sanity checks |
 | `realforge bench-tasks` | Durable structured task benchmarks |
 | `realforge leaderboard` | Compare saved benchmark reports over time |
+| `realforge skill-bench` | Broad cross-domain skill benchmarks (2.7) |
 
 Use **eval** for wiring checks. Use **bench-tasks** to produce comparable reports. Use **leaderboard** to rank and track those reports.
+
+The leaderboard ranks **`bench-tasks`** reports only. RealForge 2.7's
+[`skill-bench`](realforge-skill-benchmarks.md) writes its cross-domain reports to a
+separate store (`.realforge/skill_benchmarks/`) and does not change the existing
+leaderboard; a dedicated cross-domain leaderboard view is deferred to a future release.
 
 ## Safety
 

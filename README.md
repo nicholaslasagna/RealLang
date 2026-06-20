@@ -44,6 +44,8 @@ realforge cycle --area tests --budget 1 --dry-run
 realforge eval --provider mock --suite smoke
 realforge bench-tasks --provider mock --suite smoke
 realforge leaderboard
+realforge skill-bench --provider mock --suite smoke
+realforge skill-bench --provider mock --suite all
 realforge propose-patch --task "add a comment to README" --provider mock --dry-run
 realforge scheduler-status
 realforge staff-status
@@ -98,6 +100,13 @@ and Blender support is planning-only: no commands run, no assets are generated,
 and no projects are modified. See
 [asset pipelines](docs/realforge-asset-pipelines.md) and
 [Blender planning](docs/realforge-blender.md).
+RealForge 2.7 adds broad cross-domain `skill-bench` benchmarks across code, docs,
+research, creative, image, vision, engine, asset, safety, and self-improve domains.
+They are internal and rule-based — not scientific proof of superiority — and help
+compare local providers and RealForge versions. No main workspace mutation occurs,
+provider output stays untrusted, and image/vision/engine/asset tasks run in temp
+directories with no Unreal, Blender, image, or vision model required. See
+[skill benchmarks](docs/realforge-skill-benchmarks.md).
 
 Related RealForge documents include
 [interaction and capabilities](docs/realforge-interaction.md),
@@ -111,6 +120,7 @@ Related RealForge documents include
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
+[skill benchmarks](docs/realforge-skill-benchmarks.md),
 [leaderboard](docs/realforge-leaderboard.md),
 [patch proposals](docs/realforge-patch-proposals.md),
 [scheduler](docs/realforge-scheduler.md),

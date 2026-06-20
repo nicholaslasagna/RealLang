@@ -54,6 +54,14 @@ Reports include:
 
 Use **eval** for fast wiring checks. Use **bench-tasks** when comparing local providers and RealForge versions across releases.
 
+## Relationship to `realforge skill-bench` (2.7)
+
+`bench-tasks` stays focused on planning, generation, safety, and self-improvement.
+RealForge 2.7 adds [`skill-bench`](realforge-skill-benchmarks.md), a **broader
+cross-domain** benchmark that also covers docs, research, creative, image, vision,
+engine, and asset domains. It is rule-based, stores reports separately under
+`.realforge/skill_benchmarks/`, and does not change the existing leaderboard.
+
 ## Safety
 
 - Does **not** modify the main workspace

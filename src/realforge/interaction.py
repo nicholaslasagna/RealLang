@@ -51,6 +51,7 @@ def build_slash_registry(*, staff_mode_enabled: bool) -> SlashCommandRegistry:
         SlashCommand("/eval", "realforge eval --provider mock --suite smoke", "Run provider evaluation checks.", "BENCHMARK"),
         SlashCommand("/bench", "realforge bench-tasks --provider mock --suite smoke", "Run repeatable task benchmarks.", "BENCHMARK"),
         SlashCommand("/leaderboard", "realforge leaderboard", "Show saved local-provider benchmark rankings.", "READ ONLY"),
+        SlashCommand("/skill-bench", "realforge skill-bench --provider mock --suite smoke", "Run cross-domain skill benchmarks.", "BENCHMARK"),
         SlashCommand("/improve", "realforge improve --dry-run", "Propose a bounded improvement plan.", "DRY RUN"),
         SlashCommand("/doctor", "realforge doctor", "Check environment health.", "PASS/WARN/BLOCKED"),
         SlashCommand("/help", "realforge slash", "Show this slash-command grammar.", "READ ONLY"),

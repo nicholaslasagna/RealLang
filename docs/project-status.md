@@ -65,7 +65,7 @@ these as goals rather than proven outcomes.
 
 RealForge is an experimental local-first AI engineering layer in the same repository.
 It is developing as a general environment rather than a
-single-purpose coding or game-design tool. As of RealForge 2.6:
+single-purpose coding or game-design tool. As of RealForge 2.7:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -103,6 +103,7 @@ single-purpose coding or game-design tool. As of RealForge 2.6:
 - `blender asset-plan` produces a dry-run DCC plan without requiring or executing Blender (2.6)
 - `unreal import-plan` uses read-only Unreal detection and produces no imports or project changes (2.6)
 - `engine pipeline` records validated project-relative operations and inert command suggestions (2.6)
+- `skill-bench`, `skill-bench-list`, and `skill-bench-show` run broad cross-domain skill benchmarks across code, docs, research, creative, image, vision, engine, asset, safety, and self-improve domains (2.7); rule-based, not a superiority benchmark, with no main workspace mutation
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)
