@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.4 adds
+
+RealForge remains **experimental** and does not add autonomous editing in 0.4.
+Version 0.4 adds deterministic **workspace awareness** and **context construction**:
+
+- `realforge index` — scan workspace for `.real` files, docs, tests, and benchmarks
+- `realforge symbols` — conservative text-based symbol tables (modules, functions, bindings)
+- `realforge context --task "..."` — bounded, deterministic context bundles for local providers
+- Optional index cache at `.realforge/index.json` with explicit `--write` only
+
+Symbol scanning is text-based, not a full parser import. Treat extracted symbols as hints,
+not compiler facts.
+
 ## What RealForge 0.3 adds
 
 RealForge remains **experimental**. It does not claim to outperform Codex, Claude Code,
@@ -62,6 +75,12 @@ realforge plan --task "inspect hello.real diagnostics"
 
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
+
+# Workspace awareness (read-only by default)
+realforge index
+realforge symbols
+realforge context --task "explain hello.real" --max-chars 4000
+realforge index --write
 
 # Environment health check
 realforge doctor
@@ -120,7 +139,7 @@ src/realforge/
   report.py              human-readable summaries
   doctor.py              environment checks
   providers/             local model adapters (mock implemented)
-  index/                 workspace indexing scaffolds
+  index/                 workspace scan, symbols, context builder
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing

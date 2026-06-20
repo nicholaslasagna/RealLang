@@ -11,6 +11,20 @@ trust: boundary enforcement, backup rotation, and post-apply rollback.
 RealForge remains experimental and does not claim to outperform Codex, Claude Code,
 or Cursor yet.
 
+## Workspace awareness (0.4)
+
+RealForge 0.4 adds deterministic workspace indexing before more autonomous behavior:
+
+```text
+scan workspace → symbol table → context bundle → (future) local provider prompt
+```
+
+- `index/` scans `.real` files, docs, tests, and benchmarks while ignoring caches and generated outputs
+- `symbols.py` extracts conservative text-based symbol tables
+- `context_builder.py` assembles bounded context with README/docs priority and explicit safety rules
+- `realforge context` prints bundles only; it does not call models or edit files
+- index cache writes require explicit `--write` and stay inside the workspace root
+
 ## Control flow
 
 ```text
@@ -24,7 +38,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
-| Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace indexing |
+| Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |
 | Repair | `repair_rules.py`, `patcher.py` | Conservative rule-based fixes; backup before writes |
 | Safety | `permissions.py` | `readonly` (default), `ask`, `workspace-write` |

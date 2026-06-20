@@ -17,4 +17,5 @@ benchmarks/build/
 benchmarks/results/results.json
 benchmarks/results/summary.md
 llm_study/results/**/*.json
+.realforge/index.json
 .DS_Store

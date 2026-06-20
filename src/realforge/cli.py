@@ -9,6 +9,9 @@ from realforge.config import load_config
 from realforge.config_file import ConfigFileError
 from realforge.doctor import format_doctor_report, run_doctor
 from realforge.generation import run_generate
+from realforge.index.context_builder import build_context
+from realforge.index.file_index import format_index_report, scan_workspace, write_index_cache
+from realforge.index.symbols import format_symbol_table, scan_workspace_symbols
 from realforge.permissions import PermissionMode, Permissions
 from realforge.providers import resolve_provider
 from realforge.report import format_check_fail, format_check_pass
@@ -86,9 +89,27 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("doctor", help="check RealForge environment and optional local model settings")
 
+    index = sub.add_parser("index", help="scan workspace and list tracked project files")
+    index.add_argument(
+        "--write",
+        action="store_true",
+        help="write index cache to .realforge/index.json (default: print only)",
+    )
+
+    sub.add_parser("symbols", help="extract text-based RealLang symbol tables from .real files")
+
+    context = sub.add_parser("context", help="build a bounded context bundle for local providers")
+    context.add_argument("--task", required=True, help="task description used to prioritize context")
+    context.add_argument(
+        "--max-chars",
+        type=int,
+        default=12000,
+        help="maximum context size in characters (default: 12000)",
+    )
+
     args = parser.parse_args(argv)
 
-    if args.command in {"check", "repair", "doctor"}:
+    if args.command in {"check", "repair", "doctor", "index", "symbols", "context"}:
         config = load_config()
     else:
         config = _load_cli_config(args)
@@ -165,6 +186,33 @@ def main(argv: list[str] | None = None) -> int:
         report = run_doctor(config)
         print(format_doctor_report(report))
         return 0 if report.ok else 1
+
+    if args.command == "index":
+        index = scan_workspace(config.workspace_root or Path.cwd())
+        print(format_index_report(index))
+        if args.write:
+            apply_mode = Permissions(
+                mode=PermissionMode.WORKSPACE_WRITE,
+                workspace_root=config.workspace_root,
+            )
+            cache_path = write_index_cache(index, permissions=apply_mode)
+            print(f"\ncache written: {cache_path}")
+        return 0
+
+    if args.command == "symbols":
+        index = scan_workspace(config.workspace_root or Path.cwd())
+        symbols = scan_workspace_symbols(index.real_files)
+        print(format_symbol_table(symbols, workspace_root=index.workspace_root))
+        return 0
+
+    if args.command == "context":
+        bundle = build_context(
+            args.task,
+            config.workspace_root or Path.cwd(),
+            max_chars=args.max_chars,
+        )
+        print(bundle.text)
+        return 0
 
     parser.error("unknown command")
     return 2
