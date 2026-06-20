@@ -4,15 +4,17 @@ from urllib.parse import urljoin
 
 from realforge.config import RealForgeConfig
 from realforge.planner import AgentPlan, parse_plan_response
-from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PlanRequest
+from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PatchProposalRequest, PlanRequest
 from realforge.errors import ProviderPlanError
 from realforge.providers.http_util import HTTPProviderError, post_json
 from realforge.providers.prompts import (
     GENERATE_SYSTEM_PROMPT,
     IMPROVE_SYSTEM_PROMPT,
+    PATCH_PROPOSAL_SYSTEM_PROMPT,
     PATCH_SYSTEM_PROMPT,
     PLAN_SYSTEM_PROMPT,
     build_improve_user_prompt,
+    build_patch_proposal_user_prompt,
     build_patch_user_prompt,
     build_plan_user_prompt,
 )
@@ -109,6 +111,18 @@ class OpenAICompatibleLocalProvider(ModelProvider):
         if not text.strip():
             raise ProviderPlanError(self.name, "empty patch proposal", raw=text)
         return text.strip()
+
+    def generate_task_patch_proposal(self, request: PatchProposalRequest):
+        user = build_patch_proposal_user_prompt(task=request.task, context=request.context)
+        text = self._chat(PATCH_PROPOSAL_SYSTEM_PROMPT, user)
+        from realforge.patch_proposal import parse_patch_proposal_payload
+
+        try:
+            return parse_patch_proposal_payload(text, provider=self.name, task=request.task)
+        except ProviderPlanError:
+            raise
+        except ValueError as err:
+            raise ProviderPlanError(self.name, str(err), raw=text) from err
 
     def generate(self, task: str) -> GenerationResult:
         user = f"Generate RealLang source code for this task:\n{task}"

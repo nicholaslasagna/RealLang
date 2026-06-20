@@ -206,6 +206,26 @@ realforge leaderboard export --output leaderboard.json
 
 See [Local model leaderboard (1.8)](realforge-leaderboard.md).
 
+## Patch proposals (1.9)
+
+RealForge 1.9 adds task-driven untrusted patch proposals:
+
+```text
+realforge propose-patch --task "..." --provider mock --dry-run [--save] [--experiment]
+  → PatchProposal validation via patch_safety.py
+  → optional isolated experiment (no auto-merge)
+```
+
+| Module | Role |
+|--------|------|
+| `patch_proposal.py` | Orchestration, validation, optional experiment hook |
+| `patch_proposal_report.py` | PatchProposal storage schema and writers |
+
+- Dry-run by default; saving is not approval
+- Main workspace unchanged; human approval still required for apply
+
+See [Patch proposals (1.9)](realforge-patch-proposals.md).
+
 ## Staff improvement channel (1.4)
 
 RealForge 1.4 adds config-gated **staff mode** for a future Improve/Update workflow:

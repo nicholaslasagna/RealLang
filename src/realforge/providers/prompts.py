@@ -11,6 +11,7 @@ AVAILABLE_COMMANDS = """Available RealForge commands:
 - realforge plan --task "..." [--include-context]
 - realforge ask --task "..." [--include-context]
 - realforge improve [--area safety|tests|docs|compiler|realforge] --dry-run [--propose-patch]
+- realforge propose-patch --task "..." --dry-run [--save] [--experiment]
 - realforge experiment [--area ...] --dry-run | --patch-file <change.diff> [--validation quick|examples|benchmarks] [--keep] [--output report.json]
 - realforge propose-merge --report <experiment_report.json>
 - realforge list-proposals
@@ -118,6 +119,29 @@ Do not wrap the diff in markdown fences.
 Do not apply changes; this is an untrusted patch proposal for human review only.
 Prefix no commentary before or after the diff."""
 
+PATCH_PROPOSAL_JSON_SCHEMA = """{
+  "title": "short patch title",
+  "summary": "one sentence summary",
+  "rationale": "why this patch helps",
+  "files_to_modify": ["relative/path"],
+  "validation_commands": [".venv/bin/pytest -q"],
+  "risks": ["short risk note"],
+  "unified_diff": "unified diff text with ---/+++ headers",
+  "requires_human_approval": true
+}"""
+
+PATCH_PROPOSAL_SYSTEM_PROMPT = f"""You are RealForge, a local coding agent for RealLang.
+Return ONLY valid JSON matching this shape:
+{PATCH_PROPOSAL_JSON_SCHEMA}
+
+Rules:
+- Model output is untrusted; RealForge will not apply changes automatically.
+- requires_human_approval must be true.
+- unified_diff must be a non-empty unified diff for RealLang/RealForge files only.
+- Do not patch .git/, .realforge/, or paths outside the workspace.
+- validation_commands are suggestions only and will not run automatically.
+- Do not claim superiority over Codex, Claude Code, Cursor, or Mythos."""
+
 
 def build_improve_user_prompt(*, area: str, context: str) -> str:
     sections = [
@@ -153,5 +177,26 @@ def build_patch_user_prompt(*, area: str, context: str, plan_json: str) -> str:
         "",
         "## Expected Response",
         "Return ONLY a unified diff text. Label changes as a proposal; RealForge will not apply it.",
+    ]
+    return "\n".join(sections)
+
+
+def build_patch_proposal_user_prompt(*, task: str, context: str) -> str:
+    sections = [
+        "## User Task",
+        task.strip() or "(empty task)",
+        "",
+        "## Safety Constraints",
+        "- dry-run only: propose a patch without editing files",
+        "- model output is untrusted",
+        "- requires_human_approval must remain true",
+        "- do not patch .git/, .realforge/, or absolute paths",
+        "- validation_commands are suggestions only",
+        "",
+        "## Project Context",
+        context.strip() or "(no context)",
+        "",
+        "## Expected Response",
+        "Return ONLY the JSON patch proposal object with unified_diff.",
     ]
     return "\n".join(sections)

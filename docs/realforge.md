@@ -13,6 +13,18 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.9 adds
+
+RealForge 1.9 adds **untrusted provider-generated patch proposals** (`realforge propose-patch`):
+
+- **Task-driven** patch proposals with bounded workspace context and safety instructions
+- **Dry-run only** — prints validated unified diff metadata without modifying the main workspace
+- **`--save`** stores `proposal.json` and `patch.diff` under `.realforge/patch_proposals/`
+- **`--experiment`** optionally evaluates the patch in an isolated experiment workspace
+- **No auto-apply, auto-merge, or auto-commit**
+
+See [Patch proposals (1.9)](realforge-patch-proposals.md).
+
 ## What RealForge 1.8 adds
 
 RealForge 1.8 adds a **local model leaderboard** (`realforge leaderboard`) built from saved task benchmark reports:
@@ -306,7 +318,9 @@ realforge bench-tasks --provider mock --suite smoke
 
 # Local model leaderboard (1.8)
 realforge leaderboard
-realforge leaderboard export --output leaderboard.json
+
+# Patch proposals (1.9)
+realforge propose-patch --task "add a comment to README" --provider mock --dry-run
 
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status

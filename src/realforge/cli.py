@@ -41,6 +41,7 @@ from realforge.eval_report import EVAL_SUITES
 from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks, show_bench_task
 from realforge.bench_report import BENCH_SUITES
 from realforge.leaderboard import export_leaderboard, run_leaderboard
+from realforge.patch_proposal import PatchProposalError, run_propose_patch
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
@@ -208,6 +209,50 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=12000,
         help="maximum context size for improvement planning (default: 12000)",
+    )
+
+    propose_patch = sub.add_parser(
+        "propose-patch",
+        help="ask a provider for an untrusted unified diff proposal (dry-run only in 1.9)",
+    )
+    propose_patch.add_argument("--task", required=True, help="task description for the patch proposal")
+    propose_patch.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print and optionally save an untrusted patch proposal without modifying files (required in 1.9)",
+    )
+    propose_patch.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider (default: [model].provider from .realforge.toml or mock)",
+    )
+    propose_patch.add_argument(
+        "--save",
+        action="store_true",
+        help="save proposal JSON and patch.diff under .realforge/patch_proposals/",
+    )
+    propose_patch.add_argument(
+        "--experiment",
+        action="store_true",
+        help="save proposal and evaluate patch in an isolated experiment workspace",
+    )
+    propose_patch.add_argument(
+        "--validation",
+        choices=sorted(VALIDATION_MODES),
+        default="quick",
+        help="validation mode when --experiment is used (default: quick)",
+    )
+    propose_patch.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    propose_patch.add_argument(
+        "--max-context-chars",
+        type=int,
+        default=12000,
+        help="maximum context size for patch proposal planning (default: 12000)",
     )
 
     experiment = sub.add_parser("experiment", help="evaluate patches in isolated workspaces (0.7)")
@@ -691,6 +736,7 @@ def main(argv: list[str] | None = None) -> int:
         "cycle",
         "eval",
         "bench-tasks",
+        "propose-patch",
         "update-check",
         "improve-channel",
         "update-history",
@@ -1056,6 +1102,32 @@ def main(argv: list[str] | None = None) -> int:
             print(f"warning: {warning}", file=sys.stderr)
         print(outcome.message)
         return 0
+
+    if args.command == "propose-patch":
+        if not args.dry_run:
+            print("error: propose-patch requires --dry-run in RealForge 1.9", file=sys.stderr)
+            return 1
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            outcome = run_propose_patch(
+                task=args.task,
+                provider=provider,
+                workspace_root=workspace_root,
+                config=config,
+                max_context_chars=args.max_context_chars,
+                save=args.save,
+                run_experiment=args.experiment,
+                validation_mode=args.validation,
+            )
+        except ProviderPlanError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        except PatchProposalError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
 
     if args.command == "staff-status":
         print(format_staff_status(config))

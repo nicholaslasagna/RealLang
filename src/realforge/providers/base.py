@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from realforge.permissions import PermissionMode
 from realforge.planner import AgentPlan
 from realforge.self_improvement_plan import SelfImprovementPlan
+from realforge.patch_proposal_report import PatchProposal
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,12 @@ class PlanRequest:
     task: str
     context: str | None = None
     permission_mode: PermissionMode = PermissionMode.READONLY
+
+
+@dataclass(frozen=True)
+class PatchProposalRequest:
+    task: str
+    context: str
 
 
 @dataclass(frozen=True)
@@ -53,6 +60,10 @@ class ModelProvider(ABC):
 
     @abstractmethod
     def generate_patch_proposal(self, request: ImproveRequest, plan: SelfImprovementPlan) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_task_patch_proposal(self, request: PatchProposalRequest) -> PatchProposal:
         raise NotImplementedError
 
     @abstractmethod

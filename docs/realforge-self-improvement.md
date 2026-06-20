@@ -103,6 +103,8 @@ scan workspace → build improvement context → provider JSON plan → print pr
 - `realforge improve --area <safety|tests|docs|compiler|realforge> --dry-run`
 - `realforge improve --area ... --propose-patch --dry-run` — print unified diff only
 
+RealForge 1.9 adds **`realforge propose-patch --task "..." --dry-run`** for task-focused patch proposals with structured `PatchProposal` metadata, patch safety validation, optional `--save`, and optional isolated `--experiment`. See [Patch proposals (1.9)](realforge-patch-proposals.md).
+
 Improvement areas constrain context selection and the structured plan:
 
 | Area | Focus |

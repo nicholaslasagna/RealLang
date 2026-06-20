@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from realforge.config import RealForgeConfig
 from realforge.planner import AgentPlan, mock_plan_for_task
-from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PlanRequest
+from realforge.providers.base import GenerationResult, ImproveRequest, ModelProvider, PatchProposalRequest, PlanRequest
+from realforge.patch_proposal_report import mock_task_patch_proposal
 from realforge.self_improvement_plan import (
     SelfImprovementPlan,
     mock_improvement_plan,
@@ -49,6 +50,7 @@ class MockProvider(ModelProvider):
         self._config = config
         self.last_plan_request: PlanRequest | None = None
         self.last_improve_request: ImproveRequest | None = None
+        self.last_patch_proposal_request: PatchProposalRequest | None = None
 
     @property
     def name(self) -> str:
@@ -69,6 +71,10 @@ class MockProvider(ModelProvider):
     def generate_patch_proposal(self, request: ImproveRequest, plan: SelfImprovementPlan) -> str:
         self.last_improve_request = request
         return mock_patch_proposal(plan.area)
+
+    def generate_task_patch_proposal(self, request: PatchProposalRequest):
+        self.last_patch_proposal_request = request
+        return mock_task_patch_proposal(request.task, provider=self.name)
 
     def generate(self, task: str) -> GenerationResult:
         normalized = task.strip() or "(empty task)"
