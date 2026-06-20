@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.9 adds
+
+RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.9 adds **permissioned internet research**:
+
+- `realforge research --url https://... --allow-domain example.com` — explicit HTTPS fetch with domain allowlist
+- `realforge research-list` / `realforge research-show <id>` — review saved snapshots
+- `realforge plan --task "..." --include-research <id>` — attach citation + summary to planning context
+- Snapshots stored under `.realforge/research/` with metadata and content hash
+- Network access is off by default; research cannot edit files or auto-merge changes
+
+See [Research (0.9)](realforge-research.md).
+
 ## What RealForge 0.8 adds
 
 RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
@@ -144,6 +157,12 @@ realforge show-proposal <proposal_id>
 realforge apply-proposal <proposal_id> --confirm
 realforge apply-proposal <proposal_id> --confirm --commit
 
+# Permissioned research (0.9)
+realforge research --url https://example.com/page --allow-domain example.com
+realforge research-list
+realforge research-show <research_id>
+realforge plan --task "..." --include-research <research_id> --provider mock
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -218,6 +237,7 @@ src/realforge/
   git_utils.py           git worktree / copy workspace helpers
   proposals.py           approval-gated merge proposal workflow (0.8)
   proposal_report.py     MergeProposal JSON and formatting
+  research/              permissioned HTTPS research snapshots (0.9)
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing
@@ -228,6 +248,7 @@ loops.
 
 - [Architecture](realforge-architecture.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)
+- [Research (0.9)](realforge-research.md)
 - [Local models](realforge-local-models.md)
 - [Language semantics](language-semantics.md)
 - [LLM study framework](../llm_study/README.md)

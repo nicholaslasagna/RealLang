@@ -83,6 +83,20 @@ passed ExperimentReport → propose-merge → .realforge/proposals/<id>.json →
 - Proposal patches are copied into `.realforge/proposals/` for stable local references
 - Changes remain uncommitted by default; `--commit` uses author `Imagicast Studios <reallang@users.noreply.github.com>`
 
+## Permissioned research (0.9)
+
+RealForge 0.9 adds explicit HTTPS research fetches with domain allowlists:
+
+```text
+research --url --allow-domain → snapshot + metadata → plan --include-research
+```
+
+- `research/` modules validate URLs, enforce size/time limits, and store snapshots locally
+- Default network access is off unless `realforge research` is used
+- Planning includes summaries and citations, not unbounded raw HTML
+
+See [Research (0.9)](realforge-research.md).
+
 ## Control flow
 
 ```text
@@ -98,6 +112,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |
 | Proposals | `proposals.py`, `proposal_report.py` | Approval-gated merge proposals and apply/rollback flow |
+| Research | `research/` | Permissioned HTTPS fetch, snapshot store, planning summaries |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

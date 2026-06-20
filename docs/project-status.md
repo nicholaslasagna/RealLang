@@ -64,7 +64,7 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 0.8:
+As of RealForge 0.9:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -72,6 +72,8 @@ As of RealForge 0.8:
 - `experiment --dry-run` previews validation steps without creating a workspace
 - `experiment --patch-file` applies patches only in isolated git worktrees or copied workspaces
 - `propose-merge`, `list-proposals`, `show-proposal`, and `apply-proposal --confirm` implement approval-gated merges
+- `research`, `research-list`, and `research-show` provide permissioned HTTPS research snapshots
+- `plan --include-research` can attach saved research summaries to planning context
 - local model configuration via `.realforge.toml` is supported
 - Ollama and OpenAI-compatible **local** providers are optional; tests use `MockProvider` only
 - workspace boundary enforcement, backup rotation, and post-apply rollback are implemented

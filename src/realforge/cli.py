@@ -33,9 +33,10 @@ from realforge.proposals import (
     show_proposal,
 )
 from realforge.proposal_report import format_propose_merge_outcome, format_proposal_summary
+from realforge.research import ResearchError, default_http_opener, list_research, run_research_fetch, show_research
 
 
-def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) -> None:
+def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
     parser.add_argument("--task", required=True, help="task description for the agent")
     parser.add_argument(
         "--provider",
@@ -65,6 +66,12 @@ def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) 
             choices=[mode.value for mode in PermissionMode],
             default=PermissionMode.READONLY.value,
             help="permission mode for planning (default: readonly)",
+        )
+    if research:
+        parser.add_argument(
+            "--include-research",
+            default=None,
+            help="include saved research summary and citation metadata in planning context",
         )
 
 
@@ -114,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_model_args(ask, planning=True)
 
     plan = sub.add_parser("plan", help="build a structured plan from the configured local model provider")
-    _add_model_args(plan, planning=True)
+    _add_model_args(plan, planning=True, research=True)
 
     generate = sub.add_parser("generate", help="generate RealLang source from a local model provider")
     _add_model_args(generate)
@@ -280,11 +287,42 @@ def main(argv: list[str] | None = None) -> int:
         help="directory containing .realforge.toml (default: current directory)",
     )
 
+    research = sub.add_parser("research", help="fetch allowlisted HTTPS research sources (0.9)")
+    research.add_argument("--url", type=str, default=None, help="HTTPS URL to fetch")
+    research.add_argument(
+        "--allow-domain",
+        type=str,
+        default=None,
+        help="required domain allowlist entry (exact domain or parent domain)",
+    )
+    research.add_argument("--query", type=str, default=None, help="optional research query note")
+    research.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    sub.add_parser("research-list", help="list saved research snapshots (read-only)")
+    research_show = sub.add_parser("research-show", help="show a saved research snapshot (read-only)")
+    research_show.add_argument("research_id", help="saved research snapshot id")
+
     args = parser.parse_args(argv)
 
-    if args.command in {"check", "repair", "doctor", "index", "symbols", "context", "list-proposals", "show-proposal"}:
+    if args.command in {
+        "check",
+        "repair",
+        "doctor",
+        "index",
+        "symbols",
+        "context",
+        "list-proposals",
+        "show-proposal",
+        "research-list",
+        "research-show",
+    }:
         config = load_config()
-    elif args.command in {"propose-merge", "apply-proposal"}:
+    elif args.command in {"propose-merge", "apply-proposal", "research"}:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
@@ -332,10 +370,14 @@ def main(argv: list[str] | None = None) -> int:
                 config=config,
                 permissions=perms,
                 include_context=args.include_context,
+                include_research=getattr(args, "include_research", None),
                 max_context_chars=args.max_context_chars,
                 brief=args.command == "ask",
             )
         except ProviderPlanError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        except FileNotFoundError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
         print(outcome.message)
@@ -503,6 +545,39 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(outcome.message)
         return 0 if outcome.ok else 1
+
+    if args.command == "research":
+        if not args.url:
+            print("error: research requires --url in RealForge 0.9", file=sys.stderr)
+            return 1
+        if not args.allow_domain:
+            print("error: research requires --allow-domain", file=sys.stderr)
+            return 1
+        try:
+            outcome = run_research_fetch(
+                url=args.url,
+                allow_domain=args.allow_domain,
+                workspace_root=config.workspace_root or Path.cwd(),
+                query=args.query,
+                opener=default_http_opener(),
+            )
+        except ResearchError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0
+
+    if args.command == "research-list":
+        print(list_research(config.workspace_root or Path.cwd()))
+        return 0
+
+    if args.command == "research-show":
+        try:
+            print(show_research(config.workspace_root or Path.cwd(), args.research_id))
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
 
     parser.error("unknown command")
     return 2

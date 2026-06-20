@@ -38,10 +38,15 @@ realforge ask --task "plan a diagnostic review"
 realforge plan --task "plan a diagnostic review"
 realforge generate --task "hello world program" --dry-run
 realforge doctor
+realforge research --url https://example.com/docs --allow-domain example.com
 ```
 
-See also [RealForge architecture](docs/realforge-architecture.md) and
-[local model adapters](docs/realforge-local-models.md).
+Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
+`plan --include-research` without auto-editing files. See [research docs](docs/realforge-research.md).
+
+See also [RealForge architecture](docs/realforge-architecture.md),
+[local model adapters](docs/realforge-local-models.md), and
+[research](docs/realforge-research.md).
 
 ## Integer overflow (v0.1)
 
@@ -133,6 +138,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge agent layer](docs/realforge.md)
 - [RealForge architecture](docs/realforge-architecture.md)
 - [RealForge local models](docs/realforge-local-models.md)
+- [RealForge research](docs/realforge-research.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 

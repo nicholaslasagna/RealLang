@@ -13,6 +13,7 @@ from realforge.index.context_builder import build_context
 from realforge.permissions import Permissions
 from realforge.planner import AgentPlan, format_plan
 from realforge.providers.base import ModelProvider, PlanRequest
+from realforge.research import build_research_context
 from realforge.repair_rules import apply_safe_repairs
 from realforge.report import format_check_fail, format_repair_plan
 from realforge.runner import run_realc_check
@@ -154,16 +155,21 @@ def run_agent(
     memory: SessionMemory | None = None,
     keep_failed_repair: bool = False,
     include_context: bool = False,
+    include_research: str | None = None,
     max_context_chars: int = 12000,
     brief: bool = False,
 ) -> AgentOutcome:
     cfg = config or default_config()
     perms = permissions or Permissions(mode=cfg.permission_mode, workspace_root=cfg.workspace_root)
     mem = memory or SessionMemory(task=task)
-    context_text: str | None = None
+    context_parts: list[str] = []
     if include_context:
         bundle = build_context(task, cfg.workspace_root or Path.cwd(), max_chars=max_context_chars)
-        context_text = bundle.text
+        context_parts.append(bundle.text)
+    if include_research:
+        research_text = build_research_context(cfg.workspace_root or Path.cwd(), include_research)
+        context_parts.append(research_text)
+    context_text = "\n\n".join(context_parts) if context_parts else None
     request = PlanRequest(task=task, context=context_text, permission_mode=perms.mode)
     plan = provider.generate_plan(request)
     mem.record(
@@ -172,6 +178,7 @@ def run_agent(
             "provider": provider.name,
             "steps": len(plan.steps),
             "include_context": include_context,
+            "include_research": include_research,
         },
     )
 

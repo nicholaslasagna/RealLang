@@ -3,10 +3,21 @@
 RealForge self-improvement is **experimental**. Version **0.6** added dry-run plans and
 untrusted patch display. Version **0.7** added isolated experiment workspaces. Version
 **0.8** adds **approval-gated merge proposals** — successful experiments can become
-reviewable proposals, but nothing merges automatically.
+reviewable proposals, but nothing merges automatically. Version **0.9** adds
+**permissioned internet research** — explicit HTTPS fetches with domain allowlists,
+local snapshots, and optional planning context.
 
 RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or
 Mythos yet. Local models may be used, but **model output is untrusted**.
+
+## What 0.9 adds
+
+- `realforge research --url ... --allow-domain ...` for explicit HTTPS research fetches
+- Saved snapshots under `.realforge/research/` with metadata and summaries
+- `plan --include-research <id>` attaches citation metadata to planning context
+- Research informs plans only; it does not edit files or auto-merge
+
+See [Research (0.9)](realforge-research.md).
 
 ## What 0.8 adds
 
