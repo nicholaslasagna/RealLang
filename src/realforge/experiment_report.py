@@ -76,3 +76,36 @@ def write_report_json(report: ExperimentReport, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report_to_dict(report), indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def load_report_json(path: Path) -> ExperimentReport:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("experiment report JSON must be an object")
+    command_results = tuple(
+        CommandResultRecord(
+            command=str(item.get("command", "")),
+            returncode=int(item.get("returncode", 1)),
+            stdout=str(item.get("stdout", "")),
+            stderr=str(item.get("stderr", "")),
+            passed=bool(item.get("passed", False)),
+        )
+        for item in data.get("command_results", [])
+        if isinstance(item, dict)
+    )
+    return ExperimentReport(
+        id=str(data.get("id", "")).strip(),
+        area=str(data.get("area", "")).strip(),
+        patch_file=data.get("patch_file"),
+        workspace_mode=str(data.get("workspace_mode", "")).strip(),
+        experiment_path=data.get("experiment_path"),
+        validation_commands=tuple(str(item) for item in data.get("validation_commands", [])),
+        command_results=command_results,
+        passed=bool(data.get("passed", False)),
+        failures=tuple(str(item) for item in data.get("failures", [])),
+        duration_ms=int(data.get("duration_ms", 0)),
+        kept=bool(data.get("kept", False)),
+        cleanup_status=str(data.get("cleanup_status", "")).strip(),
+        main_workspace_modified=bool(data.get("main_workspace_modified", False)),
+        notes=tuple(str(item) for item in data.get("notes", [])),
+    )

@@ -117,7 +117,33 @@ def apply_unified_patch(
     *,
     config: RealForgeConfig | None = None,
 ) -> CommandResult:
+    return apply_patch_to_directory(patch_file, workspace.workspace_path, config=config)
+
+
+def parse_patch_paths(patch_file: Path) -> tuple[str, ...]:
+    paths: list[str] = []
+    for line in patch_file.read_text(encoding="utf-8").splitlines():
+        if line.startswith("--- a/"):
+            rel = line[len("--- a/") :].strip()
+            if rel != "/dev/null":
+                paths.append(rel)
+        elif line.startswith("--- "):
+            rel = line[4:].strip()
+            if rel.startswith("a/"):
+                rel = rel[2:]
+            if rel and rel != "/dev/null":
+                paths.append(rel)
+    return tuple(dict.fromkeys(paths))
+
+
+def apply_patch_to_directory(
+    patch_file: Path,
+    workspace_root: Path,
+    *,
+    config: RealForgeConfig | None = None,
+) -> CommandResult:
     patch_file = patch_file.resolve()
+    workspace_root = workspace_root.resolve()
     if not patch_file.is_file():
         raise FileNotFoundError(f"patch file not found: {patch_file}")
 
@@ -125,20 +151,49 @@ def apply_unified_patch(
     if "---" not in text and "diff --git" not in text:
         raise ValueError("patch must be a unified diff")
 
-    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace.workspace_path)
-    if is_git_repo(workspace.workspace_path):
+    perms = Permissions(mode=PermissionMode.WORKSPACE_WRITE, workspace_root=workspace_root)
+    if is_git_repo(workspace_root):
         return run_command(
             ("git", "apply", "--whitespace=nowarn", str(patch_file)),
             config=config,
             permissions=perms,
-            cwd=workspace.workspace_path,
+            cwd=workspace_root,
         )
     return run_command(
         ("patch", "-p1", "--forward", "-i", str(patch_file)),
         config=config,
         permissions=perms,
-        cwd=workspace.workspace_path,
+        cwd=workspace_root,
     )
+
+
+def is_workspace_dirty(workspace_root: Path, *, config: RealForgeConfig | None = None) -> bool:
+    workspace_root = workspace_root.resolve()
+    if not is_git_repo(workspace_root):
+        return False
+    perms = Permissions(mode=PermissionMode.READONLY, workspace_root=workspace_root)
+    result = run_command(
+        ("git", "status", "--porcelain"),
+        config=config,
+        permissions=perms,
+        cwd=workspace_root,
+    )
+    if result.returncode != 0:
+        return True
+    lines = [
+        line
+        for line in result.stdout.splitlines()
+        if line.strip() and not _is_realforge_proposal_path(line)
+    ]
+    return bool(lines)
+
+
+def _is_realforge_proposal_path(porcelain_line: str) -> bool:
+    path = porcelain_line[3:].strip()
+    if " -> " in path:
+        path = path.split(" -> ", 1)[1]
+    normalized = path.removeprefix("./")
+    return normalized == ".realforge" or normalized.startswith(".realforge/")
 
 
 def remove_experiment_workspace(

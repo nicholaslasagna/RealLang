@@ -13,6 +13,20 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.8 adds
+
+RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.8 adds **approval-gated merge proposals**:
+
+- `realforge propose-merge --report experiment_report.json` — create a pending proposal from a passed experiment
+- `realforge list-proposals` / `realforge show-proposal <id>` — review proposals (read-only)
+- `realforge apply-proposal <id> --confirm` — apply patch to main workspace after explicit approval
+- Post-apply validation runs in the main workspace; failed validation rolls back automatically
+- `--commit` commits only after validation passes (default: changes left uncommitted)
+- No auto-merge; model output remains untrusted
+
+Proposal metadata is stored under `.realforge/proposals/` (gitignored by default).
+
 ## What RealForge 0.7 adds
 
 RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
@@ -123,6 +137,13 @@ realforge experiment --area tests --dry-run
 realforge experiment --area tests --patch-file /path/to/change.diff --validation quick
 realforge experiment --area tests --patch-file change.diff --keep --output report.json
 
+# Approval-gated merge proposals (0.8)
+realforge propose-merge --report /path/to/experiment_report.json
+realforge list-proposals
+realforge show-proposal <proposal_id>
+realforge apply-proposal <proposal_id> --confirm
+realforge apply-proposal <proposal_id> --confirm --commit
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -195,6 +216,8 @@ src/realforge/
   experiment.py          isolated patch experiments and validation (0.7)
   experiment_report.py   ExperimentReport JSON and formatting
   git_utils.py           git worktree / copy workspace helpers
+  proposals.py           approval-gated merge proposal workflow (0.8)
+  proposal_report.py     MergeProposal JSON and formatting
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing

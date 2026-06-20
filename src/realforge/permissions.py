@@ -24,6 +24,8 @@ class Permissions:
     def can_run_shell(self, cmd: tuple[str, ...]) -> bool:
         if self.allow_git_worktree_admin and _is_git_worktree_admin(cmd):
             return True
+        if self.mode != PermissionMode.WORKSPACE_WRITE and _is_git_readonly(cmd):
+            return True
         if self.mode == PermissionMode.WORKSPACE_WRITE:
             return True
         if self.mode == PermissionMode.ASK:
@@ -54,3 +56,7 @@ def _is_realc_check(cmd: tuple[str, ...]) -> bool:
 
 def _is_git_worktree_admin(cmd: tuple[str, ...]) -> bool:
     return len(cmd) >= 2 and cmd[0] == "git" and cmd[1] == "worktree"
+
+
+def _is_git_readonly(cmd: tuple[str, ...]) -> bool:
+    return len(cmd) >= 2 and cmd[0] == "git" and cmd[1] in {"status", "diff", "rev-parse", "show"}

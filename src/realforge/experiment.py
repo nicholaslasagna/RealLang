@@ -275,3 +275,18 @@ def run_experiment_patch(
 
 def format_patch_outcome(report: ExperimentReport) -> str:
     return format_experiment_report(report)
+
+
+def run_validation_commands(
+    commands: tuple[tuple[str, ...], ...],
+    *,
+    workspace: Path,
+    config: RealForgeConfig,
+    command_runner: CommandRunner = run_command,
+) -> tuple[tuple[CommandResultRecord, ...], tuple[str, ...]]:
+    return _run_validation_commands(
+        commands,
+        workspace=workspace,
+        config=config,
+        command_runner=command_runner,
+    )

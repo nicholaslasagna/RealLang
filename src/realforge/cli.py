@@ -24,6 +24,15 @@ from realforge.experiment import (
     run_experiment_dry_run,
     run_experiment_patch,
 )
+from realforge.proposals import (
+    ProposalError,
+    apply_proposal,
+    format_list_proposals,
+    list_proposals,
+    propose_merge_from_report,
+    show_proposal,
+)
+from realforge.proposal_report import format_propose_merge_outcome, format_proposal_summary
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) -> None:
@@ -227,10 +236,56 @@ def main(argv: list[str] | None = None) -> int:
         help="maximum context size for --dry-run planning (default: 12000)",
     )
 
+    propose_merge = sub.add_parser(
+        "propose-merge",
+        help="create an approval-gated merge proposal from a passed experiment report",
+    )
+    propose_merge.add_argument(
+        "--report",
+        type=Path,
+        required=True,
+        help="path to ExperimentReport JSON from a passed experiment",
+    )
+    propose_merge.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    sub.add_parser("list-proposals", help="list pending merge proposals (read-only)")
+
+    show_proposal_cmd = sub.add_parser("show-proposal", help="show a merge proposal (read-only)")
+    show_proposal_cmd.add_argument("proposal_id", help="proposal identifier")
+
+    apply_proposal_cmd = sub.add_parser(
+        "apply-proposal",
+        help="apply a pending merge proposal after explicit confirmation",
+    )
+    apply_proposal_cmd.add_argument("proposal_id", help="proposal identifier")
+    apply_proposal_cmd.add_argument(
+        "--confirm",
+        action="store_true",
+        help="required flag confirming human approval to apply the patch",
+    )
+    apply_proposal_cmd.add_argument(
+        "--commit",
+        action="store_true",
+        help="commit applied changes only after post-apply validation passes",
+    )
+    apply_proposal_cmd.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
     args = parser.parse_args(argv)
 
-    if args.command in {"check", "repair", "doctor", "index", "symbols", "context"}:
+    if args.command in {"check", "repair", "doctor", "index", "symbols", "context", "list-proposals", "show-proposal"}:
         config = load_config()
+    elif args.command in {"propose-merge", "apply-proposal"}:
+        config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
 
@@ -403,6 +458,51 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(format_patch_outcome(report))
         return 0 if report.passed else 1
+
+    if args.command == "propose-merge":
+        if not args.report.is_file():
+            print(f"error: report not found: {args.report}", file=sys.stderr)
+            return 1
+        try:
+            proposal = propose_merge_from_report(
+                args.report,
+                workspace_root=config.workspace_root or Path.cwd(),
+                config=config,
+            )
+        except ProposalError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_propose_merge_outcome(proposal))
+        return 0
+
+    if args.command == "list-proposals":
+        proposals = list_proposals(config.workspace_root or Path.cwd())
+        print(format_list_proposals(proposals))
+        return 0
+
+    if args.command == "show-proposal":
+        try:
+            proposal = show_proposal(config.workspace_root or Path.cwd(), args.proposal_id)
+        except ProposalError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_proposal_summary(proposal))
+        return 0
+
+    if args.command == "apply-proposal":
+        try:
+            outcome = apply_proposal(
+                args.proposal_id,
+                workspace_root=config.workspace_root or Path.cwd(),
+                config=config,
+                confirm=args.confirm,
+                commit=args.commit,
+            )
+        except ProposalError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
 
     parser.error("unknown command")
     return 2

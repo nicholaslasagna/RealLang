@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -47,13 +48,21 @@ def run_command(
     config: RealForgeConfig | None = None,
     permissions: Permissions | None = None,
     cwd: Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> CommandResult:
     cfg = config or default_config()
     perms = permissions or Permissions(mode=cfg.permission_mode, workspace_root=cfg.workspace_root)
     _assert_not_destructive(cmd)
     if not perms.can_run_shell(cmd):
         raise PermissionError(f"shell command not permitted in {perms.mode.value} mode: {' '.join(cmd)}")
-    proc = subprocess.run(list(cmd), capture_output=True, text=True, cwd=str(cwd) if cwd else None)
+    proc_env = {**os.environ, **env} if env else None
+    proc = subprocess.run(
+        list(cmd),
+        capture_output=True,
+        text=True,
+        cwd=str(cwd) if cwd else None,
+        env=proc_env,
+    )
     return CommandResult(proc.returncode, proc.stdout, proc.stderr, cmd)
 
 

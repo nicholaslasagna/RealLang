@@ -1,11 +1,26 @@
 # RealForge self-improvement and experiments
 
 RealForge self-improvement is **experimental**. Version **0.6** added dry-run plans and
-untrusted patch display. Version **0.7** adds **isolated experiment workspaces** that
-apply saved patch files and run validation without modifying the main working tree.
+untrusted patch display. Version **0.7** added isolated experiment workspaces. Version
+**0.8** adds **approval-gated merge proposals** — successful experiments can become
+reviewable proposals, but nothing merges automatically.
 
 RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or
 Mythos yet. Local models may be used, but **model output is untrusted**.
+
+## What 0.8 adds
+
+```text
+passed ExperimentReport → propose-merge → pending proposal → apply-proposal --confirm → validate → optional --commit
+```
+
+- `realforge propose-merge --report <experiment_report.json>` — requires `passed=true` and clean main workspace metadata
+- `realforge list-proposals` / `realforge show-proposal <id>` — read-only review
+- `realforge apply-proposal <id> --confirm` — applies patch to main workspace with backup/rollback
+- Post-apply validation reruns quick checks; failure rolls back automatically
+- `--commit` commits only after validation passes (default leaves changes uncommitted)
+- Dirty main workspaces are blocked (`.realforge/` metadata is ignored)
+- No auto-merge; human `--confirm` is mandatory
 
 ## What 0.7 adds
 
@@ -90,6 +105,8 @@ realforge improve --area realforge --propose-patch --dry-run
 realforge experiment --area tests --dry-run
 realforge experiment --area tests --patch-file /tmp/change.diff
 realforge experiment --area tests --patch-file change.diff --keep --output report.json
+realforge propose-merge --report report.json
+realforge apply-proposal <proposal_id> --confirm
 ```
 
 MockProvider returns deterministic plans for tests. Local providers use strict JSON

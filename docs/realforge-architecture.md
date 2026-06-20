@@ -70,6 +70,19 @@ snapshot main workspace → create worktree/copy → apply patch → validate �
 - `--patch-file` is required for apply mode; model patches must be saved to disk first
 - No auto-merge exists; human approval is still required
 
+## Approval-gated merge proposals (0.8)
+
+RealForge 0.8 turns successful experiments into reviewable merge proposals:
+
+```text
+passed ExperimentReport → propose-merge → .realforge/proposals/<id>.json → show-proposal → apply-proposal --confirm → validate → optional --commit
+```
+
+- `proposals.py` validates experiment reports and stores pending proposals
+- `apply-proposal` requires `--confirm`, blocks dirty workspaces, and rolls back on failed validation
+- Proposal patches are copied into `.realforge/proposals/` for stable local references
+- Changes remain uncommitted by default; `--commit` uses author `Imagicast Studios <reallang@users.noreply.github.com>`
+
 ## Control flow
 
 ```text
@@ -84,6 +97,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |
+| Proposals | `proposals.py`, `proposal_report.py` | Approval-gated merge proposals and apply/rollback flow |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |
