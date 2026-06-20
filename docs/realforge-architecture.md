@@ -168,6 +168,25 @@ realforge eval --provider mock --suite smoke|planning|safety|generation
 
 See [Eval harness (1.3)](realforge-evals.md).
 
+## Task benchmarks (1.7)
+
+RealForge 1.7 adds durable structured task benchmarks for longitudinal comparison:
+
+```text
+realforge bench-tasks --provider mock --suite smoke|planning|generation|safety|self-improve
+  → BenchmarkReport (print or --write to .realforge/task_benchmarks/)
+```
+
+| Module | Role |
+|--------|------|
+| `bench_runner.py` | Suite orchestration, rule-based scoring, temp-workspace generation checks |
+| `bench_report.py` | `BenchmarkReport` / `BenchmarkTaskResult` JSON and formatters |
+
+- Complements the quicker `realforge eval` harness; includes `realforge_version` in reports
+- Results are internal rule-based measurements — not proof of superiority over frontier tools
+
+See [Task benchmarks (1.7)](realforge-task-benchmarks.md).
+
 ## Staff improvement channel (1.4)
 
 RealForge 1.4 adds config-gated **staff mode** for a future Improve/Update workflow:
@@ -208,6 +227,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Research | `research/` | Permissioned HTTPS fetch, snapshot store, planning summaries |
 | Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
 | Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
+| Task benchmarks | `bench_runner.py`, `bench_report.py` | Repeatable task benchmarks with version tracking (1.7) |
 | Staff | `staff.py`, `update_channel.py`, `update_history.py` | Staff-only improvement/update channel (config-gated; 1.4) |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |

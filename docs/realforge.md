@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.7 adds
+
+RealForge 1.7 adds a **repeatable task benchmark suite** (`realforge bench-tasks`):
+
+- **Suites:** `smoke`, `planning`, `generation`, `safety`, `self-improve`, and `all`
+- **Structured scoring** with per-task `checks`, `normalized_score`, and `realforge_version` for longitudinal comparison
+- **Durable storage** under `.realforge/task_benchmarks/` (with `--write`)
+- **`bench-task-list` / `bench-task-show`** for inspecting saved reports
+
+Task benchmarks are internal rule-based measurements — not proof of superiority over frontier tools. They complement the quicker `realforge eval` harness (see [Task benchmarks vs evals](realforge-task-benchmarks.md)).
+
+See [Task benchmarks (1.7)](realforge-task-benchmarks.md).
+
 ## What RealForge 1.6 adds
 
 RealForge 1.6 hardens **update bundle integrity and the staff update flow**:
@@ -276,6 +289,9 @@ realforge cycle-show <cycle_id>
 
 # Local provider eval harness (1.3)
 realforge eval --provider mock --suite smoke
+
+# Task benchmarks (1.7)
+realforge bench-tasks --provider mock --suite smoke
 
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status

@@ -70,4 +70,14 @@ real local model suggests readiness for **manual** experimentation — not auton
 In RealForge 1.4+, the staff-only **`improve-channel`** command can require provider eval pass
 and a configurable `minimum_eval_score` before patch experiments proceed (see [Staff mode](realforge-staff-mode.md)).
 
+## Relationship to task benchmarks (1.7)
+
+| | `realforge eval` | `realforge bench-tasks` |
+|--|------------------|-------------------------|
+| Purpose | Quick provider sanity checks | Durable structured task benchmarks |
+| Storage | `.realforge/evals/` | `.realforge/task_benchmarks/` |
+| Version tracking | Provider-focused | Includes `realforge_version` for longitudinal comparison |
+
+Use eval for fast wiring checks. Use [task benchmarks](realforge-task-benchmarks.md) when tracking RealForge/local-model progress across releases.
+
 See also [RealForge architecture](realforge-architecture.md) and [local models](realforge-local-models.md).

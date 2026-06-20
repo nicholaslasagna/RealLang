@@ -124,7 +124,7 @@ def mock_improvement_plan(area: str) -> SelfImprovementPlan:
             ("src/realforge/permissions.py", "src/realforge/workspace.py"),
             ("src/realforge/report.py",),
             ("tests/test_realforge_improve.py",),
-            (".venv/bin/pytest -q tests/test_realforge_workspace.py", "realforge doctor"),
+            (".venv/bin/pytest -q tests/test_realforge_workspace.py", "git diff --check"),
             ("Changing permission defaults could break CLI expectations.",),
             "Revert permission/report changes and rerun pytest.",
             ("All safety tests pass.", "No file writes occur in dry-run improve mode."),

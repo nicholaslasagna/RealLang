@@ -24,6 +24,11 @@ _MOCK_GENERATION_OUTPUTS: tuple[tuple[tuple[str, ...], str], ...] = (
         "module main;\n\nfn main() -> i32 {\n  var count: i32 = 0;\n  while condition(count < 3) {\n"
         "    set count = count + 1;\n  }\n  print_i32(count);\n  return 0;\n}\n",
     ),
+    (
+        ("if", "else"),
+        "module main;\n\nfn main() -> i32 {\n  let flag: bool = true;\n  if condition(flag) {\n"
+        "    print_bool(true);\n  } else {\n    print_bool(false);\n  }\n  return 0;\n}\n",
+    ),
 )
 
 

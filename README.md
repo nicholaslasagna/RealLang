@@ -41,18 +41,23 @@ realforge doctor
 realforge research --url https://example.com/docs --allow-domain example.com
 realforge cycle --area tests --budget 1 --dry-run
 realforge eval --provider mock --suite smoke
+realforge bench-tasks --provider mock --suite smoke
 realforge staff-status
 ```
 
 Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
 `plan --include-research` without auto-editing files. Bounded `cycle` commands compose
 improve → experiment → proposal flows without auto-merge. The `eval` harness scores local
-providers on deterministic tasks without editing the main workspace. Staff-only
+providers on deterministic tasks without editing the main workspace. `bench-tasks` provides
+structured repeatable benchmarks for tracking local providers and RealForge versions over time.
+Staff-only
 `improve-channel` commands (disabled by default) compose eval gates and cycles for a future
 Improve/Update workflow; `update-bundle` packages pending proposals as reviewable update
 candidates (with `verify` integrity checks in 1.6) without applying them. See
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
-[eval harness](docs/realforge-evals.md), [staff mode](docs/realforge-staff-mode.md),
+[eval harness](docs/realforge-evals.md),
+[task benchmarks](docs/realforge-task-benchmarks.md),
+[staff mode](docs/realforge-staff-mode.md),
 and [update bundles](docs/realforge-update-bundles.md).
 
 See also [RealForge architecture](docs/realforge-architecture.md),
@@ -156,6 +161,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge research](docs/realforge-research.md)
 - [RealForge cycle](docs/realforge-cycle.md)
 - [RealForge eval harness](docs/realforge-evals.md)
+- [RealForge task benchmarks](docs/realforge-task-benchmarks.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)
 - [RealForge update bundles](docs/realforge-update-bundles.md)
 - [Contributing](CONTRIBUTING.md)

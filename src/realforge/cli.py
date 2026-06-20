@@ -38,6 +38,8 @@ from realforge.research import ResearchError, default_http_opener, list_research
 from realforge.cycle import CycleError, list_cycles, run_cycle_dry_run, run_cycle_patch, show_cycle
 from realforge.eval_runner import EvalError, list_evals, run_eval, show_eval
 from realforge.eval_report import EVAL_SUITES
+from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks, show_bench_task
+from realforge.bench_report import BENCH_SUITES
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
@@ -409,6 +411,34 @@ def main(argv: list[str] | None = None) -> int:
     eval_show = sub.add_parser("eval-show", help="show a saved eval report (read-only)")
     eval_show.add_argument("eval_id", help="eval report id")
 
+    bench_tasks = sub.add_parser("bench-tasks", help="run repeatable RealForge task benchmarks (1.7)")
+    bench_tasks.add_argument(
+        "--provider",
+        default=None,
+        help="model provider to benchmark (default: mock)",
+    )
+    bench_tasks.add_argument(
+        "--suite",
+        choices=sorted(BENCH_SUITES),
+        default="smoke",
+        help="benchmark suite (default: smoke)",
+    )
+    bench_tasks.add_argument(
+        "--write",
+        action="store_true",
+        help="write benchmark report JSON under .realforge/task_benchmarks/",
+    )
+    bench_tasks.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    sub.add_parser("bench-task-list", help="list saved task benchmark reports (read-only)")
+    bench_task_show = sub.add_parser("bench-task-show", help="show a saved task benchmark report (read-only)")
+    bench_task_show.add_argument("benchmark_id", help="task benchmark report id")
+
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
     staff_update_check = sub.add_parser(
@@ -595,6 +625,8 @@ def main(argv: list[str] | None = None) -> int:
         "cycle-show",
         "eval-list",
         "eval-show",
+        "bench-task-list",
+        "bench-task-show",
         "staff-status",
     }:
         config = load_config()
@@ -604,6 +636,7 @@ def main(argv: list[str] | None = None) -> int:
         "research",
         "cycle",
         "eval",
+        "bench-tasks",
         "update-check",
         "improve-channel",
         "update-history",
@@ -910,6 +943,35 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "eval-show":
         try:
             print(show_eval(config.workspace_root or Path.cwd(), args.eval_id))
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "bench-tasks":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            outcome = run_bench_tasks(
+                provider=provider,
+                suite=args.suite,
+                workspace_root=workspace_root,
+                config=config,
+                write=args.write,
+            )
+        except BenchError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "bench-task-list":
+        print(list_bench_tasks(config.workspace_root or Path.cwd()))
+        return 0
+
+    if args.command == "bench-task-show":
+        try:
+            print(show_bench_task(config.workspace_root or Path.cwd(), args.benchmark_id))
         except FileNotFoundError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
