@@ -91,3 +91,19 @@ class ModelProvider(ABC):
     @abstractmethod
     def generate_unreal_plan(self, request: CreativeRequest) -> str:
         raise NotImplementedError
+
+    @abstractmethod
+    def generate_asset_pipeline(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_unreal_import_plan(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_blender_asset_plan(self, request: CreativeRequest) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def generate_engine_pipeline(self, request: CreativeRequest) -> str:
+        raise NotImplementedError

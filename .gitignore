@@ -29,4 +29,5 @@ llm_study/results/**/*.json
 .realforge/creative/
 .realforge/engines/
 .realforge/multimodal/
+.realforge/pipelines/
 .DS_Store

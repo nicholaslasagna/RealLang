@@ -65,6 +65,10 @@ realforge creative map --provider mock --task "design Hall 13 abandoned school m
 realforge creative asset --provider mock --task "design a forest monster statue prop"
 realforge engine scan --path /workspace/MyGame
 realforge unreal plan --path /workspace/MyGame --provider mock --task "plan a map blockout"
+realforge asset pipeline --provider mock --task "plan a forest monster production workflow"
+realforge blender asset-plan --provider mock --task "plan a twisted forest altar prop"
+realforge unreal import-plan --path /workspace/MyGame --provider mock --task "plan an asset import"
+realforge engine pipeline --path /workspace/MyGame --provider mock --task "plan an engine workflow"
 ```
 
 Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
@@ -89,6 +93,11 @@ RealForge 2.5 expands provider-backed vision reports for creative review,
 comparison, and asset-brief planning. Mock mode performs no semantic recognition,
 and all reports remain untrusted. See
 [image understanding](docs/realforge-image-understanding.md).
+RealForge 2.6 adds untrusted, dry-run asset and engine pipeline reports. Unreal
+and Blender support is planning-only: no commands run, no assets are generated,
+and no projects are modified. See
+[asset pipelines](docs/realforge-asset-pipelines.md) and
+[Blender planning](docs/realforge-blender.md).
 
 Related RealForge documents include
 [interaction and capabilities](docs/realforge-interaction.md),
@@ -97,6 +106,8 @@ Related RealForge documents include
 [image understanding](docs/realforge-image-understanding.md),
 [image-generation planning](docs/realforge-image-generation.md),
 [image workflows](docs/realforge-image-workflows.md),
+[asset pipelines](docs/realforge-asset-pipelines.md),
+[Blender planning](docs/realforge-blender.md),
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
@@ -214,6 +225,8 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge image understanding](docs/realforge-image-understanding.md)
 - [RealForge image-generation planning](docs/realforge-image-generation.md)
 - [RealForge image workflows](docs/realforge-image-workflows.md)
+- [RealForge asset pipelines](docs/realforge-asset-pipelines.md)
+- [RealForge Blender planning](docs/realforge-blender.md)
 - [RealForge creative planning](docs/realforge-creative.md)
 - [RealForge Unreal foundation](docs/realforge-unreal.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)

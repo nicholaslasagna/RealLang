@@ -100,3 +100,8 @@ RealForge 2.5 expands the vision capability entry with `vision understand`,
 `vision compare`, and `vision asset-brief`. The `/vision` grammar maps to the
 rich understanding command but executes nothing by itself. Mock mode performs
 no semantic recognition, and all provider reports remain untrusted.
+
+RealForge 2.6 adds `asset pipeline`, `blender asset-plan`, `unreal import-plan`,
+and `engine pipeline` to the capability surface. `/asset` maps to the asset
+pipeline planner but executes nothing by itself. All four commands are
+untrusted, dry-run workflows with no engine/DCC execution or project mutation.

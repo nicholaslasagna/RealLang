@@ -10,6 +10,12 @@ from realforge.creative.creative_context import (
     mock_unreal_plan_payload,
 )
 from realforge.planner import AgentPlan, mock_plan_for_task
+from realforge.pipeline.prompts import (
+    mock_asset_pipeline_payload,
+    mock_blender_asset_payload,
+    mock_engine_pipeline_payload,
+    mock_unreal_import_payload,
+)
 from realforge.providers.base import (
     CreativeRequest,
     GenerationResult,
@@ -122,3 +128,15 @@ class MockProvider(ModelProvider):
 
     def generate_unreal_plan(self, request: CreativeRequest) -> str:
         return json.dumps(mock_unreal_plan_payload(request.task), sort_keys=True)
+
+    def generate_asset_pipeline(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_asset_pipeline_payload(request.task), sort_keys=True)
+
+    def generate_unreal_import_plan(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_unreal_import_payload(request.task), sort_keys=True)
+
+    def generate_blender_asset_plan(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_blender_asset_payload(request.task), sort_keys=True)
+
+    def generate_engine_pipeline(self, request: CreativeRequest) -> str:
+        return json.dumps(mock_engine_pipeline_payload(request.task), sort_keys=True)

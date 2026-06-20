@@ -57,3 +57,11 @@ semantic recognition. Hash differences are not visual differences, and mock
 asset briefs are task-derived scaffolds. No live provider, OCR library, image
 decoder dependency, or network access is required. See
 [Image understanding](realforge-image-understanding.md).
+
+## Pipeline context in 2.6
+
+The 2.6 asset pipeline planner can load saved image jobs, reference boards, and
+vision reports by bounded ID or workspace path. These artifacts remain
+untrusted provider context. RealForge does not automatically accept their
+claims, generate their proposed assets, or send them to Unreal or Blender. See
+[Asset pipelines](realforge-asset-pipelines.md).

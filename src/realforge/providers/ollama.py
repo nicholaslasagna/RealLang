@@ -11,6 +11,13 @@ from realforge.creative.creative_context import (
     build_unreal_plan_prompt,
 )
 from realforge.planner import AgentPlan, parse_plan_response
+from realforge.pipeline.prompts import (
+    PIPELINE_JSON_SYSTEM_PROMPT,
+    build_asset_pipeline_prompt,
+    build_blender_asset_prompt,
+    build_engine_pipeline_prompt,
+    build_unreal_import_prompt,
+)
 from realforge.providers.base import (
     CreativeRequest,
     GenerationResult,
@@ -152,4 +159,25 @@ class OllamaProvider(ModelProvider):
         return self._chat(
             STRICT_JSON_SYSTEM_PROMPT,
             build_unreal_plan_prompt(request.task, request.context or "{}"),
+        )
+
+    def generate_asset_pipeline(self, request: CreativeRequest) -> str:
+        return self._chat(
+            PIPELINE_JSON_SYSTEM_PROMPT,
+            build_asset_pipeline_prompt(request.task, request.context or "{}"),
+        )
+
+    def generate_unreal_import_plan(self, request: CreativeRequest) -> str:
+        return self._chat(
+            PIPELINE_JSON_SYSTEM_PROMPT,
+            build_unreal_import_prompt(request.task, request.context or "{}"),
+        )
+
+    def generate_blender_asset_plan(self, request: CreativeRequest) -> str:
+        return self._chat(PIPELINE_JSON_SYSTEM_PROMPT, build_blender_asset_prompt(request.task))
+
+    def generate_engine_pipeline(self, request: CreativeRequest) -> str:
+        return self._chat(
+            PIPELINE_JSON_SYSTEM_PROMPT,
+            build_engine_pipeline_prompt(request.task, request.context or "{}"),
         )

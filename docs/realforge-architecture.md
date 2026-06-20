@@ -95,6 +95,31 @@ uses hashes, metadata, and task text only; it performs no semantic recognition.
 Image-to-asset reports embed the existing creative `AssetBrief` type without
 creating or importing an asset.
 
+## Engine and asset pipeline planning (2.6)
+
+```text
+optional bounded artifacts + task → strict JSON provider plan → typed validation
+                                  → UNTRUSTED / DRY RUN report
+
+bounded project path → read-only EngineProjectProfile → strict provider plan
+                     → validated relative paths and inert command suggestions
+```
+
+| Module | Role |
+|--------|------|
+| `pipeline/models.py` | Asset, Blender, Unreal import, and engine report schemas |
+| `pipeline/validation.py` | Strict JSON fields, safe project paths, and bounded source artifacts |
+| `pipeline/asset_pipeline.py` | Optional creative/multimodal artifact composition |
+| `pipeline/blender.py` | Blender-oriented planning without Blender execution |
+| `pipeline/unreal_pipeline.py` | Read-only profile to Unreal import plan |
+| `pipeline/engine_pipeline.py` | Generic engine workflow reports with inert suggestions |
+| `pipeline/storage.py` | Workspace-bounded `.realforge/pipelines/` JSON writes |
+
+Provider outputs cannot trigger execution because the pipeline modules contain
+no shell, subprocess, Unreal, Blender, or asset-write operation. HTTP/local
+providers are prompted for one JSON object, then every field is parsed and
+validated locally. Existing engine scanning remains the only project read path.
+
 ## Creative and engine-aware planning (2.1)
 
 RealForge 2.1 adds a planning-only creative layer:
@@ -398,6 +423,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
 | Task benchmarks | `bench_runner.py`, `bench_report.py` | Repeatable task benchmarks with version tracking (1.7) |
 | Creative planning | `creative/` | Structured game/map/asset plans, image metadata, and Unreal dry-run plans (2.1) |
+| Asset pipelines | `pipeline/` | Untrusted, approval-gated Unreal/Blender/engine planning reports (2.6) |
 | Staff | `staff.py`, `update_channel.py`, `update_history.py` | Staff-only improvement/update channel (config-gated; 1.4) |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |

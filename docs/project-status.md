@@ -65,7 +65,7 @@ these as goals rather than proven outcomes.
 
 RealForge is an experimental local-first AI engineering layer in the same repository.
 It is developing as a general environment rather than a
-single-purpose coding or game-design tool. As of RealForge 2.5:
+single-purpose coding or game-design tool. As of RealForge 2.6:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -99,6 +99,10 @@ single-purpose coding or game-design tool. As of RealForge 2.5:
 - `vision understand` produces rich, untrusted creative and asset-planning reports; mock mode performs no semantic recognition (2.5)
 - `vision compare` produces bounded multi-image comparison reports; mock output compares hashes/workflow metadata only (2.5)
 - `vision asset-brief` embeds the existing untrusted `AssetBrief` schema without creating meshes, textures, or assets (2.5)
+- `asset pipeline` composes optional bounded creative/image/vision artifacts into an untrusted production plan (2.6)
+- `blender asset-plan` produces a dry-run DCC plan without requiring or executing Blender (2.6)
+- `unreal import-plan` uses read-only Unreal detection and produces no imports or project changes (2.6)
+- `engine pipeline` records validated project-relative operations and inert command suggestions (2.6)
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)

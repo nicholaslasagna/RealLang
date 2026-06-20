@@ -53,6 +53,12 @@ and image-to-asset-brief reports. These can structure future creative review and
 game/asset planning, but mock mode performs no semantic recognition and creates
 no production asset. See [Image understanding](realforge-image-understanding.md).
 
+RealForge 2.6 can reference saved asset briefs, image jobs, reference boards,
+and vision reports when building an `AssetPipelinePlan`. Referenced JSON remains
+untrusted and is used as bounded planning context only. No creative artifact is
+converted into a binary asset or applied to an engine project. See
+[Asset pipelines](realforge-asset-pipelines.md).
+
 ## Safety boundary
 
 - Creative artifacts are plans, not evidence that a game or asset exists.
@@ -62,5 +68,5 @@ no production asset. See [Image understanding](realforge-image-understanding.md)
   artifact write, and writes stay under `.realforge/creative/`.
 - Local provider output remains untrusted.
 
-Future work may add creative evals, vision adapters, asset-pipeline planning,
-and style-bible memory. Those capabilities are not implemented in 2.1.
+Future work may add creative evals, reviewed provider adapters, and style-bible
+memory. The 2.6 asset pipeline remains planning-only.

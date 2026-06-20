@@ -53,3 +53,26 @@ Optional `--write` stores plans under `.realforge/engines/plans/`.
 
 Future milestones may add a reviewed command sandbox and editor-scripting
 dry-run layer. Direct engine mutation remains out of scope for 2.1.
+
+## Pipeline planning in 2.6
+
+RealForge 2.6 adds two separate planning-only workflows:
+
+```bash
+realforge unreal import-plan --path /workspace/MyGame --provider mock \
+  --task "plan a reviewed static-mesh import"
+realforge engine pipeline --path /workspace/MyGame --provider mock \
+  --task "plan an asset production workflow"
+```
+
+`unreal import-plan` returns an `UnrealAssetImportPlan` with a validated
+`/Game/...` target path, expected source inputs, proposed import settings,
+material/collision/LOD setup, Blueprint notes, validation, and risks.
+`engine pipeline` returns an `EnginePipelineReport` with project-relative files
+to inspect or modify only after approval, inert command suggestions, and a
+validation checklist.
+
+Both commands reuse the read-only 2.1 scanner. They do not open Unreal Editor,
+run commandlets, import assets, execute suggestions, or modify project files.
+Explicit writes store JSON under `.realforge/pipelines/`, not under the scanned
+project. See [Asset pipelines](realforge-asset-pipelines.md).

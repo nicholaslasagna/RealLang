@@ -42,6 +42,12 @@ def build_slash_registry(*, staff_mode_enabled: bool) -> SlashCommandRegistry:
             "UNTRUSTED",
         ),
         SlashCommand("/engine", "realforge engine scan --path <project>", "Scan an engine project without mutation.", "DRY RUN"),
+        SlashCommand(
+            "/asset",
+            'realforge asset pipeline --task "<task>"',
+            "Build an untrusted asset production plan.",
+            "DRY RUN",
+        ),
         SlashCommand("/eval", "realforge eval --provider mock --suite smoke", "Run provider evaluation checks.", "BENCHMARK"),
         SlashCommand("/bench", "realforge bench-tasks --provider mock --suite smoke", "Run repeatable task benchmarks.", "BENCHMARK"),
         SlashCommand("/leaderboard", "realforge leaderboard", "Show saved local-provider benchmark rankings.", "READ ONLY"),

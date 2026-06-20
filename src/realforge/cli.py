@@ -91,6 +91,18 @@ from realforge.multimodal.registry import (
     resolve_multimodal_provider,
 )
 from realforge.multimodal.vision_report import analyze_image, format_vision_analysis
+from realforge.pipeline.asset_pipeline import build_asset_pipeline_plan, format_asset_pipeline_plan
+from realforge.pipeline.blender import build_blender_asset_plan, format_blender_asset_plan
+from realforge.pipeline.engine_pipeline import (
+    build_engine_pipeline_report,
+    format_engine_pipeline_report,
+)
+from realforge.pipeline.storage import format_pipeline_json, write_pipeline_report
+from realforge.pipeline.unreal_pipeline import (
+    build_unreal_import_plan,
+    format_unreal_import_plan,
+)
+from realforge.pipeline.validation import PipelineError
 from realforge.patch_proposal import PatchProposalError, run_propose_patch
 from realforge.scheduler import SchedulerError, format_scheduler_status, list_scheduler, run_scheduler, show_scheduler_run
 from realforge.settings_surface import (
@@ -667,6 +679,21 @@ def main(argv: list[str] | None = None) -> int:
         help="workspace containing .realforge.toml (default: current directory)",
     )
 
+    engine_pipeline = engine_sub.add_parser(
+        "pipeline",
+        help="build an untrusted dry-run engine pipeline report (2.6)",
+    )
+    engine_pipeline.add_argument("--path", type=Path, required=True, help="project path inside workspace")
+    engine_pipeline.add_argument("--task", required=True, help="engine pipeline planning task")
+    engine_pipeline.add_argument("--provider", default=None, help="model provider (default: mock)")
+    engine_pipeline.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/pipelines/engines/",
+    )
+    engine_pipeline.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    engine_pipeline.add_argument("--config-root", type=Path, default=None)
+
     unreal = sub.add_parser("unreal", help="build dry-run Unreal plans without engine mutation")
     unreal_sub = unreal.add_subparsers(dest="unreal_command", required=True)
     unreal_plan = unreal_sub.add_parser("plan", help="build an untrusted dry-run Unreal command plan")
@@ -688,6 +715,56 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="workspace containing .realforge.toml (default: current directory)",
     )
+
+    unreal_import = unreal_sub.add_parser(
+        "import-plan",
+        help="build an untrusted dry-run Unreal asset import plan (2.6)",
+    )
+    unreal_import.add_argument("--path", type=Path, required=True, help="Unreal project path inside workspace")
+    unreal_import.add_argument("--task", required=True, help="asset import planning task")
+    unreal_import.add_argument("--provider", default=None, help="model provider (default: mock)")
+    unreal_import.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/pipelines/unreal/",
+    )
+    unreal_import.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    unreal_import.add_argument("--config-root", type=Path, default=None)
+
+    asset = sub.add_parser("asset", help="build planning-only asset production workflows (2.6)")
+    asset_sub = asset.add_subparsers(dest="asset_command", required=True)
+    asset_pipeline = asset_sub.add_parser("pipeline", help="build an untrusted asset pipeline plan")
+    asset_pipeline.add_argument("--task", required=True, help="asset pipeline planning task")
+    asset_pipeline.add_argument("--provider", default=None, help="model provider (default: mock)")
+    asset_pipeline.add_argument(
+        "--target-engine",
+        choices=("unreal", "generic"),
+        default="generic",
+    )
+    asset_pipeline.add_argument("--asset-brief", default=None, help="saved artifact id or workspace JSON path")
+    asset_pipeline.add_argument("--image-job", default=None, help="saved artifact id or workspace JSON path")
+    asset_pipeline.add_argument("--reference-board", default=None, help="saved artifact id or workspace JSON path")
+    asset_pipeline.add_argument("--vision-report", default=None, help="saved artifact id or workspace JSON path")
+    asset_pipeline.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/pipelines/assets/",
+    )
+    asset_pipeline.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    asset_pipeline.add_argument("--config-root", type=Path, default=None)
+
+    blender = sub.add_parser("blender", help="build planning-only Blender workflows (2.6)")
+    blender_sub = blender.add_subparsers(dest="blender_command", required=True)
+    blender_asset = blender_sub.add_parser("asset-plan", help="build an untrusted Blender asset plan")
+    blender_asset.add_argument("--task", required=True, help="Blender asset planning task")
+    blender_asset.add_argument("--provider", default=None, help="model provider (default: mock)")
+    blender_asset.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/pipelines/blender/",
+    )
+    blender_asset.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    blender_asset.add_argument("--config-root", type=Path, default=None)
 
     capabilities = sub.add_parser(
         "capabilities",
@@ -1375,40 +1452,137 @@ def main(argv: list[str] | None = None) -> int:
             print(f"written: {written}")
         return 0
 
+    if args.command == "asset":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            report = build_asset_pipeline_plan(
+                args.task,
+                provider,
+                workspace_root=workspace_root,
+                target_engine=args.target_engine,
+                asset_brief=args.asset_brief,
+                image_job=args.image_job,
+                reference_board=args.reference_board,
+                vision_report=args.vision_report,
+            )
+            written = (
+                write_pipeline_report(report, workspace_root, category="assets")
+                if args.write
+                else None
+            )
+        except (PipelineError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_pipeline_json(report) if args.json else format_asset_pipeline_plan(report))
+        if written is not None:
+            print(f"written: {written}", file=sys.stderr if args.json else sys.stdout)
+        return 0
+
+    if args.command == "blender":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            report = build_blender_asset_plan(args.task, provider)
+            written = (
+                write_pipeline_report(report, workspace_root, category="blender")
+                if args.write
+                else None
+            )
+        except (PipelineError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(format_pipeline_json(report) if args.json else format_blender_asset_plan(report))
+        if written is not None:
+            print(f"written: {written}", file=sys.stderr if args.json else sys.stdout)
+        return 0
+
     if args.command == "engine":
         workspace_root = config.workspace_root or Path.cwd()
         try:
-            profile = scan_engine_project(args.path, workspace_root=workspace_root)
-            written = write_engine_artifact(profile, workspace_root) if args.write else None
-        except (CreativeError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+            if args.engine_command == "scan":
+                profile = scan_engine_project(args.path, workspace_root=workspace_root)
+                written = write_engine_artifact(profile, workspace_root) if args.write else None
+                output = format_artifact(profile)
+            else:
+                provider = _resolve_cli_provider(args, config)
+                report = build_engine_pipeline_report(
+                    args.path,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                written = (
+                    write_pipeline_report(report, workspace_root, category="engines")
+                    if args.write
+                    else None
+                )
+                output = format_pipeline_json(report) if args.json else format_engine_pipeline_report(report)
+        except (
+            CreativeError,
+            PipelineError,
+            WorkspaceError,
+            FileNotFoundError,
+            RuntimeError,
+            ValueError,
+        ) as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
-        print(format_artifact(profile))
+        print(output)
         if written is not None:
-            print(f"written: {written}")
+            print(
+                f"written: {written}",
+                file=sys.stderr if args.engine_command == "pipeline" and args.json else sys.stdout,
+            )
         return 0
 
     if args.command == "unreal":
         workspace_root = config.workspace_root or Path.cwd()
         provider = _resolve_cli_provider(args, config)
         try:
-            plan = build_unreal_command_plan(
-                args.path,
-                args.task,
-                provider,
-                workspace_root=workspace_root,
-            )
+            if args.unreal_command == "plan":
+                plan = build_unreal_command_plan(
+                    args.path,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                output = format_artifact(plan)
+                category = None
+            else:
+                plan = build_unreal_import_plan(
+                    args.path,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                output = format_pipeline_json(plan) if args.json else format_unreal_import_plan(plan)
+                category = "unreal"
             written = (
-                write_engine_artifact(plan, workspace_root, category="plans")
+                (
+                    write_engine_artifact(plan, workspace_root, category="plans")
+                    if category is None
+                    else write_pipeline_report(plan, workspace_root, category=category)
+                )
                 if args.write
                 else None
             )
-        except (CreativeError, WorkspaceError, FileNotFoundError, RuntimeError, ValueError) as err:
+        except (
+            CreativeError,
+            PipelineError,
+            WorkspaceError,
+            FileNotFoundError,
+            RuntimeError,
+            ValueError,
+        ) as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
-        print(format_artifact(plan))
+        print(output)
         if written is not None:
-            print(f"written: {written}")
+            print(
+                f"written: {written}",
+                file=sys.stderr if args.unreal_command == "import-plan" and args.json else sys.stdout,
+            )
         return 0
 
     if args.command == "check":

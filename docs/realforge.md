@@ -26,6 +26,21 @@ Provider, research, patch, plan, and generated artifact output remains untrusted
 until validated. Commands default to read-only or dry-run behavior, and no feature
 may silently apply, merge, or commit changes.
 
+## What RealForge 2.6 adds
+
+RealForge 2.6 adds **planning-only engine and asset pipelines**:
+
+- `asset pipeline` composes optional bounded creative, image, and vision artifacts.
+- `blender asset-plan` creates a DCC production plan without invoking Blender.
+- `unreal import-plan` combines read-only project detection with import planning.
+- `engine pipeline` creates approval-gated operations, file, command-suggestion,
+  and validation reports.
+
+All output is untrusted and dry-run only. No command is executed, no binary
+asset is generated, and no engine or source file is modified. See
+[Asset pipelines](realforge-asset-pipelines.md) and
+[Blender planning](realforge-blender.md).
+
 ## What RealForge 2.5 adds
 
 RealForge 2.5 expands the **untrusted image-understanding foundation**:
@@ -460,6 +475,12 @@ realforge creative image --image references/concept.png
 realforge engine scan --path /workspace/MyGame
 realforge unreal plan --path /workspace/MyGame --provider mock --task "plan a map blockout"
 
+# Engine/asset pipeline planning (2.6; no tool execution or project mutation)
+realforge asset pipeline --provider mock --task "plan an asset production workflow"
+realforge blender asset-plan --provider mock --task "plan a Blender workflow"
+realforge unreal import-plan --path /workspace/MyGame --provider mock --task "plan an import"
+realforge engine pipeline --path /workspace/MyGame --provider mock --task "plan an engine workflow"
+
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status
 realforge update-check
@@ -557,6 +578,7 @@ src/realforge/
   interaction.py         slash-command grammar for future clients (2.2)
   settings_surface.py    effective settings and safety doctor reports (2.2)
   multimodal/            vision interfaces and image workflow planning (2.3-2.5)
+  pipeline/              planning-only asset, Blender, Unreal, and engine workflows (2.6)
   creative/              game/map/asset schemas, image metadata, engine scan/plans (2.1)
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
@@ -583,7 +605,7 @@ Planned follow-up milestones, subject to separate tests and review:
 - 2.3 multimodal provider interfaces for optional text, vision, image, and embedding adapters (implemented)
 - 2.4 image-generation workflow planner with provenance metadata (implemented)
 - 2.5 optional vision/image-understanding adapter foundation with untrusted reports (implemented; mock-first)
-- 2.6 Unreal/Blender engine and asset pipeline planning
+- 2.6 Unreal/Blender engine and asset pipeline planning (implemented; planning-only)
 - 2.7 general agent skill benchmark suite across code, creative, image, engine, and safety domains
 - 2.8 local model tournament and capability-domain leaderboards
 - 2.9 staff update UI backend expansion with capability-specific queues
@@ -600,6 +622,8 @@ These are plans, not implemented capabilities or performance claims.
 - [Image understanding (2.5)](realforge-image-understanding.md)
 - [Image-generation planning (2.3)](realforge-image-generation.md)
 - [Image workflows (2.4)](realforge-image-workflows.md)
+- [Asset pipelines (2.6)](realforge-asset-pipelines.md)
+- [Blender planning (2.6)](realforge-blender.md)
 - [Creative planning (2.1)](realforge-creative.md)
 - [Unreal foundation (2.1)](realforge-unreal.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)
