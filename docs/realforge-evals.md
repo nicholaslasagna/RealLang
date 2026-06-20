@@ -67,4 +67,7 @@ Use eval reports to compare **local** providers (mock, Ollama, OpenAI-compatible
 on RealForge-oriented tasks. A passing mock eval confirms harness wiring; passing a
 real local model suggests readiness for **manual** experimentation — not autonomous self-improvement.
 
+In RealForge 1.4+, the staff-only **`improve-channel`** command can require provider eval pass
+and a configurable `minimum_eval_score` before patch experiments proceed (see [Staff mode](realforge-staff-mode.md)).
+
 See also [RealForge architecture](realforge-architecture.md) and [local models](realforge-local-models.md).

@@ -6,7 +6,14 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from realforge.config_file import ConfigFileError, ModelSettings, find_config_file, load_model_settings
+from realforge.config_file import (
+    ConfigFileError,
+    ImprovementSettings,
+    ModelSettings,
+    StaffSettings,
+    find_config_file,
+    load_realforge_settings,
+)
 from realforge.permissions import PermissionMode
 
 
@@ -17,6 +24,8 @@ class RealForgeConfig:
     permission_mode: PermissionMode = PermissionMode.READONLY
     workspace_root: Path | None = None
     model: ModelSettings = ModelSettings()
+    staff: StaffSettings = StaffSettings()
+    improvement: ImprovementSettings = ImprovementSettings()
     config_path: Path | None = None
     ollama_base_url: str | None = None
     openai_compatible_base_url: str | None = None
@@ -51,8 +60,13 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
     root = (workspace_root or Path.cwd()).resolve()
     config_path = find_config_file(root)
     file_settings = ModelSettings()
+    staff_settings = StaffSettings()
+    improvement_settings = ImprovementSettings()
     if config_path is not None:
-        file_settings = load_model_settings(config_path, workspace_root=root)
+        file_settings, staff_settings, improvement_settings = load_realforge_settings(
+            config_path,
+            workspace_root=root,
+        )
 
     ollama_env = os.environ.get("REALFORGE_OLLAMA_URL")
     openai_env = os.environ.get("REALFORGE_OPENAI_COMPAT_URL")
@@ -69,6 +83,8 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
         realc_command=_realc_command(),
         workspace_root=root,
         model=model,
+        staff=staff_settings,
+        improvement=improvement_settings,
         config_path=config_path,
         ollama_base_url=legacy_ollama,
         openai_compatible_base_url=legacy_openai,

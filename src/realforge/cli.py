@@ -38,6 +38,9 @@ from realforge.research import ResearchError, default_http_opener, list_research
 from realforge.cycle import CycleError, list_cycles, run_cycle_dry_run, run_cycle_patch, show_cycle
 from realforge.eval_runner import EvalError, list_evals, run_eval, show_eval
 from realforge.eval_report import EVAL_SUITES
+from realforge.staff import StaffError, format_staff_status, require_staff_enabled
+from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
+from realforge.update_history import list_update_history
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
@@ -396,6 +399,86 @@ def main(argv: list[str] | None = None) -> int:
     eval_show = sub.add_parser("eval-show", help="show a saved eval report (read-only)")
     eval_show.add_argument("eval_id", help="eval report id")
 
+    sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
+
+    staff_update_check = sub.add_parser(
+        "update-check",
+        help="staff-only read-only check for local improvement opportunities (1.4)",
+    )
+    staff_update_check.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    improve_channel = sub.add_parser(
+        "improve-channel",
+        help="staff-only configured improvement/update flow (1.4)",
+    )
+    improve_channel.add_argument(
+        "--area",
+        choices=sorted(IMPROVE_AREAS),
+        required=True,
+        help="improvement focus area",
+    )
+    improve_channel.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="build plan and optional provider eval without creating experiments",
+    )
+    improve_channel.add_argument(
+        "--patch-file",
+        type=Path,
+        default=None,
+        help="unified diff to evaluate in a controlled cycle",
+    )
+    improve_channel.add_argument(
+        "--budget",
+        type=int,
+        default=1,
+        help="maximum cycle attempts (default: 1; capped by [improvement].max_budget)",
+    )
+    improve_channel.add_argument(
+        "--research-id",
+        default=None,
+        help="optional saved research snapshot id (requires [improvement].allow_research)",
+    )
+    improve_channel.add_argument(
+        "--validation",
+        choices=sorted(VALIDATION_MODES),
+        default="quick",
+        help="validation mode for patch experiments (default: quick)",
+    )
+    improve_channel.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider (default: [model].provider from .realforge.toml or mock)",
+    )
+    improve_channel.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    improve_channel.add_argument(
+        "--max-context-chars",
+        type=int,
+        default=12000,
+        help="maximum context size for improvement planning (default: 12000)",
+    )
+
+    staff_update_history = sub.add_parser(
+        "update-history",
+        help="staff-only timeline of cycles, proposals, and evals (read-only)",
+    )
+    staff_update_history.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command in {
@@ -413,9 +496,19 @@ def main(argv: list[str] | None = None) -> int:
         "cycle-show",
         "eval-list",
         "eval-show",
+        "staff-status",
     }:
         config = load_config()
-    elif args.command in {"propose-merge", "apply-proposal", "research", "cycle", "eval"}:
+    elif args.command in {
+        "propose-merge",
+        "apply-proposal",
+        "research",
+        "cycle",
+        "eval",
+        "update-check",
+        "improve-channel",
+        "update-history",
+    }:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
@@ -718,6 +811,72 @@ def main(argv: list[str] | None = None) -> int:
         try:
             print(show_eval(config.workspace_root or Path.cwd(), args.eval_id))
         except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "staff-status":
+        print(format_staff_status(config))
+        return 0
+
+    if args.command == "update-check":
+        try:
+            outcome = run_update_check(
+                workspace_root=config.workspace_root or Path.cwd(),
+                config=config,
+            )
+        except StaffError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0
+
+    if args.command == "improve-channel":
+        workspace_root = config.workspace_root or Path.cwd()
+        research_ids = (args.research_id,) if args.research_id else ()
+        if args.dry_run and args.patch_file is not None:
+            print("error: improve-channel --dry-run cannot be combined with --patch-file", file=sys.stderr)
+            return 1
+        provider = _resolve_cli_provider(args, config)
+        try:
+            if args.dry_run:
+                outcome = run_improve_channel_dry_run(
+                    area=args.area,
+                    workspace_root=workspace_root,
+                    config=config,
+                    provider=provider,
+                    budget=args.budget,
+                    research_ids=research_ids,
+                    max_context_chars=args.max_context_chars,
+                )
+            else:
+                if args.patch_file is None:
+                    print("error: improve-channel requires --dry-run or --patch-file", file=sys.stderr)
+                    return 1
+                if not args.patch_file.is_file():
+                    print(f"error: patch file not found: {args.patch_file}", file=sys.stderr)
+                    return 1
+                outcome = run_improve_channel_patch(
+                    area=args.area,
+                    patch_file=args.patch_file,
+                    workspace_root=workspace_root,
+                    config=config,
+                    provider=provider,
+                    budget=args.budget,
+                    research_ids=research_ids,
+                    validation_mode=args.validation,
+                )
+        except (StaffError, UpdateChannelError, ProviderPlanError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "update-history":
+        try:
+            require_staff_enabled(config)
+            print(list_update_history(config.workspace_root or Path.cwd()))
+        except StaffError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
         return 0

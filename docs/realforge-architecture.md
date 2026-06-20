@@ -168,6 +168,28 @@ realforge eval --provider mock --suite smoke|planning|safety|generation
 
 See [Eval harness (1.3)](realforge-evals.md).
 
+## Staff improvement channel (1.4)
+
+RealForge 1.4 adds config-gated **staff mode** for a future Improve/Update workflow:
+
+```text
+[staff].enabled + [improvement] settings
+  → update-check / improve-channel / update-history
+  → optional provider eval gate → controlled cycle → pending proposal
+```
+
+| Module | Role |
+|--------|------|
+| `staff.py` | Staff gate checks and `staff-status` formatting |
+| `update_channel.py` | `update-check`, `improve-channel` dry-run and patch flows |
+| `update_history.py` | Combined cycle/proposal/eval timeline |
+
+- Disabled by default; never enabled silently
+- No auto-apply/auto-commit in v1.4
+- Does not claim superiority over frontier coding tools
+
+See [Staff mode (1.4)](realforge-staff-mode.md).
+
 ## Control flow
 
 ```text
@@ -186,6 +208,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Research | `research/` | Permissioned HTTPS fetch, snapshot store, planning summaries |
 | Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
 | Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
+| Staff | `staff.py`, `update_channel.py`, `update_history.py` | Staff-only improvement/update channel (config-gated; 1.4) |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

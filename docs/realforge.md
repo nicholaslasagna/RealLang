@@ -13,6 +13,21 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.4 adds
+
+RealForge 1.4 adds a **staff-only improvement/update channel** (CLI/config foundation; no GUI yet):
+
+- **`[staff].enabled`** — explicit config gate (default: `false`)
+- **`[improvement]`** — channel settings (`stable` / `experimental`), budget cap, eval gates, research/patch toggles
+- **`staff-status`** — read-only view of staff mode, improvement settings, and safety gates
+- **`update-check`** — staff-only read-only scan of improvement opportunities (no edits, experiments, or internet)
+- **`improve-channel`** — staff-only dry-run or patch-file flow composing improve → eval → cycle → pending proposal
+- **`update-history`** — staff-only timeline of cycle, proposal, and eval records
+
+Staff mode is **advanced and disabled by default**. It is the backend for a future staff-only “Improve / Update” workflow. It does **not** enable infinite autonomous loops, auto-merge, auto-apply, or auto-commit (both remain unsupported in v1.4).
+
+See [Staff mode (1.4)](realforge-staff-mode.md).
+
 ## What RealForge 1.3 adds
 
 RealForge 1.3 adds a **local provider quality evaluation harness**:
@@ -232,6 +247,16 @@ realforge cycle --area tests --budget 1 --patch-file change.diff
 realforge cycle-list
 realforge cycle-show <cycle_id>
 
+# Local provider eval harness (1.3)
+realforge eval --provider mock --suite smoke
+
+# Staff-only improvement channel (1.4; disabled by default)
+realforge staff-status
+realforge update-check
+realforge improve-channel --area tests --dry-run
+realforge improve-channel --area tests --patch-file change.diff
+realforge update-history
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -252,6 +277,19 @@ Example `.realforge.toml`:
 provider = "ollama"
 model = "qwen2.5-coder:32b"
 base_url = "http://localhost:11434"
+
+[staff]
+enabled = false
+
+[improvement]
+channel = "stable"
+max_budget = 1
+require_eval_pass = true
+minimum_eval_score = 0.75
+allow_research = false
+allow_patch_proposals = true
+auto_apply = false
+auto_commit = false
 ```
 
 ### Supported automatic repairs (v0.1)

@@ -41,20 +41,24 @@ realforge doctor
 realforge research --url https://example.com/docs --allow-domain example.com
 realforge cycle --area tests --budget 1 --dry-run
 realforge eval --provider mock --suite smoke
+realforge staff-status
 ```
 
 Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
 `plan --include-research` without auto-editing files. Bounded `cycle` commands compose
 improve → experiment → proposal flows without auto-merge. The `eval` harness scores local
-providers on deterministic tasks without editing the main workspace. See
+providers on deterministic tasks without editing the main workspace. Staff-only
+`improve-channel` commands (disabled by default) compose eval gates and cycles for a future
+Improve/Update workflow. See
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
-and [eval harness](docs/realforge-evals.md).
+[eval harness](docs/realforge-evals.md), and [staff mode](docs/realforge-staff-mode.md).
 
 See also [RealForge architecture](docs/realforge-architecture.md),
 [local model adapters](docs/realforge-local-models.md),
 [research](docs/realforge-research.md),
-[cycle](docs/realforge-cycle.md), and
-[eval harness](docs/realforge-evals.md).
+[cycle](docs/realforge-cycle.md),
+[eval harness](docs/realforge-evals.md), and
+[staff mode](docs/realforge-staff-mode.md).
 
 ## Integer overflow (v0.1)
 
@@ -149,6 +153,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge research](docs/realforge-research.md)
 - [RealForge cycle](docs/realforge-cycle.md)
 - [RealForge eval harness](docs/realforge-evals.md)
+- [RealForge staff mode](docs/realforge-staff-mode.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 

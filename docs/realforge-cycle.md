@@ -10,6 +10,17 @@ before any main-workspace apply.
 RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or Mythos yet.
 This is a **local-first agent architecture**, not a frontier-model superiority claim.
 
+## What 1.4 adds
+
+RealForge 1.4 introduces a **staff-only improvement channel** that wraps cycles with config gates:
+
+- `improve-channel --dry-run` runs improve planning and optional provider eval (via [eval harness](realforge-evals.md))
+- `improve-channel --patch-file` runs the same controlled cycle as `realforge cycle --patch-file`, but enforces `[improvement]` settings
+- Successful patch flows still stop at a **pending proposal**; `auto_apply` / `auto_commit` are refused in v1.4
+- Staff commands require `[staff].enabled = true`; normal cycle commands remain available separately
+
+See [Staff mode (1.4)](realforge-staff-mode.md).
+
 ## What 1.1 clarifies
 
 - Cycle reports include **`proposal_created`** — when true, the message is:
