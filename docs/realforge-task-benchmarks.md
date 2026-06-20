@@ -66,4 +66,17 @@ Use **eval** for fast wiring checks. Use **bench-tasks** when comparing local pr
 
 Pass threshold per task: **60% of max_score**. Reports are rule-based and early — useful for tracking RealForge/local-model progress, not for claiming frontier superiority.
 
+## Leaderboard (1.8)
+
+After saving reports with `--write`, compare providers over time:
+
+```bash
+realforge leaderboard
+realforge leaderboard --suite planning --latest
+realforge leaderboard --trend
+realforge leaderboard export --output leaderboard.json
+```
+
+See [Local model leaderboard (1.8)](realforge-leaderboard.md).
+
 See also [RealForge evals](realforge-evals.md) and [RealForge](realforge.md).

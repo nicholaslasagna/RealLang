@@ -78,6 +78,6 @@ and a configurable `minimum_eval_score` before patch experiments proceed (see [S
 | Storage | `.realforge/evals/` | `.realforge/task_benchmarks/` |
 | Version tracking | Provider-focused | Includes `realforge_version` for longitudinal comparison |
 
-Use eval for fast wiring checks. Use [task benchmarks](realforge-task-benchmarks.md) when tracking RealForge/local-model progress across releases.
+Use eval for fast wiring checks. Use [task benchmarks](realforge-task-benchmarks.md) when tracking RealForge/local-model progress across releases. Use [leaderboard](realforge-leaderboard.md) to rank saved benchmark reports.
 
 See also [RealForge architecture](realforge-architecture.md) and [local models](realforge-local-models.md).

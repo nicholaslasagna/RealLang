@@ -187,6 +187,25 @@ realforge bench-tasks --provider mock --suite smoke|planning|generation|safety|s
 
 See [Task benchmarks (1.7)](realforge-task-benchmarks.md).
 
+## Local model leaderboard (1.8)
+
+RealForge 1.8 ranks saved task benchmark reports for local provider comparison:
+
+```text
+realforge leaderboard [--suite ...] [--provider ...] [--latest] [--trend]
+realforge leaderboard export --output leaderboard.json
+```
+
+| Module | Role |
+|--------|------|
+| `leaderboard.py` | Load/filter/rank reports, trend summaries, empty-state guidance |
+| `leaderboard_report.py` | Export metadata JSON with workspace boundary checks |
+
+- Read-only over source files; compares saved RealForge task benchmarks only
+- Not proof of superiority over frontier commercial tools
+
+See [Local model leaderboard (1.8)](realforge-leaderboard.md).
+
 ## Staff improvement channel (1.4)
 
 RealForge 1.4 adds config-gated **staff mode** for a future Improve/Update workflow:

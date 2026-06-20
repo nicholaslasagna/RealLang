@@ -13,6 +13,17 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.8 adds
+
+RealForge 1.8 adds a **local model leaderboard** (`realforge leaderboard`) built from saved task benchmark reports:
+
+- **Read-only ranking** of providers/models by `normalized_score` from `.realforge/task_benchmarks/`
+- **Filters:** suite, provider, RealForge version, `--latest`, and `--trend`
+- **`leaderboard export`** — metadata-only JSON for staff review
+- **Not a superiority benchmark** — compares saved RealForge task reports only
+
+See [Local model leaderboard (1.8)](realforge-leaderboard.md).
+
 ## What RealForge 1.7 adds
 
 RealForge 1.7 adds a **repeatable task benchmark suite** (`realforge bench-tasks`):
@@ -292,6 +303,10 @@ realforge eval --provider mock --suite smoke
 
 # Task benchmarks (1.7)
 realforge bench-tasks --provider mock --suite smoke
+
+# Local model leaderboard (1.8)
+realforge leaderboard
+realforge leaderboard export --output leaderboard.json
 
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status

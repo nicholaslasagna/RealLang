@@ -42,6 +42,7 @@ realforge research --url https://example.com/docs --allow-domain example.com
 realforge cycle --area tests --budget 1 --dry-run
 realforge eval --provider mock --suite smoke
 realforge bench-tasks --provider mock --suite smoke
+realforge leaderboard
 realforge staff-status
 ```
 
@@ -50,13 +51,14 @@ Permissioned HTTPS research saves snapshots under `.realforge/research/` and can
 improve → experiment → proposal flows without auto-merge. The `eval` harness scores local
 providers on deterministic tasks without editing the main workspace. `bench-tasks` provides
 structured repeatable benchmarks for tracking local providers and RealForge versions over time.
-Staff-only
+`leaderboard` summarizes saved benchmark reports for local provider selection. Staff-only
 `improve-channel` commands (disabled by default) compose eval gates and cycles for a future
 Improve/Update workflow; `update-bundle` packages pending proposals as reviewable update
 candidates (with `verify` integrity checks in 1.6) without applying them. See
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
 [eval harness](docs/realforge-evals.md),
 [task benchmarks](docs/realforge-task-benchmarks.md),
+[leaderboard](docs/realforge-leaderboard.md),
 [staff mode](docs/realforge-staff-mode.md),
 and [update bundles](docs/realforge-update-bundles.md).
 

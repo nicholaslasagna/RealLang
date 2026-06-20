@@ -40,6 +40,7 @@ from realforge.eval_runner import EvalError, list_evals, run_eval, show_eval
 from realforge.eval_report import EVAL_SUITES
 from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks, show_bench_task
 from realforge.bench_report import BENCH_SUITES
+from realforge.leaderboard import export_leaderboard, run_leaderboard
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
@@ -439,6 +440,58 @@ def main(argv: list[str] | None = None) -> int:
     bench_task_show = sub.add_parser("bench-task-show", help="show a saved task benchmark report (read-only)")
     bench_task_show.add_argument("benchmark_id", help="task benchmark report id")
 
+    def _add_leaderboard_filters(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "--suite",
+            choices=sorted(s for s in BENCH_SUITES if s != "all"),
+            default=None,
+            help="filter by benchmark suite",
+        )
+        parser.add_argument(
+            "--provider",
+            default=None,
+            help="filter by provider name",
+        )
+        parser.add_argument(
+            "--realforge-version",
+            default=None,
+            help="filter by RealForge version recorded in reports",
+        )
+        parser.add_argument(
+            "--latest",
+            action="store_true",
+            help="keep only the latest report per provider/model/suite",
+        )
+        parser.add_argument(
+            "--trend",
+            action="store_true",
+            help="show score trends grouped by provider/model/suite",
+        )
+        parser.add_argument(
+            "--config-root",
+            type=Path,
+            default=None,
+            help="directory containing .realforge.toml (default: current directory)",
+        )
+
+    leaderboard = sub.add_parser(
+        "leaderboard",
+        help="rank saved task benchmark reports for local provider comparison (1.8)",
+    )
+    leaderboard_sub = leaderboard.add_subparsers(dest="leaderboard_command")
+    _add_leaderboard_filters(leaderboard)
+    leaderboard_export = leaderboard_sub.add_parser(
+        "export",
+        help="export leaderboard metadata JSON (read-only source reports)",
+    )
+    _add_leaderboard_filters(leaderboard_export)
+    leaderboard_export.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="output JSON path (must stay inside workspace)",
+    )
+
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
     staff_update_check = sub.add_parser(
@@ -627,6 +680,7 @@ def main(argv: list[str] | None = None) -> int:
         "eval-show",
         "bench-task-list",
         "bench-task-show",
+        "leaderboard",
         "staff-status",
     }:
         config = load_config()
@@ -975,6 +1029,32 @@ def main(argv: list[str] | None = None) -> int:
         except FileNotFoundError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
+        return 0
+
+    if args.command == "leaderboard":
+        workspace_root = config.workspace_root or Path.cwd()
+        if args.leaderboard_command == "export":
+            outcome = export_leaderboard(
+                workspace_root,
+                args.output,
+                suite=args.suite,
+                provider=args.provider,
+                realforge_version=args.realforge_version,
+                latest_only=args.latest,
+                trend=args.trend,
+            )
+        else:
+            outcome = run_leaderboard(
+                workspace_root,
+                suite=args.suite,
+                provider=args.provider,
+                realforge_version=args.realforge_version,
+                latest_only=args.latest,
+                trend=args.trend,
+            )
+        for warning in outcome.warnings:
+            print(f"warning: {warning}", file=sys.stderr)
+        print(outcome.message)
         return 0
 
     if args.command == "staff-status":
