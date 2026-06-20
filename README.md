@@ -39,14 +39,18 @@ realforge plan --task "plan a diagnostic review"
 realforge generate --task "hello world program" --dry-run
 realforge doctor
 realforge research --url https://example.com/docs --allow-domain example.com
+realforge cycle --area tests --budget 1 --dry-run
 ```
 
 Permissioned HTTPS research saves snapshots under `.realforge/research/` and can inform
-`plan --include-research` without auto-editing files. See [research docs](docs/realforge-research.md).
+`plan --include-research` without auto-editing files. Bounded `cycle` commands compose
+improve → experiment → proposal flows without auto-merge. See
+[research docs](docs/realforge-research.md) and [cycle docs](docs/realforge-cycle.md).
 
 See also [RealForge architecture](docs/realforge-architecture.md),
-[local model adapters](docs/realforge-local-models.md), and
-[research](docs/realforge-research.md).
+[local model adapters](docs/realforge-local-models.md),
+[research](docs/realforge-research.md), and
+[cycle](docs/realforge-cycle.md).
 
 ## Integer overflow (v0.1)
 
@@ -139,6 +143,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge architecture](docs/realforge-architecture.md)
 - [RealForge local models](docs/realforge-local-models.md)
 - [RealForge research](docs/realforge-research.md)
+- [RealForge cycle](docs/realforge-cycle.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 

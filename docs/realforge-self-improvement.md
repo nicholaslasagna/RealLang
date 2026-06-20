@@ -5,10 +5,21 @@ untrusted patch display. Version **0.7** added isolated experiment workspaces. V
 **0.8** adds **approval-gated merge proposals** — successful experiments can become
 reviewable proposals, but nothing merges automatically. Version **0.9** adds
 **permissioned internet research** — explicit HTTPS fetches with domain allowlists,
-local snapshots, and optional planning context.
+local snapshots, and optional planning context. Version **1.0** adds **controlled
+recursive improvement cycles** that compose improve → experiment → proposal flows
+with bounded budgets and mandatory human approval before apply.
 
 RealForge does **not** claim to match or exceed Codex, Claude Code, Cursor, or
 Mythos yet. Local models may be used, but **model output is untrusted**.
+
+## What 1.0 adds
+
+- `realforge cycle --area ... --budget 1..3 --dry-run` previews plan + validation steps
+- `realforge cycle --patch-file ...` runs isolated experiments and creates pending proposals on success
+- `--research-id` attaches saved research snapshots without fetching new URLs
+- Cycles do not auto-merge, auto-apply, or commit
+
+See [Cycle (1.0)](realforge-cycle.md).
 
 ## What 0.9 adds
 
@@ -118,6 +129,9 @@ realforge experiment --area tests --patch-file /tmp/change.diff
 realforge experiment --area tests --patch-file change.diff --keep --output report.json
 realforge propose-merge --report report.json
 realforge apply-proposal <proposal_id> --confirm
+
+realforge cycle --area tests --budget 1 --dry-run
+realforge cycle --area tests --budget 1 --patch-file change.diff
 ```
 
 MockProvider returns deterministic plans for tests. Local providers use strict JSON

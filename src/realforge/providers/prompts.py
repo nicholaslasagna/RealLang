@@ -19,6 +19,9 @@ AVAILABLE_COMMANDS = """Available RealForge commands:
 - realforge research --url <https://...> --allow-domain <domain> [--query "..."]
 - realforge research-list
 - realforge research-show <research_id>
+- realforge cycle [--area ...] --budget 1..3 --dry-run | --patch-file <change.diff> [--research-id <id>]
+- realforge cycle-list
+- realforge cycle-show <cycle_id>
 - realforge generate --task "..." --dry-run|--apply --output <file.real>
 - realforge doctor"""
 

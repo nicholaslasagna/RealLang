@@ -34,6 +34,7 @@ from realforge.proposals import (
 )
 from realforge.proposal_report import format_propose_merge_outcome, format_proposal_summary
 from realforge.research import ResearchError, default_http_opener, list_research, run_research_fetch, show_research
+from realforge.cycle import CycleError, list_cycles, run_cycle_dry_run, run_cycle_patch, show_cycle
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
@@ -307,6 +308,63 @@ def main(argv: list[str] | None = None) -> int:
     research_show = sub.add_parser("research-show", help="show a saved research snapshot (read-only)")
     research_show.add_argument("research_id", help="saved research snapshot id")
 
+    cycle = sub.add_parser("cycle", help="run a bounded recursive improvement cycle (1.0)")
+    cycle.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print improvement plan and validation steps without experiment or proposal",
+    )
+    cycle.add_argument(
+        "--area",
+        choices=sorted(IMPROVE_AREAS),
+        default="tests",
+        help="improvement focus area (default: tests)",
+    )
+    cycle.add_argument(
+        "--budget",
+        type=int,
+        default=1,
+        help="maximum cycle attempts (1-3, default: 1)",
+    )
+    cycle.add_argument(
+        "--patch-file",
+        type=Path,
+        default=None,
+        help="unified diff to evaluate in an isolated experiment",
+    )
+    cycle.add_argument(
+        "--research-id",
+        default=None,
+        help="attach a saved research snapshot id to the cycle report/context",
+    )
+    cycle.add_argument(
+        "--validation",
+        choices=sorted(VALIDATION_MODES),
+        default="quick",
+        help="validation preset for patch experiments (default: quick)",
+    )
+    cycle.add_argument(
+        "--provider",
+        default=None,
+        help="override model provider for planning (default: mock)",
+    )
+    cycle.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    cycle.add_argument(
+        "--max-context-chars",
+        type=int,
+        default=12000,
+        help="maximum context size for planning (default: 12000)",
+    )
+
+    sub.add_parser("cycle-list", help="list saved cycle reports (read-only)")
+    cycle_show = sub.add_parser("cycle-show", help="show a saved cycle report (read-only)")
+    cycle_show.add_argument("cycle_id", help="cycle report id")
+
     args = parser.parse_args(argv)
 
     if args.command in {
@@ -320,9 +378,11 @@ def main(argv: list[str] | None = None) -> int:
         "show-proposal",
         "research-list",
         "research-show",
+        "cycle-list",
+        "cycle-show",
     }:
         config = load_config()
-    elif args.command in {"propose-merge", "apply-proposal", "research"}:
+    elif args.command in {"propose-merge", "apply-proposal", "research", "cycle"}:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
@@ -545,6 +605,59 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(outcome.message)
         return 0 if outcome.ok else 1
+
+    if args.command == "cycle":
+        workspace_root = config.workspace_root or Path.cwd()
+        research_ids = (args.research_id,) if args.research_id else ()
+        if args.dry_run and args.patch_file is not None:
+            print("error: cycle --dry-run cannot be combined with --patch-file", file=sys.stderr)
+            return 1
+        try:
+            if args.dry_run:
+                provider = _resolve_cli_provider(args, config)
+                outcome = run_cycle_dry_run(
+                    area=args.area,
+                    workspace_root=workspace_root,
+                    provider=provider,
+                    config=config,
+                    budget=args.budget,
+                    research_ids=research_ids,
+                    validation_mode=args.validation,
+                    max_context_chars=args.max_context_chars,
+                )
+            else:
+                if args.patch_file is None:
+                    print("error: cycle requires --dry-run or --patch-file", file=sys.stderr)
+                    return 1
+                if not args.patch_file.is_file():
+                    print(f"error: patch file not found: {args.patch_file}", file=sys.stderr)
+                    return 1
+                outcome = run_cycle_patch(
+                    area=args.area,
+                    patch_file=args.patch_file,
+                    workspace_root=workspace_root,
+                    config=config,
+                    budget=args.budget,
+                    research_ids=research_ids,
+                    validation_mode=args.validation,
+                )
+        except (CycleError, ProviderPlanError, FileNotFoundError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "cycle-list":
+        print(list_cycles(config.workspace_root or Path.cwd()))
+        return 0
+
+    if args.command == "cycle-show":
+        try:
+            print(show_cycle(config.workspace_root or Path.cwd(), args.cycle_id))
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
 
     if args.command == "research":
         if not args.url:

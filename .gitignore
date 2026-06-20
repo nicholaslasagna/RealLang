@@ -20,4 +20,5 @@ llm_study/results/**/*.json
 .realforge/index.json
 .realforge/proposals/
 .realforge/research/
+.realforge/cycles/
 .DS_Store

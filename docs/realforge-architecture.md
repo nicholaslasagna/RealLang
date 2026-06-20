@@ -97,6 +97,22 @@ research --url --allow-domain → snapshot + metadata → plan --include-researc
 
 See [Research (0.9)](realforge-research.md).
 
+## Controlled improvement cycles (1.0)
+
+RealForge 1.0 composes planning, experiments, and proposals into bounded cycles:
+
+```text
+cycle --dry-run → plan + validation preview
+cycle --patch-file → experiment → propose-merge (pending) → manual apply-proposal --confirm
+```
+
+- `cycle.py` orchestrates attempts with budget limits (max 3)
+- `cycle_report.py` stores reports under `.realforge/cycles/`
+- Cycles never auto-merge, auto-apply, commit, or fetch internet directly
+- Saved research snapshots may be attached with `--research-id`
+
+See [Cycle (1.0)](realforge-cycle.md).
+
 ## Control flow
 
 ```text
@@ -113,6 +129,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |
 | Proposals | `proposals.py`, `proposal_report.py` | Approval-gated merge proposals and apply/rollback flow |
 | Research | `research/` | Permissioned HTTPS fetch, snapshot store, planning summaries |
+| Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

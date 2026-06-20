@@ -13,6 +13,19 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.0 adds
+
+RealForge 1.0 adds a **controlled recursive improvement cycle** that composes existing
+safety gates without removing them:
+
+- `realforge cycle --area tests --budget 1 --dry-run` — plan + validation preview only
+- `realforge cycle --area tests --budget 1 --patch-file change.diff` — experiment + pending proposal
+- `realforge cycle --research-id <id> ...` — attach saved research snapshots (no new fetch)
+- `realforge cycle-list` / `realforge cycle-show <id>` — review cycle reports
+- Bounded budget (1–3 attempts); no auto-merge, no auto-apply, no commits
+
+See [Cycle (1.0)](realforge-cycle.md).
+
 ## What RealForge 0.9 adds
 
 RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
@@ -163,6 +176,12 @@ realforge research-list
 realforge research-show <research_id>
 realforge plan --task "..." --include-research <research_id> --provider mock
 
+# Controlled improvement cycles (1.0)
+realforge cycle --area tests --budget 1 --dry-run
+realforge cycle --area tests --budget 1 --patch-file change.diff
+realforge cycle-list
+realforge cycle-show <cycle_id>
+
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
 
@@ -238,6 +257,8 @@ src/realforge/
   proposals.py           approval-gated merge proposal workflow (0.8)
   proposal_report.py     MergeProposal JSON and formatting
   research/              permissioned HTTPS research snapshots (0.9)
+  cycle.py               bounded recursive improvement orchestration (1.0)
+  cycle_report.py        CycleReport JSON and formatting
 ```
 
 RealForge intentionally calls **`realc` through subprocess** rather than importing
@@ -249,6 +270,7 @@ loops.
 - [Architecture](realforge-architecture.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)
 - [Research (0.9)](realforge-research.md)
+- [Cycle (1.0)](realforge-cycle.md)
 - [Local models](realforge-local-models.md)
 - [Language semantics](language-semantics.md)
 - [LLM study framework](../llm_study/README.md)
