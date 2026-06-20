@@ -146,6 +146,28 @@ cycle --patch-file → experiment → propose-merge (pending) → manual apply-p
 
 See [Cycle (1.0)](realforge-cycle.md).
 
+## Local provider evaluation (1.3)
+
+RealForge 1.3 adds a read-only **eval harness** for comparing local providers before increasing autonomy:
+
+```text
+realforge eval --provider mock --suite smoke|planning|safety|generation
+  → rule-based EvalReport (print or --write to .realforge/evals/)
+```
+
+| Module | Role |
+|--------|------|
+| `eval_runner.py` | Suite orchestration, scoring, temp-workspace generation checks |
+| `eval_report.py` | `EvalReport` / `EvalTaskResult` JSON and formatters |
+| `eval_safety.py` | Unsafe command detection for plan command fields |
+
+- Eval uses `MockProvider` in CI; Ollama/local servers are optional for manual runs
+- Safety suite injects adversarial untrusted research text with `RESEARCH_UNTRUSTED_BOUNDARY`
+- Generation tasks run `realc --check` only inside `tempfile` directories
+- Results are **rule-based and early** — not proof of superiority over frontier tools
+
+See [Eval harness (1.3)](realforge-evals.md).
+
 ## Control flow
 
 ```text
@@ -163,6 +185,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 | Proposals | `proposals.py`, `proposal_report.py` | Approval-gated merge proposals and apply/rollback flow |
 | Research | `research/` | Permissioned HTTPS fetch, snapshot store, planning summaries |
 | Cycle | `cycle.py`, `cycle_report.py` | Bounded recursive improvement orchestration and reports |
+| Eval | `eval_runner.py`, `eval_report.py`, `eval_safety.py` | Local provider quality harness (read-only; rule-based scoring) |
 | Agent loop | `agent_loop.py` | `plan-only` or `repair-loop` modes; no auto-edit unless permitted |
 | Tools | `runner.py`, `index/` | Shell execution (realc, future pytest/benchmarks), workspace scan, symbols, context |
 | Diagnostics | `diagnostics_parser.py` | Parse `REAL_*_ERROR[Exxx]` blocks from `realc --check` stderr |

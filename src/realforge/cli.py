@@ -36,6 +36,8 @@ from realforge.proposals import (
 from realforge.proposal_report import format_propose_merge_outcome, format_proposal_summary
 from realforge.research import ResearchError, default_http_opener, list_research, run_research_fetch, show_research
 from realforge.cycle import CycleError, list_cycles, run_cycle_dry_run, run_cycle_patch, show_cycle
+from realforge.eval_runner import EvalError, list_evals, run_eval, show_eval
+from realforge.eval_report import EVAL_SUITES
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
@@ -366,6 +368,34 @@ def main(argv: list[str] | None = None) -> int:
     cycle_show = sub.add_parser("cycle-show", help="show a saved cycle report (read-only)")
     cycle_show.add_argument("cycle_id", help="cycle report id")
 
+    eval_cmd = sub.add_parser("eval", help="run a local provider quality evaluation harness (1.3)")
+    eval_cmd.add_argument(
+        "--provider",
+        default=None,
+        help="model provider to evaluate (default: mock)",
+    )
+    eval_cmd.add_argument(
+        "--suite",
+        choices=sorted(EVAL_SUITES),
+        default="smoke",
+        help="evaluation suite (default: smoke)",
+    )
+    eval_cmd.add_argument(
+        "--write",
+        action="store_true",
+        help="write EvalReport JSON under .realforge/evals/",
+    )
+    eval_cmd.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    sub.add_parser("eval-list", help="list saved eval reports (read-only)")
+    eval_show = sub.add_parser("eval-show", help="show a saved eval report (read-only)")
+    eval_show.add_argument("eval_id", help="eval report id")
+
     args = parser.parse_args(argv)
 
     if args.command in {
@@ -381,9 +411,11 @@ def main(argv: list[str] | None = None) -> int:
         "research-show",
         "cycle-list",
         "cycle-show",
+        "eval-list",
+        "eval-show",
     }:
         config = load_config()
-    elif args.command in {"propose-merge", "apply-proposal", "research", "cycle"}:
+    elif args.command in {"propose-merge", "apply-proposal", "research", "cycle", "eval"}:
         config = _load_cli_config(args)
     else:
         config = _load_cli_config(args)
@@ -656,6 +688,35 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "cycle-show":
         try:
             print(show_cycle(config.workspace_root or Path.cwd(), args.cycle_id))
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "eval":
+        workspace_root = config.workspace_root or Path.cwd()
+        provider = _resolve_cli_provider(args, config)
+        try:
+            outcome = run_eval(
+                provider=provider,
+                suite=args.suite,
+                workspace_root=workspace_root,
+                config=config,
+                write=args.write,
+            )
+        except EvalError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "eval-list":
+        print(list_evals(config.workspace_root or Path.cwd()))
+        return 0
+
+    if args.command == "eval-show":
+        try:
+            print(show_eval(config.workspace_root or Path.cwd(), args.eval_id))
         except FileNotFoundError as err:
             print(f"error: {err}", file=sys.stderr)
             return 1

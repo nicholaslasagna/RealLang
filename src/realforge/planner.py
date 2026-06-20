@@ -85,6 +85,10 @@ def mock_plan_for_task(task: str, *, context: str | None = None) -> AgentPlan:
     files_to_inspect: list[str] = []
     if "hello.real" in normalized.lower() or "hello" in normalized.lower():
         files_to_inspect.append("examples/hello.real")
+    if "diagnostics" in normalized.lower():
+        files_to_inspect.extend(["src/reallang/diagnostics.py", "tests/"])
+    if "docs" in normalized.lower() or "realforge docs" in normalized.lower():
+        files_to_inspect.extend(["docs/realforge.md", "docs/project-status.md"])
     if context and "README.md" in context:
         files_to_inspect.append("README.md")
     if context and "docs/project-status.md" in context:
@@ -95,6 +99,8 @@ def mock_plan_for_task(task: str, *, context: str | None = None) -> AgentPlan:
         "realforge check examples/hello.real",
         "realforge context --task \"explain hello.real\"",
     )
+    if "diagnostics" in normalized.lower() or "docs" in normalized.lower():
+        commands = commands + (".venv/bin/pytest -q",)
     if context:
         commands = commands + ("realforge plan --task \"explain hello.real\" --include-context",)
 

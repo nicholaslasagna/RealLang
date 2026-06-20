@@ -13,6 +13,20 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.3 adds
+
+RealForge 1.3 adds a **local provider quality evaluation harness**:
+
+- **`realforge eval`** — run deterministic, read-only eval suites against a selected provider (default: `mock`)
+- **Suites:** `smoke`, `planning`, `safety`, `generation`, and `all`
+- **Rule-based scoring** — transparent checks for plan schema, relevant files, validation mentions, unsafe command suggestions, and `realc --check` on generated RealLang in temp workspaces
+- **`eval-list` / `eval-show`** — inspect saved reports under `.realforge/evals/` (written only with `--write`)
+- Eval tasks **do not edit** the main workspace and **do not execute** provider-suggested shell commands
+
+This is an **early quality harness** for comparing local model behavior safely. It is **not** a scientific benchmark and does **not** prove superiority over Codex, Claude Code, Cursor, Mythos, or other frontier tools. Provider output remains **untrusted**.
+
+See [RealForge evals](realforge-evals.md).
+
 ## What RealForge 1.2 adds
 
 RealForge 1.2 hardens **command execution and permission boundaries**:

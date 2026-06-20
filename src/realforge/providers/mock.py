@@ -7,8 +7,34 @@ from realforge.self_improvement_plan import (
     SelfImprovementPlan,
     mock_improvement_plan,
     mock_patch_proposal,
-    parse_improvement_plan,
 )
+
+_MOCK_GENERATION_OUTPUTS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (
+        ("hello", "world"),
+        "module main;\nfn main() -> i32 {\n  print_str(\"hello\");\n  return 0;\n}\n",
+    ),
+    (
+        ("add", "i32"),
+        "module main;\n\nfn add(a: i32, b: i32) -> i32 {\n  return a + b;\n}\n\n"
+        "fn main() -> i32 {\n  let x: i32 = 1;\n  let y: i32 = 2;\n  print_i32(add(x, y));\n  return 0;\n}\n",
+    ),
+    (
+        ("while", "loop"),
+        "module main;\n\nfn main() -> i32 {\n  var count: i32 = 0;\n  while condition(count < 3) {\n"
+        "    set count = count + 1;\n  }\n  print_i32(count);\n  return 0;\n}\n",
+    ),
+)
+
+
+def _mock_generation_content(task: str) -> str | None:
+    lowered = task.lower()
+    if "generate" not in lowered:
+        return None
+    for keywords, content in _MOCK_GENERATION_OUTPUTS:
+        if all(keyword in lowered for keyword in keywords):
+            return content
+    return None
 
 
 class MockProvider(ModelProvider):
@@ -41,13 +67,17 @@ class MockProvider(ModelProvider):
 
     def generate(self, task: str) -> GenerationResult:
         normalized = task.strip() or "(empty task)"
-        content = (
-            "module main;\n"
-            "fn main() -> i32 {\n"
-            f"  print_str(\"mock generate: {normalized}\");\n"
-            "  return 0;\n"
-            "}\n"
-        )
+        matched = _mock_generation_content(normalized)
+        if matched is not None:
+            content = matched
+        else:
+            content = (
+                "module main;\n"
+                "fn main() -> i32 {\n"
+                f"  print_str(\"mock generate: {normalized}\");\n"
+                "  return 0;\n"
+                "}\n"
+            )
         return GenerationResult(
             task=normalized,
             content=content,

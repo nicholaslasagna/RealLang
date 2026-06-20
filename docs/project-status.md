@@ -64,7 +64,7 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 1.2:
+As of RealForge 1.3:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -76,6 +76,7 @@ As of RealForge 1.2:
 - `research`, `research-list`, and `research-show` provide permissioned HTTPS research snapshots
 - `plan --include-research` can attach saved research summaries to planning context
 - `cycle`, `cycle-list`, and `cycle-show` orchestrate bounded recursive improvement flows
+- `eval`, `eval-list`, and `eval-show` run read-only local provider quality harnesses (1.3); rule-based, not a superiority benchmark
 - validation command allowlist and `manual` permission mode (1.2); provider/research output labeled untrusted
 - patch hash chains, validation mode parity, path-safe apply, scoped commits, and stronger rollback (1.1)
 - local model configuration via `.realforge.toml` is supported
