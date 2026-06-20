@@ -38,11 +38,17 @@ realforge update-check
 realforge improve-channel --area tests --dry-run
 realforge improve-channel --area tests --patch-file change.diff
 realforge update-history
+realforge scheduler-status
+realforge scheduler-run --dry-run
 ```
 
 | Command | Staff required | Behavior |
 |---------|----------------|----------|
 | `staff-status` | No | Read-only status of staff/improvement settings and safety gates |
+| `scheduler-status` | Yes | Read-only scheduler config, benchmark gate, and latest run |
+| `scheduler-run --dry-run` | Yes | Print planned bounded jobs; no proposals or bundles |
+| `scheduler-run` | Yes | Bounded jobs: patch proposal → experiment → proposal → optional bundle |
+| `scheduler-list` / `scheduler-show` | Yes | Inspect saved scheduler run reports |
 | `update-check` | Yes | Read-only scan of candidate improvement areas; no edits, experiments, or internet |
 | `improve-channel --dry-run` | Yes | Build improvement plan; run provider eval if configured; no experiments |
 | `improve-channel --patch-file` | Yes | Enforce config gates → controlled cycle → pending proposal if experiment passes |
@@ -67,7 +73,7 @@ realforge update-bundle export <bundle_id> --output bundle.json
 - Staff approval (`mark`) and proposal apply (`apply-proposal --confirm`) remain separate
 - Bundles are **not a security boundary by themselves** (1.6)
 
-See [Update bundles (1.5+)](realforge-update-bundles.md).
+See [Update bundles (1.5+)](realforge-update-bundles.md) and [Scheduler (2.0)](realforge-scheduler.md).
 
 ## Staff status and history (1.6)
 

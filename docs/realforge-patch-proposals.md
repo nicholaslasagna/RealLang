@@ -75,4 +75,6 @@ Experiments run only in isolated workspaces. A passing experiment does not apply
 
 Use **propose-patch** when asking a local provider for a task-specific unified diff with structured metadata. Use **experiment** when you already have a saved patch file to validate.
 
+The RealForge 2.0 **scheduler** composes patch proposals, experiments, merge proposals, and optional update bundles in bounded staff jobs. See [Scheduler (2.0)](realforge-scheduler.md).
+
 See also [Self-improvement](realforge-self-improvement.md), [RealForge architecture](realforge-architecture.md), and [RealForge](realforge.md).

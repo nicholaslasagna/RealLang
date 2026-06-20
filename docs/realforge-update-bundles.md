@@ -20,6 +20,8 @@ realforge update-bundle export <bundle_id> --output path.json --include-patch
 
 All commands require **`[staff].enabled = true`**.
 
+RealForge 2.0's bounded **scheduler** can optionally create update bundles automatically when `create_update_bundle = true` after a passing isolated experiment — still without auto-apply. See [Scheduler (2.0)](realforge-scheduler.md).
+
 ## Create requirements
 
 `update-bundle create` reads a **pending** merge proposal and:

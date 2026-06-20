@@ -44,6 +44,7 @@ realforge eval --provider mock --suite smoke
 realforge bench-tasks --provider mock --suite smoke
 realforge leaderboard
 realforge propose-patch --task "add a comment to README" --provider mock --dry-run
+realforge scheduler-status
 realforge staff-status
 ```
 
@@ -63,6 +64,7 @@ candidates (with `verify` integrity checks in 1.6) without applying them. See
 [task benchmarks](docs/realforge-task-benchmarks.md),
 [leaderboard](docs/realforge-leaderboard.md),
 [patch proposals](docs/realforge-patch-proposals.md),
+[scheduler](docs/realforge-scheduler.md),
 [staff mode](docs/realforge-staff-mode.md),
 and [update bundles](docs/realforge-update-bundles.md).
 

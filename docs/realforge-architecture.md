@@ -226,6 +226,26 @@ realforge propose-patch --task "..." --provider mock --dry-run [--save] [--exper
 
 See [Patch proposals (1.9)](realforge-patch-proposals.md).
 
+## Staff scheduler (2.0)
+
+RealForge 2.0 adds bounded staff scheduler jobs:
+
+```text
+realforge scheduler-status
+realforge scheduler-run [--dry-run]
+  → patch proposal → isolated experiment → merge proposal → optional update bundle
+```
+
+| Module | Role |
+|--------|------|
+| `scheduler.py` | Staff-gated bounded job orchestration and benchmark gate |
+| `scheduler_report.py` | SchedulerRunReport storage under `.realforge/scheduler_runs/` |
+
+- Not an infinite autonomous loop; capped by `max_runs_per_invocation`
+- Never auto-applies or auto-commits
+
+See [Scheduler (2.0)](realforge-scheduler.md).
+
 ## Staff improvement channel (1.4)
 
 RealForge 1.4 adds config-gated **staff mode** for a future Improve/Update workflow:

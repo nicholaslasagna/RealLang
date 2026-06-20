@@ -110,6 +110,20 @@ def mock_task_patch_proposal(task: str, *, provider: str = "mock") -> PatchPropo
         )
         files = ("README.md",)
         title = "Add README comment"
+    elif "test" in lowered:
+        diff = "\n".join(
+            [
+                "--- a/tests/test_example.py",
+                "+++ b/tests/test_example.py",
+                "@@ -1,2 +1,3 @@",
+                "+# UNTRUSTED MODEL PATCH PROPOSAL (dry-run only)",
+                " def test_ok():",
+                "     assert True",
+                "",
+            ]
+        )
+        files = ("tests/test_example.py",)
+        title = "Add scheduler test comment"
     else:
         diff = "\n".join(
             [

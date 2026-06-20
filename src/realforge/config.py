@@ -10,6 +10,7 @@ from realforge.config_file import (
     ConfigFileError,
     ImprovementSettings,
     ModelSettings,
+    SchedulerSettings,
     StaffSettings,
     find_config_file,
     load_realforge_settings,
@@ -26,6 +27,7 @@ class RealForgeConfig:
     model: ModelSettings = ModelSettings()
     staff: StaffSettings = StaffSettings()
     improvement: ImprovementSettings = ImprovementSettings()
+    scheduler: SchedulerSettings = SchedulerSettings()
     config_path: Path | None = None
     ollama_base_url: str | None = None
     openai_compatible_base_url: str | None = None
@@ -62,8 +64,9 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
     file_settings = ModelSettings()
     staff_settings = StaffSettings()
     improvement_settings = ImprovementSettings()
+    scheduler_settings = SchedulerSettings()
     if config_path is not None:
-        file_settings, staff_settings, improvement_settings = load_realforge_settings(
+        file_settings, staff_settings, improvement_settings, scheduler_settings = load_realforge_settings(
             config_path,
             workspace_root=root,
         )
@@ -85,6 +88,7 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
         model=model,
         staff=staff_settings,
         improvement=improvement_settings,
+        scheduler=scheduler_settings,
         config_path=config_path,
         ollama_base_url=legacy_ollama,
         openai_compatible_base_url=legacy_openai,

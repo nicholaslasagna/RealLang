@@ -34,8 +34,26 @@ class ImprovementSettings:
 
 
 IMPROVEMENT_CHANNELS = frozenset({"stable", "experimental"})
+SCHEDULER_MODES = frozenset({"manual", "recurring"})
 MIN_IMPROVEMENT_BUDGET = 1
 MAX_IMPROVEMENT_BUDGET = 3
+MIN_SCHEDULER_RUNS = 1
+MAX_SCHEDULER_RUNS = 3
+DEFAULT_SCHEDULER_AREAS = ("tests", "docs", "realforge")
+
+
+@dataclass(frozen=True)
+class SchedulerSettings:
+    enabled: bool = False
+    mode: str = "manual"
+    max_runs_per_invocation: int = 1
+    areas: tuple[str, ...] = DEFAULT_SCHEDULER_AREAS
+    provider: str = "mock"
+    require_leaderboard_pass: bool = True
+    minimum_benchmark_score: float = 0.75
+    create_update_bundle: bool = True
+    auto_apply: bool = False
+    auto_commit: bool = False
 
 
 def find_config_file(workspace_root: Path) -> Path | None:
@@ -149,7 +167,69 @@ def _parse_improvement_settings(section: object) -> ImprovementSettings:
     )
 
 
-def load_realforge_settings(path: Path, *, workspace_root: Path) -> tuple[ModelSettings, StaffSettings, ImprovementSettings]:
+def _parse_string_list(value: object, *, field: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ConfigFileError(f"{field} must be a list of strings")
+    items: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ConfigFileError(f"{field} must contain non-empty strings")
+        items.append(item.strip())
+    return tuple(items)
+
+
+def _parse_scheduler_settings(section: object) -> SchedulerSettings:
+    if section is None:
+        return SchedulerSettings()
+    if not isinstance(section, dict):
+        raise ConfigFileError("[scheduler] must be a table")
+
+    mode = section.get("mode", "manual")
+    if not isinstance(mode, str) or mode.strip() not in SCHEDULER_MODES:
+        raise ConfigFileError("[scheduler].mode must be 'manual' or 'recurring'")
+
+    max_runs = section.get("max_runs_per_invocation", 1)
+    if not isinstance(max_runs, int) or max_runs < MIN_SCHEDULER_RUNS or max_runs > MAX_SCHEDULER_RUNS:
+        raise ConfigFileError("[scheduler].max_runs_per_invocation must be an integer from 1 to 3")
+
+    provider = section.get("provider", "mock")
+    if not isinstance(provider, str) or not provider.strip():
+        raise ConfigFileError("[scheduler].provider must be a non-empty string")
+
+    minimum_benchmark_score = section.get("minimum_benchmark_score", 0.75)
+    if not isinstance(minimum_benchmark_score, (int, float)):
+        raise ConfigFileError("[scheduler].minimum_benchmark_score must be a number")
+    minimum_benchmark_score = float(minimum_benchmark_score)
+    if minimum_benchmark_score < 0.0 or minimum_benchmark_score > 1.0:
+        raise ConfigFileError("[scheduler].minimum_benchmark_score must be between 0.0 and 1.0")
+
+    areas = _parse_string_list(section.get("areas"), field="[scheduler].areas")
+    if not areas:
+        areas = DEFAULT_SCHEDULER_AREAS
+
+    return SchedulerSettings(
+        enabled=_parse_bool(section.get("enabled", False), field="[scheduler].enabled"),
+        mode=mode.strip(),
+        max_runs_per_invocation=max_runs,
+        areas=areas,
+        provider=provider.strip(),
+        require_leaderboard_pass=_parse_bool(
+            section.get("require_leaderboard_pass", True),
+            field="[scheduler].require_leaderboard_pass",
+        ),
+        minimum_benchmark_score=minimum_benchmark_score,
+        create_update_bundle=_parse_bool(
+            section.get("create_update_bundle", True),
+            field="[scheduler].create_update_bundle",
+        ),
+        auto_apply=_parse_bool(section.get("auto_apply", False), field="[scheduler].auto_apply"),
+        auto_commit=_parse_bool(section.get("auto_commit", False), field="[scheduler].auto_commit"),
+    )
+
+
+def load_realforge_settings(path: Path, *, workspace_root: Path) -> tuple[ModelSettings, StaffSettings, ImprovementSettings, SchedulerSettings]:
     try:
         path.resolve().relative_to(workspace_root.resolve())
     except ValueError as err:
@@ -165,4 +245,5 @@ def load_realforge_settings(path: Path, *, workspace_root: Path) -> tuple[ModelS
     model = load_model_settings(path, workspace_root=workspace_root)
     staff = _parse_staff_settings(data.get("staff"))
     improvement = _parse_improvement_settings(data.get("improvement"))
-    return model, staff, improvement
+    scheduler = _parse_scheduler_settings(data.get("scheduler"))
+    return model, staff, improvement, scheduler

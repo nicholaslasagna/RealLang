@@ -42,6 +42,7 @@ from realforge.bench_runner import BenchError, list_bench_tasks, run_bench_tasks
 from realforge.bench_report import BENCH_SUITES
 from realforge.leaderboard import export_leaderboard, run_leaderboard
 from realforge.patch_proposal import PatchProposalError, run_propose_patch
+from realforge.scheduler import SchedulerError, format_scheduler_status, list_scheduler, run_scheduler, show_scheduler_run
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
@@ -539,6 +540,29 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("staff-status", help="show staff mode and improvement channel settings (read-only)")
 
+    sub.add_parser(
+        "scheduler-status",
+        help="show staff scheduler configuration and latest run (staff-only; read-only)",
+    )
+    scheduler_run = sub.add_parser(
+        "scheduler-run",
+        help="run bounded staff scheduler jobs (2.0; staff-only)",
+    )
+    scheduler_run.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print planned scheduler actions without creating proposals or bundles",
+    )
+    scheduler_run.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+    sub.add_parser("scheduler-list", help="list scheduler run reports (staff-only; read-only)")
+    scheduler_show = sub.add_parser("scheduler-show", help="show a scheduler run report (staff-only; read-only)")
+    scheduler_show.add_argument("run_id", help="scheduler run id")
+
     staff_update_check = sub.add_parser(
         "update-check",
         help="staff-only read-only check for local improvement opportunities (1.4)",
@@ -726,6 +750,9 @@ def main(argv: list[str] | None = None) -> int:
         "bench-task-list",
         "bench-task-show",
         "leaderboard",
+        "scheduler-status",
+        "scheduler-list",
+        "scheduler-show",
         "staff-status",
     }:
         config = load_config()
@@ -737,6 +764,7 @@ def main(argv: list[str] | None = None) -> int:
         "eval",
         "bench-tasks",
         "propose-patch",
+        "scheduler-run",
         "update-check",
         "improve-channel",
         "update-history",
@@ -1128,6 +1156,50 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(outcome.message)
         return 0 if outcome.ok else 1
+
+    if args.command == "scheduler-status":
+        try:
+            print(format_scheduler_status(config))
+        except StaffError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "scheduler-run":
+        workspace_root = config.workspace_root or Path.cwd()
+        try:
+            outcome = run_scheduler(
+                workspace_root=workspace_root,
+                config=config,
+                dry_run=args.dry_run,
+            )
+        except StaffError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        except SchedulerError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(outcome.message)
+        return 0 if outcome.ok else 1
+
+    if args.command == "scheduler-list":
+        try:
+            print(list_scheduler(config.workspace_root or Path.cwd(), config=config))
+        except StaffError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
+
+    if args.command == "scheduler-show":
+        try:
+            print(show_scheduler_run(config.workspace_root or Path.cwd(), args.run_id, config=config))
+        except StaffError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        except FileNotFoundError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        return 0
 
     if args.command == "staff-status":
         print(format_staff_status(config))

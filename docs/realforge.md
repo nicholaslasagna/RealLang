@@ -13,6 +13,17 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 2.0 adds
+
+RealForge 2.0 adds a **staff-only recurring improvement scheduler foundation**:
+
+- **`scheduler-status`**, **`scheduler-run`**, **`scheduler-list`**, **`scheduler-show`**
+- Bounded jobs per invocation (`max_runs_per_invocation` 1–3)
+- Optional benchmark/leaderboard gate before running
+- Produces patch proposals, isolated experiments, merge proposals, and update bundles — **never auto-apply or auto-commit**
+
+See [Scheduler (2.0)](realforge-scheduler.md).
+
 ## What RealForge 1.9 adds
 
 RealForge 1.9 adds **untrusted provider-generated patch proposals** (`realforge propose-patch`):
@@ -321,6 +332,10 @@ realforge leaderboard
 
 # Patch proposals (1.9)
 realforge propose-patch --task "add a comment to README" --provider mock --dry-run
+
+# Staff scheduler (2.0; staff + scheduler enabled)
+realforge scheduler-status
+realforge scheduler-run --dry-run
 
 # Staff-only improvement channel (1.4; disabled by default)
 realforge staff-status

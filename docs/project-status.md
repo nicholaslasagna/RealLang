@@ -64,7 +64,7 @@ these as goals rather than proven outcomes.
 ## RealForge status
 
 RealForge is an experimental local-first coding agent layer in the same repository.
-As of RealForge 1.9:
+As of RealForge 2.0:
 
 - `check`, `repair`, `ask`, `plan`, `generate`, `doctor`, `index`, `symbols`, and `context` commands exist
 - `improve --dry-run` proposes structured self-improvement plans without modifying files
@@ -80,6 +80,7 @@ As of RealForge 1.9:
 - `bench-tasks`, `bench-task-list`, and `bench-task-show` run repeatable task benchmarks with version tracking (1.7)
 - `leaderboard` and `leaderboard export` rank saved task benchmark reports for local provider comparison (1.8)
 - `propose-patch --dry-run` asks providers for untrusted unified diff proposals without modifying the main workspace (1.9)
+- `scheduler-status`, `scheduler-run`, `scheduler-list`, and `scheduler-show` provide bounded staff scheduler jobs that produce proposals/bundles without auto-apply (2.0)
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)
