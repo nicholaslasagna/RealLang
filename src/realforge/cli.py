@@ -41,6 +41,15 @@ from realforge.eval_report import EVAL_SUITES
 from realforge.staff import StaffError, format_staff_status, require_staff_enabled
 from realforge.update_channel import UpdateChannelError, run_improve_channel_dry_run, run_improve_channel_patch, run_update_check
 from realforge.update_history import list_update_history
+from realforge.update_bundle import (
+    UpdateBundleError,
+    create_update_bundle,
+    export_update_bundle,
+    list_update_bundle_records,
+    mark_update_bundle,
+    show_update_bundle_record,
+)
+from realforge.update_bundle_report import MARKABLE_BUNDLE_STATUSES
 
 
 def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False, research: bool = False) -> None:
@@ -479,6 +488,83 @@ def main(argv: list[str] | None = None) -> int:
         help="directory containing .realforge.toml (default: current directory)",
     )
 
+    update_bundle = sub.add_parser(
+        "update-bundle",
+        help="staff-only update bundle packaging for validated proposals (1.5)",
+    )
+    update_bundle_sub = update_bundle.add_subparsers(dest="update_bundle_command", required=True)
+
+    update_bundle_create = update_bundle_sub.add_parser(
+        "create",
+        help="package a pending proposal as a versioned update candidate",
+    )
+    update_bundle_create.add_argument(
+        "--proposal",
+        required=True,
+        help="pending merge proposal id",
+    )
+    update_bundle_create.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    update_bundle_list = update_bundle_sub.add_parser("list", help="list update bundles")
+    update_bundle_list.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    update_bundle_show = update_bundle_sub.add_parser("show", help="show update bundle metadata")
+    update_bundle_show.add_argument("bundle_id", help="update bundle id")
+    update_bundle_show.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    update_bundle_mark = update_bundle_sub.add_parser("mark", help="update bundle status metadata only")
+    update_bundle_mark.add_argument("bundle_id", help="update bundle id")
+    update_bundle_mark.add_argument(
+        "--status",
+        choices=sorted(MARKABLE_BUNDLE_STATUSES),
+        required=True,
+        help="new bundle status (metadata only)",
+    )
+    update_bundle_mark.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
+    update_bundle_export = update_bundle_sub.add_parser(
+        "export",
+        help="export update bundle metadata to JSON",
+    )
+    update_bundle_export.add_argument("bundle_id", help="update bundle id")
+    update_bundle_export.add_argument(
+        "--output",
+        type=Path,
+        required=True,
+        help="destination JSON path inside workspace",
+    )
+    update_bundle_export.add_argument(
+        "--include-patch",
+        action="store_true",
+        help="include stored proposal patch text (default: metadata only)",
+    )
+    update_bundle_export.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="directory containing .realforge.toml (default: current directory)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command in {
@@ -508,6 +594,7 @@ def main(argv: list[str] | None = None) -> int:
         "update-check",
         "improve-channel",
         "update-history",
+        "update-bundle",
     }:
         config = _load_cli_config(args)
     else:
@@ -880,6 +967,54 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {err}", file=sys.stderr)
             return 1
         return 0
+
+    if args.command == "update-bundle":
+        workspace_root = config.workspace_root or Path.cwd()
+        try:
+            if args.update_bundle_command == "create":
+                outcome = create_update_bundle(
+                    proposal_id=args.proposal,
+                    workspace_root=workspace_root,
+                    config=config,
+                )
+                print(outcome.message)
+                return 0 if outcome.ok else 1
+            if args.update_bundle_command == "list":
+                print(list_update_bundle_records(workspace_root=workspace_root, config=config))
+                return 0
+            if args.update_bundle_command == "show":
+                print(
+                    show_update_bundle_record(
+                        bundle_id=args.bundle_id,
+                        workspace_root=workspace_root,
+                        config=config,
+                    )
+                )
+                return 0
+            if args.update_bundle_command == "mark":
+                outcome = mark_update_bundle(
+                    bundle_id=args.bundle_id,
+                    status=args.status,
+                    workspace_root=workspace_root,
+                    config=config,
+                )
+                print(outcome.message)
+                return 0 if outcome.ok else 1
+            if args.update_bundle_command == "export":
+                outcome = export_update_bundle(
+                    bundle_id=args.bundle_id,
+                    output=args.output,
+                    workspace_root=workspace_root,
+                    config=config,
+                    include_patch=args.include_patch,
+                )
+                print(outcome.message)
+                return 0 if outcome.ok else 1
+        except (StaffError, UpdateBundleError) as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print("error: unknown update-bundle command", file=sys.stderr)
+        return 1
 
     if args.command == "research":
         if not args.url:

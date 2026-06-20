@@ -13,6 +13,18 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 1.5 adds
+
+RealForge 1.5 adds **staff update bundles** — versioned metadata records that package validated pending proposals as reviewable update candidates:
+
+- **`update-bundle create --proposal <id>`** — verify patch hash and validation metadata; write bundle JSON under `.realforge/updates/`
+- **`update-bundle list` / `show` / `mark` / `export`** — inspect and track bundle status without applying patches
+- **Candidate versioning** — `version_base` from current package version; `candidate_version` like `1.5-candidate` (does not bump package version)
+
+Update bundles are the backend for a future staff-only “Update available” UI. They do **not** apply changes, auto-merge, or auto-commit. Applying still requires `apply-proposal --confirm`.
+
+See [Update bundles (1.5)](realforge-update-bundles.md).
+
 ## What RealForge 1.4 adds
 
 RealForge 1.4 adds a **staff-only improvement/update channel** (CLI/config foundation; no GUI yet):
@@ -256,6 +268,11 @@ realforge update-check
 realforge improve-channel --area tests --dry-run
 realforge improve-channel --area tests --patch-file change.diff
 realforge update-history
+
+# Staff update bundles (1.5)
+realforge update-bundle create --proposal <proposal_id>
+realforge update-bundle list
+realforge update-bundle show <bundle_id>
 
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run
