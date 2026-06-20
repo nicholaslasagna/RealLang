@@ -15,6 +15,7 @@ dev = ["pytest>=8.0"]
 
 [project.scripts]
 realc = "reallang.cli:main"
+realforge = "realforge.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

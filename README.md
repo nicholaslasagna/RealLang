@@ -22,6 +22,17 @@ RealLang is designed by **Imagicast Studios** as an AI-native systems language. 
 
 The [llm_study/](llm_study/) directory provides the **methodology and scoring harness** for that study (no completed results yet).
 
+## RealForge
+
+[RealForge](docs/realforge.md) is a local, rule-based coding-agent layer that uses
+`realc --check` diagnostics as its repair feedback loop. It does not call external
+AI APIs in v0.1.
+
+```bash
+realforge check examples/hello.real
+realforge repair path/to/bad.real --dry-run
+```
+
 ## Integer overflow (v0.1)
 
 **`i32` uses defined two's-complement wrapping arithmetic** (modulo 2³²). Overflow is not undefined behavior in the RealLang language model—for example, `examples/looptest.real` may wrap when the accumulated sum exceeds `i32` range.
@@ -78,13 +89,17 @@ python benchmarks/run_benchmarks.py --skip-slow
 ## CLI
 
 ```bash
+realc <file.real> --check
 realc <file.real> --emit-c [-o output.c]
+realforge check <file.real>
+realforge repair <file.real> --dry-run|--apply
 ```
 
 ## Project layout
 
 ```
-src/reallang/   lexer, parser, AST, typechecker, codegen, diagnostics, CLI
+src/reallang/   RealLang compiler
+src/realforge/  RealForge local agent layer
 tests/          unit tests per compiler stage
 examples/       RealLang source programs
 docs/           language notes and roadmap
@@ -101,6 +116,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [Performance model](docs/performance-model.md)
 - [Rust comparison methodology](docs/rust-comparison-methodology.md)
 - [Project status](docs/project-status.md)
+- [RealForge agent layer](docs/realforge.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
