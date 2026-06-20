@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+import platform
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+from realforge.config import RealForgeConfig, default_config
+from realforge.runner import run_command
+
+
+@dataclass(frozen=True)
+class DoctorCheck:
+    name: str
+    ok: bool
+    detail: str
+
+
+@dataclass(frozen=True)
+class DoctorReport:
+    checks: list[DoctorCheck]
+
+    @property
+    def ok(self) -> bool:
+        required = [c for c in self.checks if c.name in {"python", "realc"}]
+        return all(c.ok for c in required)
+
+
+def run_doctor(config: RealForgeConfig | None = None) -> DoctorReport:
+    cfg = config or default_config()
+    checks: list[DoctorCheck] = []
+
+    py_ok = sys.version_info >= (3, 11)
+    checks.append(
+        DoctorCheck(
+            name="python",
+            ok=py_ok,
+            detail=f"{platform.python_version()} ({sys.executable})",
+        )
+    )
+
+    realc_cmd = " ".join(cfg.realc_command)
+    try:
+        probe = Path(__file__).resolve().parents[2] / "examples" / "hello.real"
+        if probe.is_file():
+            result = run_command((*cfg.realc_command, str(probe), "--check"), config=cfg)
+            realc_ok = result.returncode == 0
+            detail = f"{realc_cmd} (exit {result.returncode})"
+        else:
+            realc_ok = bool(cfg.realc_command)
+            detail = f"{realc_cmd} (hello.real probe unavailable)"
+    except Exception as err:  # noqa: BLE001 — doctor should report probe failures
+        realc_ok = False
+        detail = f"{realc_cmd} ({err})"
+    checks.append(DoctorCheck(name="realc", ok=realc_ok, detail=detail))
+
+    if cfg.ollama_base_url:
+        checks.append(
+            DoctorCheck(
+                name="ollama",
+                ok=True,
+                detail=f"configured: {cfg.ollama_base_url} (connectivity not probed in v0.1)",
+            )
+        )
+    else:
+        checks.append(
+            DoctorCheck(
+                name="ollama",
+                ok=True,
+                detail="optional — set REALFORGE_OLLAMA_URL to enable Ollama adapter",
+            )
+        )
+
+    if cfg.openai_compatible_base_url:
+        checks.append(
+            DoctorCheck(
+                name="openai-compatible-local",
+                ok=True,
+                detail=(
+                    f"configured: {cfg.openai_compatible_base_url} "
+                    "(connectivity not probed in v0.1)"
+                ),
+            )
+        )
+    else:
+        checks.append(
+            DoctorCheck(
+                name="openai-compatible-local",
+                ok=True,
+                detail=(
+                    "optional — set REALFORGE_OPENAI_COMPAT_URL for local OpenAI-compatible servers"
+                ),
+            )
+        )
+
+    return DoctorReport(checks=checks)
+
+
+def format_doctor_report(report: DoctorReport) -> str:
+    lines = ["RealForge doctor"]
+    for check in report.checks:
+        status = "ok" if check.ok else "FAIL"
+        lines.append(f"- [{status}] {check.name}: {check.detail}")
+    lines.append("overall: PASS" if report.ok else "overall: FAIL")
+    return "\n".join(lines)

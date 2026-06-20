@@ -65,3 +65,35 @@ fn main() -> i32 {
     assert proc.returncode == 1
     assert "var x: i32" in proc.stdout
     assert bad.read_text(encoding="utf-8") == original
+
+
+def test_realforge_ask_mock():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "realforge.cli",
+            "ask",
+            "--provider",
+            "mock",
+            "--task",
+            "inspect hello.real",
+        ],
+        capture_output=True,
+        text=True,
+        env=_env(),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "Task: inspect hello.real" in proc.stdout
+    assert "realc --check" in proc.stdout
+
+
+def test_realforge_doctor():
+    proc = subprocess.run(
+        [sys.executable, "-m", "realforge.cli", "doctor"],
+        capture_output=True,
+        text=True,
+        env=_env(),
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "overall: PASS" in proc.stdout

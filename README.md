@@ -24,14 +24,20 @@ The [llm_study/](llm_study/) directory provides the **methodology and scoring ha
 
 ## RealForge
 
-[RealForge](docs/realforge.md) is a local, rule-based coding-agent layer that uses
-`realc --check` diagnostics as its repair feedback loop. It does not call external
-AI APIs in v0.1.
+[RealForge](docs/realforge.md) is an experimental **local-first coding-agent platform**
+for RealLang. It uses `realc` diagnostics, safe patching, local model adapters, and
+(test/benchmark feedback loops as they are added). It does not require cloud AI
+providers.
 
 ```bash
 realforge check examples/hello.real
 realforge repair path/to/bad.real --dry-run
+realforge ask --provider mock --task "plan a diagnostic review"
+realforge doctor
 ```
+
+See also [RealForge architecture](docs/realforge-architecture.md) and
+[local model adapters](docs/realforge-local-models.md).
 
 ## Integer overflow (v0.1)
 
@@ -93,6 +99,8 @@ realc <file.real> --check
 realc <file.real> --emit-c [-o output.c]
 realforge check <file.real>
 realforge repair <file.real> --dry-run|--apply
+realforge ask --provider mock --task "..."
+realforge doctor
 ```
 
 ## Project layout
@@ -117,6 +125,8 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [Rust comparison methodology](docs/rust-comparison-methodology.md)
 - [Project status](docs/project-status.md)
 - [RealForge agent layer](docs/realforge.md)
+- [RealForge architecture](docs/realforge-architecture.md)
+- [RealForge local models](docs/realforge-local-models.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
