@@ -9,9 +9,10 @@ from realforge.diagnostics_parser import ParsedDiagnostic, parse_diagnostics
 from realforge.diffing import unified_diff
 from realforge.memory import SessionMemory
 from realforge.patcher import PatcherError, apply_with_backup, validate_apply
+from realforge.index.context_builder import build_context
 from realforge.permissions import Permissions
 from realforge.planner import AgentPlan, format_plan
-from realforge.providers.base import ModelProvider
+from realforge.providers.base import ModelProvider, PlanRequest
 from realforge.repair_rules import apply_safe_repairs
 from realforge.report import format_check_fail, format_repair_plan
 from realforge.runner import run_realc_check
@@ -152,15 +153,35 @@ def run_agent(
     permissions: Permissions | None = None,
     memory: SessionMemory | None = None,
     keep_failed_repair: bool = False,
+    include_context: bool = False,
+    max_context_chars: int = 12000,
+    brief: bool = False,
 ) -> AgentOutcome:
     cfg = config or default_config()
     perms = permissions or Permissions(mode=cfg.permission_mode, workspace_root=cfg.workspace_root)
     mem = memory or SessionMemory(task=task)
-    plan = provider.generate_plan(task)
-    mem.record("plan", {"provider": provider.name, "steps": len(plan.steps)})
+    context_text: str | None = None
+    if include_context:
+        bundle = build_context(task, cfg.workspace_root or Path.cwd(), max_chars=max_context_chars)
+        context_text = bundle.text
+    request = PlanRequest(task=task, context=context_text, permission_mode=perms.mode)
+    plan = provider.generate_plan(request)
+    mem.record(
+        "plan",
+        {
+            "provider": provider.name,
+            "steps": len(plan.steps),
+            "include_context": include_context,
+        },
+    )
 
     if mode == AgentMode.PLAN_ONLY:
-        return AgentOutcome(mode=mode, plan=plan, repair=None, message=format_plan(plan))
+        return AgentOutcome(
+            mode=mode,
+            plan=plan,
+            repair=None,
+            message=format_plan(plan, brief=brief),
+        )
 
     if path is None:
         raise ValueError("repair loop mode requires a target .real file path")

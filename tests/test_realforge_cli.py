@@ -84,8 +84,8 @@ def test_realforge_ask_mock():
         env=_env(),
     )
     assert proc.returncode == 0, proc.stderr
+    assert "RealForge answer" in proc.stdout
     assert "Task: inspect hello.real" in proc.stdout
-    assert "realc --check" in proc.stdout
 
 
 def test_realforge_plan_mock():
@@ -105,6 +105,7 @@ def test_realforge_plan_mock():
         env=_env(),
     )
     assert proc.returncode == 0, proc.stderr
+    assert "RealForge plan" in proc.stdout
     assert "Task: review diagnostics" in proc.stdout
     assert "Steps:" in proc.stdout
 

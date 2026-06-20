@@ -25,6 +25,20 @@ scan workspace → symbol table → context bundle → (future) local provider p
 - `realforge context` prints bundles only; it does not call models or edit files
 - index cache writes require explicit `--write` and stay inside the workspace root
 
+## Context-aware planning (0.5)
+
+RealForge 0.5 connects workspace context to the provider interface without autonomous editing:
+
+```text
+scan workspace → build context bundle → provider plan JSON → structured AgentPlan → print
+```
+
+- `context_builder.py` supplies bounded project context
+- `providers/prompts.py` defines the planning contract and expected JSON fields
+- `planner.py` parses provider JSON robustly and raises `ProviderPlanError` on invalid output
+- `ask`/`plan` never execute `commands_to_run` or modify `files_to_modify`
+- MockProvider remains the deterministic CI-safe default; local providers are optional
+
 ## Control flow
 
 ```text

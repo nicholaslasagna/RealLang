@@ -14,10 +14,11 @@ from realforge.index.file_index import format_index_report, scan_workspace, writ
 from realforge.index.symbols import format_symbol_table, scan_workspace_symbols
 from realforge.permissions import PermissionMode, Permissions
 from realforge.providers import resolve_provider
+from realforge.errors import ProviderPlanError
 from realforge.report import format_check_fail, format_check_pass
 
 
-def _add_model_args(parser: argparse.ArgumentParser) -> None:
+def _add_model_args(parser: argparse.ArgumentParser, *, planning: bool = False) -> None:
     parser.add_argument("--task", required=True, help="task description for the agent")
     parser.add_argument(
         "--provider",
@@ -30,6 +31,29 @@ def _add_model_args(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="directory containing .realforge.toml (default: current directory)",
     )
+    if planning:
+        parser.add_argument(
+            "--include-context",
+            action="store_true",
+            help="include bounded workspace context in provider planning input",
+        )
+        parser.add_argument(
+            "--max-context-chars",
+            type=int,
+            default=12000,
+            help="maximum context size for --include-context (default: 12000)",
+        )
+        parser.add_argument(
+            "--permission",
+            choices=[mode.value for mode in PermissionMode],
+            default=PermissionMode.READONLY.value,
+            help="permission mode for planning (default: readonly)",
+        )
+
+
+def _permissions_from_args(args: argparse.Namespace, config) -> Permissions:
+    mode = PermissionMode(getattr(args, "permission", PermissionMode.READONLY.value))
+    return Permissions(mode=mode, workspace_root=config.workspace_root)
 
 
 def _load_cli_config(args: argparse.Namespace):
@@ -70,10 +94,10 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     ask = sub.add_parser("ask", help="request a plan from the configured local model provider")
-    _add_model_args(ask)
+    _add_model_args(ask, planning=True)
 
     plan = sub.add_parser("plan", help="build a structured plan from the configured local model provider")
-    _add_model_args(plan)
+    _add_model_args(plan, planning=True)
 
     generate = sub.add_parser("generate", help="generate RealLang source from a local model provider")
     _add_model_args(generate)
@@ -148,12 +172,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command in {"ask", "plan"}:
         provider = _resolve_cli_provider(args, config)
-        outcome = run_agent(
-            task=args.task,
-            provider=provider,
-            mode=AgentMode.PLAN_ONLY,
-            config=config,
-        )
+        perms = _permissions_from_args(args, config)
+        try:
+            outcome = run_agent(
+                task=args.task,
+                provider=provider,
+                mode=AgentMode.PLAN_ONLY,
+                config=config,
+                permissions=perms,
+                include_context=args.include_context,
+                max_context_chars=args.max_context_chars,
+                brief=args.command == "ask",
+            )
+        except ProviderPlanError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
         print(outcome.message)
         return 0
 

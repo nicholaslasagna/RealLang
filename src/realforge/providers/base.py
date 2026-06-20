@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+from realforge.permissions import PermissionMode
 from realforge.planner import AgentPlan
 
 
@@ -12,6 +13,13 @@ class GenerationResult:
     content: str
     provider: str
     model: str
+
+
+@dataclass(frozen=True)
+class PlanRequest:
+    task: str
+    context: str | None = None
+    permission_mode: PermissionMode = PermissionMode.READONLY
 
 
 class ModelProvider(ABC):
@@ -28,7 +36,7 @@ class ModelProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def generate_plan(self, task: str) -> AgentPlan:
+    def generate_plan(self, request: PlanRequest) -> AgentPlan:
         raise NotImplementedError
 
     @abstractmethod

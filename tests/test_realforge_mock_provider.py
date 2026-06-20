@@ -1,13 +1,16 @@
 from realforge.config import default_config
+from realforge.permissions import PermissionMode
 from realforge.planner import mock_plan_for_task
 from realforge.providers import MockProvider, get_provider, resolve_provider
+from realforge.providers.base import PlanRequest
 
 
 def test_mock_provider_is_deterministic():
     provider = MockProvider()
     task = "fix E203 in examples/bad.real"
-    first = provider.generate_plan(task)
-    second = provider.generate_plan(task)
+    request = PlanRequest(task=task)
+    first = provider.generate_plan(request)
+    second = provider.generate_plan(request)
     assert first == second
     assert first.task == task
     assert len(first.steps) == 5
@@ -15,7 +18,8 @@ def test_mock_provider_is_deterministic():
 
 def test_mock_plan_matches_helper():
     task = "inspect hello.real"
-    assert MockProvider().generate_plan(task) == mock_plan_for_task(task)
+    request = PlanRequest(task=task)
+    assert MockProvider().generate_plan(request) == mock_plan_for_task(task)
 
 
 def test_get_provider_mock():

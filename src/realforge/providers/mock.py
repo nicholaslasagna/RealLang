@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from realforge.config import RealForgeConfig
 from realforge.planner import AgentPlan, mock_plan_for_task
-from realforge.providers.base import GenerationResult, ModelProvider
+from realforge.providers.base import GenerationResult, ModelProvider, PlanRequest
 
 
 class MockProvider(ModelProvider):
@@ -10,6 +10,7 @@ class MockProvider(ModelProvider):
 
     def __init__(self, config: RealForgeConfig | None = None) -> None:
         self._config = config
+        self.last_plan_request: PlanRequest | None = None
 
     @property
     def name(self) -> str:
@@ -19,8 +20,9 @@ class MockProvider(ModelProvider):
     def model_name(self) -> str:
         return "mock"
 
-    def generate_plan(self, task: str) -> AgentPlan:
-        return mock_plan_for_task(task)
+    def generate_plan(self, request: PlanRequest) -> AgentPlan:
+        self.last_plan_request = request
+        return mock_plan_for_task(request.task, context=request.context)
 
     def generate(self, task: str) -> GenerationResult:
         normalized = task.strip() or "(empty task)"

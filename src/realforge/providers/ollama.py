@@ -3,11 +3,11 @@ from __future__ import annotations
 from urllib.parse import urljoin
 
 from realforge.config import RealForgeConfig
-from realforge.providers.base import GenerationResult
 from realforge.planner import AgentPlan, parse_plan_response
-from realforge.providers.base import ModelProvider
+from realforge.providers.base import GenerationResult, ModelProvider, PlanRequest
+from realforge.errors import ProviderPlanError
 from realforge.providers.http_util import HTTPProviderError, post_json
-from realforge.providers.prompts import GENERATE_SYSTEM_PROMPT, PLAN_SYSTEM_PROMPT
+from realforge.providers.prompts import GENERATE_SYSTEM_PROMPT, PLAN_SYSTEM_PROMPT, build_plan_user_prompt
 
 
 class OllamaProvider(ModelProvider):
@@ -52,13 +52,24 @@ class OllamaProvider(ModelProvider):
             raise RuntimeError("Ollama returned an empty response")
         return content.strip()
 
-    def generate_plan(self, task: str) -> AgentPlan:
-        user = f"Create a repair plan for this RealLang task:\n{task}"
+    def generate_plan(self, request: PlanRequest) -> AgentPlan:
+        user = build_plan_user_prompt(
+            task=request.task,
+            context=request.context,
+            permission_mode=request.permission_mode,
+        )
         text = self._chat(PLAN_SYSTEM_PROMPT, user)
         try:
-            return parse_plan_response(task, text)
+            return parse_plan_response(
+                request.task,
+                text,
+                provider=self.name,
+                used_context=request.context is not None,
+            )
+        except ProviderPlanError:
+            raise
         except ValueError as err:
-            raise RuntimeError(f"failed to parse Ollama plan JSON: {err}") from err
+            raise ProviderPlanError(self.name, str(err), raw=text) from err
 
     def generate(self, task: str) -> GenerationResult:
         user = f"Generate RealLang source code for this task:\n{task}"

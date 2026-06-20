@@ -13,6 +13,18 @@ any cloud provider. Local models are configured through `.realforge.toml` (Ollam
 OpenAI-compatible local servers). The default `mock` provider is deterministic and
 requires no external services.
 
+## What RealForge 0.5 adds
+
+RealForge remains **experimental** and does not claim to outperform Codex, Claude Code,
+or Cursor yet. Version 0.5 adds **context-aware planning**:
+
+- `realforge plan --task "..." --include-context` — bounded workspace context + structured plan
+- `realforge ask --task "..." --include-context` — lighter user-facing planning output
+- Provider prompt contract with safety constraints, available commands, and JSON plan shape
+- Structured plans include `files_to_inspect`, `files_to_modify`, `commands_to_run`, `risks`, and `requires_write_permission`
+- Model output is **untrusted**; planning does not edit files or run commands
+- `--max-context-chars`, `--permission`, and `--provider mock` (CI-safe default)
+
 ## What RealForge 0.4 adds
 
 RealForge remains **experimental** and does not add autonomous editing in 0.4.
@@ -69,9 +81,10 @@ realforge repair path/to/bad.real --dry-run
 realforge repair path/to/bad.real --apply
 realforge repair path/to/bad.real --apply --keep-failed-repair
 
-# Plan from configured local provider (mock when no .realforge.toml)
-realforge ask --task "inspect hello.real diagnostics"
-realforge plan --task "inspect hello.real diagnostics"
+# Context-aware planning (read-only; does not edit files)
+realforge plan --task "explain hello.real" --include-context --provider mock
+realforge ask --task "summarize project" --include-context --provider mock
+realforge plan --task "..." --include-context --max-context-chars 8000 --permission readonly
 
 # Generate RealLang source without writing files
 realforge generate --task "hello world program" --dry-run

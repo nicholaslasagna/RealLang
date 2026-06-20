@@ -71,7 +71,8 @@ As of RealForge 0.3:
 - Ollama and OpenAI-compatible **local** providers are optional; tests use `MockProvider` only
 - workspace boundary enforcement, backup rotation, and post-apply rollback are implemented
 - workspace indexing, symbol tables, and bounded context bundles are available (`index`, `symbols`, `context`)
-- RealForge does not claim to outperform Codex, Claude Code, or Cursor yet
+- context-aware planning via `plan --include-context` and `ask --include-context` (planning is not editing)
+- MockProvider remains the CI-safe default; local providers are optional
 
 ## Current quality signals
 

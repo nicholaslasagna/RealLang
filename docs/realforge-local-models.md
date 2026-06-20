@@ -7,6 +7,10 @@ RealForge remains **experimental**. Local model adapters can plan and generate R
 source, but **autonomous file editing remains permission-gated**. RealForge does not
 claim to outperform Codex, Claude Code, or Cursor yet.
 
+Planning output is **untrusted**. RealForge 0.5 adds context-aware planning through
+`plan --include-context` and `ask --include-context`, but planning is not editing and
+does not execute model-proposed commands.
+
 ## Configuration file
 
 ### Ollama
