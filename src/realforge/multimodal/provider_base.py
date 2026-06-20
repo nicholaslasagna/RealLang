@@ -37,6 +37,67 @@ class VisionProviderOutput:
 
 
 @dataclass(frozen=True)
+class ImageUnderstandingProviderOutput:
+    detected_subjects: tuple[str, ...]
+    environment_notes: tuple[str, ...]
+    composition_notes: tuple[str, ...]
+    lighting_notes: tuple[str, ...]
+    color_palette_notes: tuple[str, ...]
+    material_notes: tuple[str, ...]
+    style_notes: tuple[str, ...]
+    mood_notes: tuple[str, ...]
+    gameplay_relevance: tuple[str, ...]
+    asset_opportunities: tuple[str, ...]
+    map_design_opportunities: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
+    confidence: float
+    semantic_analysis_performed: bool
+
+
+@dataclass(frozen=True)
+class ImageComparisonProviderOutput:
+    similarities: tuple[str, ...]
+    differences: tuple[str, ...]
+    style_consistency_notes: tuple[str, ...]
+    asset_pipeline_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
+    confidence: float
+
+
+@dataclass(frozen=True)
+class AssetBriefDraft:
+    name: str
+    category: str
+    purpose: str
+    silhouette: str
+    materials: tuple[str, ...]
+    scale_reference: str
+    style_notes: tuple[str, ...]
+    gameplay_constraints: tuple[str, ...]
+    engine_constraints: tuple[str, ...]
+    texture_requirements: tuple[str, ...]
+    lod_notes: tuple[str, ...]
+    collision_notes: tuple[str, ...]
+    animation_notes: tuple[str, ...]
+    validation_checklist: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ImageToAssetBriefProviderOutput:
+    asset_brief: AssetBriefDraft
+    inferred_constraints: tuple[str, ...]
+    engine_notes: tuple[str, ...]
+    modeling_notes: tuple[str, ...]
+    texture_notes: tuple[str, ...]
+    collision_notes: tuple[str, ...]
+    animation_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ImagePromptProviderOutput:
     prompt: str
     negative_prompt: str | None
@@ -122,3 +183,12 @@ class MultimodalProvider(ABC):
         prompt_spec: ImagePromptSpec,
     ) -> PromptPackProviderOutput:
         raise UnsupportedCapabilityError(self.name, "image prompt-pack planning")
+
+    def understand_image(self, request: VisionRequest) -> ImageUnderstandingProviderOutput:
+        raise UnsupportedCapabilityError(self.name, "rich image understanding")
+
+    def compare_images(self, request: VisionRequest) -> ImageComparisonProviderOutput:
+        raise UnsupportedCapabilityError(self.name, "image comparison")
+
+    def image_to_asset_brief(self, request: VisionRequest) -> ImageToAssetBriefProviderOutput:
+        raise UnsupportedCapabilityError(self.name, "image-to-asset-brief planning")

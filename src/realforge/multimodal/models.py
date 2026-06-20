@@ -4,6 +4,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from realforge.creative.models import AssetBrief
+
 
 @dataclass(frozen=True)
 class MultimodalCapabilities:
@@ -54,6 +56,71 @@ class VisionAnalysis:
     risks: tuple[str, ...]
     limitations: tuple[str, ...]
     confidence: float
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageUnderstandingReport:
+    id: str
+    created_at: str
+    provider: str
+    model: str | None
+    task: str
+    images: tuple[ImageInput, ...]
+    image_sha256_values: tuple[str, ...]
+    detected_subjects: tuple[str, ...]
+    environment_notes: tuple[str, ...]
+    composition_notes: tuple[str, ...]
+    lighting_notes: tuple[str, ...]
+    color_palette_notes: tuple[str, ...]
+    material_notes: tuple[str, ...]
+    style_notes: tuple[str, ...]
+    mood_notes: tuple[str, ...]
+    gameplay_relevance: tuple[str, ...]
+    asset_opportunities: tuple[str, ...]
+    map_design_opportunities: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
+    confidence: float
+    semantic_analysis_performed: bool
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageComparisonReport:
+    id: str
+    created_at: str
+    provider: str
+    model: str | None
+    task: str
+    images: tuple[ImageInput, ...]
+    image_sha256_values: tuple[str, ...]
+    similarities: tuple[str, ...]
+    differences: tuple[str, ...]
+    style_consistency_notes: tuple[str, ...]
+    asset_pipeline_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
+    confidence: float
+    untrusted: bool = True
+
+
+@dataclass(frozen=True)
+class ImageToAssetBriefReport:
+    id: str
+    created_at: str
+    provider: str
+    model: str | None
+    source_image_sha256: str
+    asset_brief: AssetBrief
+    inferred_constraints: tuple[str, ...]
+    engine_notes: tuple[str, ...]
+    modeling_notes: tuple[str, ...]
+    texture_notes: tuple[str, ...]
+    collision_notes: tuple[str, ...]
+    animation_notes: tuple[str, ...]
+    risks: tuple[str, ...]
+    limitations: tuple[str, ...]
     untrusted: bool = True
 
 

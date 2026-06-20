@@ -53,6 +53,9 @@ realforge settings
 realforge settings doctor
 realforge multimodal capabilities --provider mock
 realforge vision analyze --image references/concept.png --task "review image" --provider mock
+realforge vision understand --image references/concept.png --task "review creative and asset implications" --provider mock
+realforge vision compare --image references/a.png --image references/b.png --task "compare style consistency" --provider mock
+realforge vision asset-brief --image references/concept.png --task "plan an asset brief" --provider mock
 realforge image prompt --task "design a concept image" --provider mock
 realforge image job --task "plan a concept image workflow" --provider mock
 realforge image prompt-pack --task "build prompt variants" --provider mock
@@ -82,11 +85,16 @@ provider is added. See [creative planning](docs/realforge-creative.md) and
 RealForge 2.4 adds untrusted image job specs, prompt packs, reference boards, and
 iteration plans. These are JSON planning artifacts; no binary image-generation
 adapter exists. See [image workflows](docs/realforge-image-workflows.md).
+RealForge 2.5 expands provider-backed vision reports for creative review,
+comparison, and asset-brief planning. Mock mode performs no semantic recognition,
+and all reports remain untrusted. See
+[image understanding](docs/realforge-image-understanding.md).
 
 Related RealForge documents include
 [interaction and capabilities](docs/realforge-interaction.md),
 [multimodal providers](docs/realforge-multimodal.md),
 [vision reports](docs/realforge-vision.md),
+[image understanding](docs/realforge-image-understanding.md),
 [image-generation planning](docs/realforge-image-generation.md),
 [image workflows](docs/realforge-image-workflows.md),
 [research docs](docs/realforge-research.md), [cycle docs](docs/realforge-cycle.md),
@@ -203,6 +211,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge interaction and capabilities](docs/realforge-interaction.md)
 - [RealForge multimodal providers](docs/realforge-multimodal.md)
 - [RealForge vision reports](docs/realforge-vision.md)
+- [RealForge image understanding](docs/realforge-image-understanding.md)
 - [RealForge image-generation planning](docs/realforge-image-generation.md)
 - [RealForge image workflows](docs/realforge-image-workflows.md)
 - [RealForge creative planning](docs/realforge-creative.md)

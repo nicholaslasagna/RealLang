@@ -57,6 +57,7 @@ image task → ImageGenerationRequest(output_mode=prompt_spec) → optional prov
 | `multimodal/registry.py` | Mock and text-only adapter resolution/capability reporting |
 | `multimodal/image_inputs.py` | Workspace, format, hash, metadata, and size validation |
 | `multimodal/vision_report.py` | Capability-gated untrusted vision reports |
+| `multimodal/image_understanding.py` | Rich vision, comparison, and asset-brief report orchestration |
 | `multimodal/generation_report.py` | Prompt-spec-only image workflow reports |
 | `multimodal/image_outputs.py` | JSON serialization and bounded report storage |
 
@@ -78,6 +79,21 @@ planning artifacts. Reference files are hashed and never modified. Prompt hashes
 record the exact planned prompt fields, but do not prove that a future image model
 used them or authenticate any generated image. Saved-job iteration validates a
 bounded 12-character identifier and never rewrites the source job.
+
+## Image understanding adapter expansion (2.5)
+
+```text
+bounded image input(s) → VisionRequest → optional rich provider method
+                       → typed output validation → untrusted report
+                       → print or explicit JSON write
+```
+
+`multimodal/image_understanding.py` reuses the 2.3 image loader and provider
+limits for richer understanding, comparison, and asset-brief workflows. Provider
+methods are optional and fail unsupported by default. The mock implementation
+uses hashes, metadata, and task text only; it performs no semantic recognition.
+Image-to-asset reports embed the existing creative `AssetBrief` type without
+creating or importing an asset.
 
 ## Creative and engine-aware planning (2.1)
 
@@ -372,7 +388,7 @@ model provider → planner → tools → realc diagnostics → repair loop → t
 |-------|--------|------|
 | Provider | `providers/` | Local model adapters (`MockProvider` today; Ollama / OpenAI-compatible scaffolds) |
 | Capabilities | `capabilities.py`, `interaction.py`, `settings_surface.py` | Domain registry and future workbench interaction surfaces (2.2) |
-| Multimodal | `multimodal/` | Optional provider capabilities, bounded image inputs, and untrusted image workflow reports (2.3-2.4) |
+| Multimodal | `multimodal/` | Optional provider capabilities, bounded image inputs, and untrusted image workflow reports (2.3-2.5) |
 | Planner | `planner.py` | Turn provider output into structured `AgentPlan` steps |
 | Self-improve | `self_improve.py`, `self_improvement_plan.py` | Dry-run improvement proposals and optional untrusted patch text |
 | Experiment | `experiment.py`, `experiment_report.py`, `git_utils.py` | Isolated patch evaluation and validation reports |

@@ -44,3 +44,16 @@ RealForge 2.4 composes the prompt-spec provider path into image job specs and
 prompt packs. It also adds local reference boards and saved-job iteration plans.
 The mock provider supplies deterministic planning fields for tests; it does not
 call an image model. See [Image workflows](realforge-image-workflows.md).
+
+## Image understanding in 2.5
+
+RealForge 2.5 extends the optional vision provider contract with rich image
+understanding, multi-image comparison, and image-to-asset-brief methods. The
+request path reuses bounded `ImageInput` validation and provider image-count and
+size limits.
+
+The mock adapter returns deterministic structured reports but performs no
+semantic recognition. Hash differences are not visual differences, and mock
+asset briefs are task-derived scaffolds. No live provider, OCR library, image
+decoder dependency, or network access is required. See
+[Image understanding](realforge-image-understanding.md).

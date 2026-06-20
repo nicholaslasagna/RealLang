@@ -35,6 +35,12 @@ def build_slash_registry(*, staff_mode_enabled: bool) -> SlashCommandRegistry:
         ),
         SlashCommand("/creative", 'realforge creative brief --task "<task>"', "Create a planning brief.", "UNTRUSTED"),
         SlashCommand("/image", 'realforge image job --task "<task>"', "Build an image workflow job.", "UNTRUSTED"),
+        SlashCommand(
+            "/vision",
+            'realforge vision understand --image <workspace-path> --task "<task>"',
+            "Build a rich untrusted image report.",
+            "UNTRUSTED",
+        ),
         SlashCommand("/engine", "realforge engine scan --path <project>", "Scan an engine project without mutation.", "DRY RUN"),
         SlashCommand("/eval", "realforge eval --provider mock --suite smoke", "Run provider evaluation checks.", "BENCHMARK"),
         SlashCommand("/bench", "realforge bench-tasks --provider mock --suite smoke", "Run repeatable task benchmarks.", "BENCHMARK"),

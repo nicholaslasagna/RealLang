@@ -48,6 +48,11 @@ packs, metadata-only reference boards, and iteration plans. It does not alter
 the 2.1 creative artifact formats or generate binary assets. See
 [Image workflows](realforge-image-workflows.md).
 
+RealForge 2.5 adds untrusted provider-backed image understanding, comparison,
+and image-to-asset-brief reports. These can structure future creative review and
+game/asset planning, but mock mode performs no semantic recognition and creates
+no production asset. See [Image understanding](realforge-image-understanding.md).
+
 ## Safety boundary
 
 - Creative artifacts are plans, not evidence that a game or asset exists.

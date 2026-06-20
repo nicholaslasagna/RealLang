@@ -68,3 +68,11 @@ ownership, or validate output quality.
 - No binary image output path or live image-generation adapter exists in 2.4.
 - Human review is required before using these plans with any future model or
   asset pipeline.
+
+## Vision workflow integration
+
+RealForge 2.5 adds separate `vision understand`, `vision compare`, and
+`vision asset-brief` reports. They can supply review material for future image
+jobs and asset pipelines, but 2.5 does not automatically connect or trust those
+reports. Mock vision performs no semantic analysis. See
+[Image understanding](realforge-image-understanding.md).

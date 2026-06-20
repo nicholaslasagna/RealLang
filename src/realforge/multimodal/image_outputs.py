@@ -10,6 +10,9 @@ from realforge.workspace import assert_path_in_workspace
 MULTIMODAL_CATEGORIES = frozenset(
     {
         "vision",
+        "vision_understanding",
+        "vision_comparisons",
+        "vision_asset_briefs",
         "image_prompts",
         "image_jobs",
         "prompt_packs",

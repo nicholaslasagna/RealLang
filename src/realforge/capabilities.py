@@ -115,11 +115,16 @@ def build_capability_registry(config: RealForgeConfig) -> CapabilityRegistry:
             domain="vision",
             status="experimental",
             safety_level="untrusted-provider-output",
-            commands=("realforge vision analyze --image <workspace-path> --task <task>",),
+            commands=(
+                "realforge vision analyze --image <workspace-path> --task <task>",
+                "realforge vision understand --image <workspace-path> --task <task>",
+                "realforge vision compare --image <path> --image <path> --task <task>",
+                "realforge vision asset-brief --image <workspace-path> --task <task>",
+            ),
             writes_files=True,
             requires_staff=False,
             requires_network=False,
-            description="Optional provider-backed vision reports; mock mode performs no semantic recognition.",
+            description="Simple and rich provider-backed image reports; mock mode performs no semantic recognition.",
             next_suggested_command="realforge multimodal capabilities",
         ),
         Capability(

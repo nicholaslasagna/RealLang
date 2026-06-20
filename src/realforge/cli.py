@@ -76,6 +76,14 @@ from realforge.multimodal.image_workflow import (
     format_reference_board,
     load_image_iteration_plan,
 )
+from realforge.multimodal.image_understanding import (
+    compare_images,
+    format_image_asset_brief,
+    format_image_comparison,
+    format_image_understanding,
+    image_to_asset_brief,
+    understand_image,
+)
 from realforge.multimodal.provider_base import MultimodalProviderError
 from realforge.multimodal.registry import (
     format_multimodal_capabilities,
@@ -754,7 +762,7 @@ def main(argv: list[str] | None = None) -> int:
         help="workspace containing .realforge.toml (default: current directory)",
     )
 
-    vision = sub.add_parser("vision", help="run untrusted provider-backed vision reports (2.3)")
+    vision = sub.add_parser("vision", help="run untrusted provider-backed vision reports (2.5)")
     vision_sub = vision.add_subparsers(dest="vision_command", required=True)
     vision_analyze = vision_sub.add_parser("analyze", help="analyze one workspace-bounded image")
     vision_analyze.add_argument("--image", type=Path, required=True, help="image inside workspace")
@@ -769,6 +777,79 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="workspace containing .realforge.toml (default: current directory)",
     )
+
+    vision_understand = vision_sub.add_parser(
+        "understand",
+        help="build a rich untrusted image-understanding report",
+    )
+    vision_understand.add_argument(
+        "--image",
+        type=Path,
+        required=True,
+        help="image inside workspace",
+    )
+    vision_understand.add_argument("--task", required=True, help="image-understanding task")
+    vision_understand.add_argument(
+        "--provider",
+        default=None,
+        help="multimodal provider (default: mock)",
+    )
+    vision_understand.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/vision_understanding/",
+    )
+    vision_understand.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    vision_understand.add_argument("--config-root", type=Path, default=None)
+
+    vision_compare = vision_sub.add_parser(
+        "compare",
+        help="compare two or more bounded images through an untrusted provider",
+    )
+    vision_compare.add_argument(
+        "--image",
+        type=Path,
+        action="append",
+        required=True,
+        help="image inside workspace; repeat at least twice",
+    )
+    vision_compare.add_argument("--task", required=True, help="image-comparison task")
+    vision_compare.add_argument(
+        "--provider",
+        default=None,
+        help="multimodal provider (default: mock)",
+    )
+    vision_compare.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/vision_comparisons/",
+    )
+    vision_compare.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    vision_compare.add_argument("--config-root", type=Path, default=None)
+
+    vision_asset_brief = vision_sub.add_parser(
+        "asset-brief",
+        help="build an untrusted AssetBrief-style plan from one image",
+    )
+    vision_asset_brief.add_argument(
+        "--image",
+        type=Path,
+        required=True,
+        help="image inside workspace",
+    )
+    vision_asset_brief.add_argument("--task", required=True, help="asset-brief planning task")
+    vision_asset_brief.add_argument(
+        "--provider",
+        default=None,
+        help="multimodal provider (default: mock)",
+    )
+    vision_asset_brief.add_argument(
+        "--write",
+        action="store_true",
+        help="write JSON under .realforge/multimodal/vision_asset_briefs/",
+    )
+    vision_asset_brief.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    vision_asset_brief.add_argument("--config-root", type=Path, default=None)
 
     image = sub.add_parser("image", help="build image-generation workflow artifacts (2.4)")
     image_sub = image.add_subparsers(dest="image_command", required=True)
@@ -1137,24 +1218,54 @@ def main(argv: list[str] | None = None) -> int:
         workspace_root = config.workspace_root or Path.cwd()
         provider = _resolve_cli_multimodal_provider(args, config)
         try:
-            report = analyze_image(
-                args.image,
-                args.task,
-                provider,
-                workspace_root=workspace_root,
-                context=args.context,
-            )
+            if args.vision_command == "analyze":
+                report = analyze_image(
+                    args.image,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                    context=args.context,
+                )
+                category = "vision"
+                formatted = format_vision_analysis(report)
+            elif args.vision_command == "understand":
+                report = understand_image(
+                    args.image,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                category = "vision_understanding"
+                formatted = format_image_understanding(report)
+            elif args.vision_command == "compare":
+                report = compare_images(
+                    tuple(args.image),
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                category = "vision_comparisons"
+                formatted = format_image_comparison(report)
+            else:
+                report = image_to_asset_brief(
+                    args.image,
+                    args.task,
+                    provider,
+                    workspace_root=workspace_root,
+                )
+                category = "vision_asset_briefs"
+                formatted = format_image_asset_brief(report)
             written = (
-                write_multimodal_report(report, workspace_root, category="vision")
+                write_multimodal_report(report, workspace_root, category=category)
                 if args.write
                 else None
             )
         except (ImageInputError, MultimodalProviderError, ValueError, WorkspaceError) as err:
             print(f"error: {err}", file=sys.stderr)
             return 1
-        print(format_report_json(report) if args.json else format_vision_analysis(report))
+        print(format_report_json(report) if args.json else formatted)
         if written is not None:
-            print(f"written: {written}")
+            print(f"written: {written}", file=sys.stderr if args.json else sys.stdout)
         return 0
 
     if args.command == "image":

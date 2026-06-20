@@ -26,6 +26,19 @@ Provider, research, patch, plan, and generated artifact output remains untrusted
 until validated. Commands default to read-only or dry-run behavior, and no feature
 may silently apply, merge, or commit changes.
 
+## What RealForge 2.5 adds
+
+RealForge 2.5 expands the **untrusted image-understanding foundation**:
+
+- `vision understand` creates a richer creative, gameplay, asset, and map-planning report.
+- `vision compare` creates a structured report for two or more bounded images.
+- `vision asset-brief` embeds the existing `AssetBrief` schema in an image-linked report.
+- Existing `vision analyze` remains the simpler report path.
+
+Mock mode performs no semantic image recognition and reports confidence `0.0`.
+No OCR, live vision server, network access, image mutation, or binary generation
+is required. See [Image understanding](realforge-image-understanding.md).
+
 ## What RealForge 2.4 adds
 
 RealForge 2.4 adds an **image-generation workflow planner** on the 2.3
@@ -428,6 +441,11 @@ realforge multimodal capabilities --provider mock
 realforge vision analyze --image references/concept.png --task "review image" --provider mock
 realforge image prompt --task "design a concept image" --provider mock
 
+# Rich vision reports (2.5; mock performs no semantic recognition)
+realforge vision understand --image references/concept.png --task "review image" --provider mock
+realforge vision compare --image references/a.png --image references/b.png --task "compare references" --provider mock
+realforge vision asset-brief --image references/concept.png --task "plan an asset brief" --provider mock
+
 # Image workflow planning (2.4; no binary generation)
 realforge image job --task "plan a concept image workflow" --provider mock
 realforge image prompt-pack --task "build prompt variants" --provider mock
@@ -538,7 +556,7 @@ src/realforge/
   capabilities.py        capability domain registry and safety metadata (2.2)
   interaction.py         slash-command grammar for future clients (2.2)
   settings_surface.py    effective settings and safety doctor reports (2.2)
-  multimodal/            vision interfaces and image workflow planning (2.3-2.4)
+  multimodal/            vision interfaces and image workflow planning (2.3-2.5)
   creative/              game/map/asset schemas, image metadata, engine scan/plans (2.1)
   index/                 workspace scan, symbols, context builder
   self_improve.py        dry-run self-improvement orchestration (0.6)
@@ -564,7 +582,7 @@ Planned follow-up milestones, subject to separate tests and review:
 - 2.2 interaction model, capability registry, and settings surfaces (implemented)
 - 2.3 multimodal provider interfaces for optional text, vision, image, and embedding adapters (implemented)
 - 2.4 image-generation workflow planner with provenance metadata (implemented)
-- 2.5 optional vision/image-understanding adapter with untrusted semantic reports
+- 2.5 optional vision/image-understanding adapter foundation with untrusted reports (implemented; mock-first)
 - 2.6 Unreal/Blender engine and asset pipeline planning
 - 2.7 general agent skill benchmark suite across code, creative, image, engine, and safety domains
 - 2.8 local model tournament and capability-domain leaderboards
@@ -579,6 +597,7 @@ These are plans, not implemented capabilities or performance claims.
 - [Interaction and capabilities (2.2)](realforge-interaction.md)
 - [Multimodal providers (2.3)](realforge-multimodal.md)
 - [Vision reports (2.3)](realforge-vision.md)
+- [Image understanding (2.5)](realforge-image-understanding.md)
 - [Image-generation planning (2.3)](realforge-image-generation.md)
 - [Image workflows (2.4)](realforge-image-workflows.md)
 - [Creative planning (2.1)](realforge-creative.md)

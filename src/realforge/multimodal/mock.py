@@ -8,8 +8,12 @@ from realforge.multimodal.models import (
     VisionRequest,
 )
 from realforge.multimodal.provider_base import (
+    AssetBriefDraft,
+    ImageComparisonProviderOutput,
     ImageJobProviderOutput,
     ImagePromptProviderOutput,
+    ImageToAssetBriefProviderOutput,
+    ImageUnderstandingProviderOutput,
     ImageWorkflowRequest,
     MultimodalProvider,
     PromptPackProviderOutput,
@@ -60,6 +64,89 @@ class MockMultimodalProvider(MultimodalProvider):
                 "Only trusted ImageInput hash and metadata descriptors were supplied.",
             ),
             confidence=0.0,
+        )
+
+    def understand_image(self, request: VisionRequest) -> ImageUnderstandingProviderOutput:
+        return ImageUnderstandingProviderOutput(
+            detected_subjects=(),
+            environment_notes=("No environment inference was performed by the mock provider.",),
+            composition_notes=("No composition inference was performed by the mock provider.",),
+            lighting_notes=("No lighting inference was performed by the mock provider.",),
+            color_palette_notes=("No color-palette inference was performed by the mock provider.",),
+            material_notes=("No material inference was performed by the mock provider.",),
+            style_notes=("No style inference was performed by the mock provider.",),
+            mood_notes=("No mood inference was performed by the mock provider.",),
+            gameplay_relevance=(f"Task context recorded without image inference: {request.task}",),
+            asset_opportunities=("No asset opportunities were inferred from image content.",),
+            map_design_opportunities=("No map opportunities were inferred from image content.",),
+            risks=("Do not interpret deterministic mock output as image understanding.",),
+            limitations=(
+                "MockMultimodalProvider reads no semantic image content.",
+                "Only validated image hashes and metadata are available to this mock workflow.",
+                "No OCR, object detection, or visual model was used.",
+            ),
+            confidence=0.0,
+            semantic_analysis_performed=False,
+        )
+
+    def compare_images(self, request: VisionRequest) -> ImageComparisonProviderOutput:
+        hashes = tuple(image.sha256 for image in request.images)
+        unique_hashes = len(set(hashes))
+        return ImageComparisonProviderOutput(
+            similarities=(
+                "All inputs passed the same bounded image validation and metadata workflow.",
+            ),
+            differences=(
+                f"The inputs contain {unique_hashes} distinct SHA-256 value(s).",
+                "No visual-content differences were assessed.",
+            ),
+            style_consistency_notes=(
+                "Style consistency was not assessed by the mock provider.",
+            ),
+            asset_pipeline_notes=(
+                "Use recorded hashes to track references before any future pipeline review.",
+            ),
+            risks=("Hash comparison is not semantic image comparison.",),
+            limitations=(
+                "MockMultimodalProvider does not compare visual content.",
+                "No OCR, feature extraction, or visual model was used.",
+            ),
+            confidence=0.0,
+        )
+
+    def image_to_asset_brief(self, request: VisionRequest) -> ImageToAssetBriefProviderOutput:
+        return ImageToAssetBriefProviderOutput(
+            asset_brief=AssetBriefDraft(
+                name="Mock image-derived asset brief",
+                category="unclassified reference",
+                purpose=f"Planning response for task: {request.task}",
+                silhouette="Not inferred from image content by the mock provider.",
+                materials=("Materials require manual review or a configured vision provider.",),
+                scale_reference="Scale was not inferred from image content.",
+                style_notes=("Style was not inferred from image content.",),
+                gameplay_constraints=("Gameplay constraints require human definition.",),
+                engine_constraints=("Engine constraints require project-specific validation.",),
+                texture_requirements=("Texture requirements require manual review.",),
+                lod_notes=("LOD strategy requires geometry and engine context.",),
+                collision_notes=("Collision requirements were not inferred.",),
+                animation_notes=("Animation requirements were not inferred.",),
+                validation_checklist=(
+                    "Review source image and task manually.",
+                    "Replace mock assumptions before production use.",
+                    "Validate scale, materials, collision, and animation in the target engine.",
+                ),
+            ),
+            inferred_constraints=("No constraints were inferred from image content.",),
+            engine_notes=("No engine-ready asset or import plan was created.",),
+            modeling_notes=("No geometry was inferred or generated.",),
+            texture_notes=("No texture was inferred or generated.",),
+            collision_notes=("No collision geometry was inferred or generated.",),
+            animation_notes=("No rig or animation was inferred or generated.",),
+            risks=("The mock asset brief is task-derived scaffolding, not visual analysis.",),
+            limitations=(
+                "MockMultimodalProvider does not inspect semantic image content.",
+                "Human review or a configured vision provider is required.",
+            ),
         )
 
     def build_image_prompt(self, request: ImageGenerationRequest) -> ImagePromptProviderOutput:

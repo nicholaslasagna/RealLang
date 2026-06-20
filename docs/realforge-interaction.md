@@ -95,3 +95,8 @@ RealForge 2.4 expands the image capability entry with `image job`,
 `image prompt-pack`, `image references`, and `image iterate`. The `/image`
 grammar maps to `image job`; it still executes nothing by itself. Every 2.4
 artifact is untrusted and binary image generation remains unimplemented.
+
+RealForge 2.5 expands the vision capability entry with `vision understand`,
+`vision compare`, and `vision asset-brief`. The `/vision` grammar maps to the
+rich understanding command but executes nothing by itself. Mock mode performs
+no semantic recognition, and all provider reports remain untrusted.
