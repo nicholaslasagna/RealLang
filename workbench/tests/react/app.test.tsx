@@ -17,6 +17,7 @@ function resetStore() {
     operationStatus: "Idle · ready",
     lastCommand: "none · prototype ready",
     stagedTask: "",
+    composedActionId: "repair-diagnostic-dry-run",
     importRaw: "",
     importType: "auto",
     importPreview: null,

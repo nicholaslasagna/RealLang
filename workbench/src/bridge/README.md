@@ -1,4 +1,4 @@
-# Local bridge boundary (Workbench 0.10)
+# Local bridge boundary (Workbench 0.12)
 
 Strict integration layer between the React UI and RealForge CLI / Tauri runtime on
 **macOS and Windows**. The UI never spawns subprocesses directly in web mode.
@@ -21,6 +21,14 @@ Strict integration layer between the React UI and RealForge CLI / Tauri runtime 
 **Desktop (0.10):** `getUpdateStatus()`, `checkForUpdate()` with typed `UpdateConfiguration`,
 env-based readiness detection, and honest `not_configured` / `ready_to_check` states.
 
+**Composer (0.11):** high-level actions can preview safety metadata. Only the
+existing `loadReadOnlyReportSource(sourceId)` path can load now; proposed argv is
+display-only and never crosses the bridge.
+
+**Approval check (0.12):** `runApprovedDryRunAction()` accepts one fixed action
+ID and an acknowledgement boolean. Rust owns the fixed `reallang.cli` argv and
+`examples/hello.real` target. Output remains untrusted.
+
 **Web:** explicit `unsupported_web` / `unavailable_web` fallbacks — no execution, no network.
 
 ## Rules (non-negotiable)
@@ -34,6 +42,8 @@ env-based readiness detection, and honest `not_configured` / `ready_to_check` st
 | Updater | No network until `tauri-plugin-updater` + signing infra wired |
 | Output untrusted | All JSON through report import adapters |
 | Write commands | Deferred until approval-gated milestone |
+| Composer | Source IDs only for live loads; all other actions are preview-only |
+| Approved check | One fixed no-write action; no user path or argv |
 
 ## Frontend API
 
@@ -46,7 +56,8 @@ import {
   checkBridgeHealth,
   getUpdateStatus,
   checkForUpdate,
-  loadReadOnlyReportSource
+  loadReadOnlyReportSource,
+  runApprovedDryRunAction
 } from "../bridge";
 ```
 

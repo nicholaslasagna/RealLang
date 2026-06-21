@@ -1,10 +1,45 @@
-# RealForge Workbench — Tauri desktop shell (0.6–0.10)
+# RealForge Workbench - Tauri desktop shell (0.6-0.12)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
 **0.8** adds **workspace resolution**, **onboarding UI**, and **bridge health**.
 **0.9** adds **persisted workspace selection** and an **update center scaffold**.
 **0.10** adds **signed-update pipeline readiness** and **workspace invalidation polish**.
+**0.11** adds a frontend **safe command composer preview** without adding Tauri
+commands or widening the read-only allowlist.
+**0.12** adds exactly one threat-modeled, approval-gated, no-write validation
+action. It does not enable a write bridge.
+
+## What 0.12 includes
+
+| Area | Status |
+|------|--------|
+| Approved action ID | `realc-check-hello-example` only |
+| Fixed command | `realc examples/hello.real --check` |
+| User path / argv input | **No** |
+| Explicit UI acknowledgement | Yes |
+| Canonical workspace containment | Yes |
+| Timeout and stdout/stderr caps | Yes |
+| Output trust | **UNTRUSTED** |
+| Writes / network / shell | **No** |
+| Apply / scheduler / update / Git | **No** |
+
+See [approval bridge threat model](./approval-bridge-threat-model.md).
+
+## What 0.11 includes
+
+| Area | Status |
+|------|--------|
+| Typed high-level action catalog | Yes — frontend review metadata |
+| Slash-command safety detail | Yes |
+| Display-only proposed argv tokens | Yes — never sent to IPC |
+| Existing read-only source loads | Yes — same 3 source IDs |
+| Web execution | **No** |
+| Write / apply / scheduler execution | **No** |
+| New Tauri IPC commands | **No** |
+| Shell plugin / arbitrary argv | **No** |
+
+See [command-composer.md](./command-composer.md) for the action model and boundary.
 
 ## What 0.10 includes
 
@@ -89,8 +124,11 @@ trust rules as paste/import.
 
 ```text
 workbench/
+  src/composer/                  → typed action catalog + bridge availability
+  src/features/composer/         → preview UI; no process or IPC primitives
   src/bridge/                    → frontend bridge (web fallback + Tauri invoke)
   src-tauri/src/bridge/
+    approval.rs                  → one approved fixed no-write validation action
     allowlist.rs                 → Rust-side source IDs + fixed argv
     workspace.rs                 → repo discovery, validation, session override
     health.rs                    → bridge health + optional probe
@@ -172,6 +210,7 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `get_update_status` | Update center metadata (`not_configured` until signed) |
 | `check_for_update` | No-op check when updater not configured |
 | `load_readonly_report_source` | Run one allowlisted read-only CLI command |
+| `run_approved_dry_run_action` | Run the one fixed check after acknowledgement |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -196,7 +235,8 @@ import {
   selectWorkspaceDirectory,
   getUpdateStatus,
   checkForUpdate,
-  loadReadOnlyReportSource
+  loadReadOnlyReportSource,
+  runApprovedDryRunAction
 } from "../bridge";
 ```
 
@@ -226,12 +266,16 @@ dev bridge.
 - Denied subcommands list blocks write/apply/scheduler paths in allowlist validation
 - Imported JSON remains untrusted; staff gating unchanged
 - No approval-gated writes until a future milestone
+- Composer argv tokens are display-only and cannot be submitted to IPC
+- Composer live loads are restricted to the unchanged three-source allowlist
+- The approved action accepts only its fixed ID and `approvalAcknowledged`; Rust
+  owns the target, module, and argv
 - Health probe uses the same allowlisted `capabilities --json` path as report load
 
 ## Future milestones
 
 - Signed Tauri updater (endpoints + pubkey + CI artifacts)
 - Approval-gated write bridge (separate milestone)
-- Safe command composer UI (read-only preview first)
+- Controlled workspace-relative input for the same check, after a separate path threat review
 - Additional JSON-verified read-only sources (eval, bench, leaderboard)
 - Installers, signing, notarization

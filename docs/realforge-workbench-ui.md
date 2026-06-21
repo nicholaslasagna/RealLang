@@ -27,6 +27,32 @@ Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
 (fixed `argv`, no shell strings), with future installer packaging and code
 signing/notarization.
 
+## Workbench 0.12 - one approved no-write check
+
+- Exactly one executable desktop action: `realc-check-hello-example`
+- Fixed command: `realc examples/hello.real --check`
+- Explicit acknowledgement required before each run
+- Fixed target and argv in Rust; no arbitrary path, command, or arguments
+- Canonical workspace containment, minimal environment, timeout, and output caps
+- Inert result with exit code, duration, capped stdout/stderr, and UNTRUSTED label
+- No write, patch, proposal, scheduler, update, commit, merge, or network path
+- Web mode remains execution-free
+
+See the [approval bridge threat model](../workbench/docs/approval-bridge-threat-model.md).
+
+## Workbench 0.11 — safe command composer preview
+
+- Typed high-level action catalog with explicit safety and availability metadata
+- Workbench action preview, future requirements, risks, and next safe step
+- Slash palette detail view with **Compose preview** instead of direct execution
+- Desktop **Load now** only for `capabilities`, `slash`, and `settings-doctor`
+- Loaded output still passes through the untrusted report import pipeline
+- Write, apply, scheduler, update install, commit, and merge actions remain disabled
+- No arbitrary shell text, arbitrary argv, new IPC command, or web execution
+
+See [command composer](../workbench/docs/command-composer.md) and
+[desktop shell](../workbench/docs/desktop-shell.md).
+
 ## Workbench 0.10 — signed update pipeline readiness
 
 - Typed `UpdateConfiguration` model on `get_update_status` IPC
@@ -110,6 +136,8 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 3. Manual CLI bridge catalog + Node helper (0.4)
 4. **React/TS desktop app migration** (0.5) — **Phase 1 complete**: Vite + React shell, all 14 screens
 5. **Tauri shell + packaging** (0.6–0.10) — read-only IPC, workspace persistence, update readiness
-6. Future: `tauri-plugin-updater` wiring, approval-gated local bridge (write paths, safe command composer)
+6. **Safe command composer preview** (0.11) — typed intent, safety review, no write execution
+7. **One approved no-write check** (0.12) - fixed action, explicit approval, untrusted output
+8. Future: controlled path input; write bridge and signed updater require separate reviews
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

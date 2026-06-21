@@ -1,3 +1,5 @@
+import type { CommandActionId } from "../composer/action-model";
+
 export type WorkbenchScreen =
   | "home"
   | "workbench"
@@ -73,6 +75,7 @@ export interface WorkbenchState {
   operationStatus: string;
   lastCommand: string;
   stagedTask: string;
+  composedActionId: CommandActionId;
   importRaw: string;
   importType: string;
   importPreview: ImportPreview | null;

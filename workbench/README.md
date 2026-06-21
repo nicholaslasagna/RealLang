@@ -9,6 +9,12 @@ in desktop mode; **0.8** adds workspace onboarding, resolution, and bridge healt
 (web workflow unchanged, output still untrusted). **0.10** adds signed-update
 pipeline readiness (env-based config detection), release checklist UI, and saved
 workspace invalidation polish.
+**0.11** adds a typed safe command composer: structured action previews, slash
+command safety details, and runtime-aware loading for the same three existing
+read-only source IDs. It adds no write-capable IPC.
+**0.12** adds exactly one approval-gated desktop validation action:
+`realc examples/hello.real --check`. Its action ID, target, and argv are fixed in
+Rust; it writes no files, requires no network, and returns untrusted inert output.
 
 Historical milestones:
 
@@ -25,6 +31,8 @@ Historical milestones:
 - **0.8** Workspace onboarding, resolution, and bridge health (desktop only)
 - **0.9** Persisted workspace + update center scaffold (signed updater deferred)
 - **0.10** Update pipeline readiness + workspace invalidation polish (updater plugin still deferred)
+- **0.11** Safe command composer preview (three existing read-only loads; all writes disabled)
+- **0.12** One threat-modeled, approval-gated, fixed no-write validation action
 
 ## Run (React app — default)
 
@@ -77,18 +85,24 @@ npm run check      # fixtures + syntax + tsc + tauri icon gen
 npm test           # node tests + vitest React tests
 npm run build      # production dist/ (offline bundle)
 npm run build:data # legacy bundle + Node CLI allowlist artifacts
+```
 
-## Architecture (0.10)
+## Architecture (0.12)
 
 ```text
 src/bridge/                       → typed frontend bridge (web fallback + Tauri IPC)
+src/composer/                     → typed action catalog + runtime availability
+src/features/composer/            → action preview, inspector, and intent controls
 src-tauri/src/bridge/
+  approval.rs                     → one fixed approved check, timeout/caps, no writes
   workspace_store.rs              → persisted workspace.json in app config dir
   update.rs                       → update readiness (env config, no network)
   workspace.rs                    → repo discovery, validation, saved priority
   health.rs                       → bridge health + optional capabilities probe
   allowlist.rs / spawn.rs         → read-only CLI IPC (unchanged from 0.7)
 docs/update-pipeline.md           → signed updater future setup
+docs/command-composer.md          → 0.11 action and execution boundary
+docs/approval-bridge-threat-model.md → 0.12 threat model and rejected inputs
 ```
 
 **Safety unchanged:** web mode never executes CLI. Workspace writes only go to app
@@ -183,8 +197,12 @@ image, vision, Unreal, Blender, asset, and engine-pipeline report families.
 ## Safety boundary
 
 - All built-in data is static and mocked.
-- Command palette selections update display state only.
-- Workbench submission stages text locally in browser memory only.
+- Command palette selections compose typed action previews with explicit safety metadata.
+- Workbench submission stages reviewed context locally in browser memory only.
+- Proposed argv is fixed display metadata, never an executable browser command.
+- Only `capabilities`, `slash`, and `settings-doctor` can load through desktop IPC.
+- One additional desktop action ID, `realc-check-hello-example`, can run only
+  after explicit approval; it has no path or argv input and cannot write.
 - Imported report JSON is parsed in-browser only, **always** treated as
   untrusted regardless of its own fields, and never executed or applied.
   Suggested commands are display-only; patch/update reports are review-only with
@@ -194,19 +212,23 @@ image, vision, Unreal, Blender, asset, and engine-pipeline report families.
 - Staff mode is a visual preview; the backend remains `STAFF OFF`. Staff gating
   for imported reports is enforced by the preview layer (report type + Workbench
   staff state); a payload cannot lower it.
-- No fetch, WebSocket, command execution, file write, apply, commit, or merge
-  integration exists.
+- No browser network, arbitrary command, write, apply, commit, or merge path exists.
+  Desktop command execution remains limited to the three fixed read-only sources.
 - Future CLI/report JSON integration must preserve the same explicit trust and
   approval boundaries.
 
-The planned integration order is pasted/local JSON report preview (0.3), manual
-read-only CLI catalog (0.4), React/TypeScript app shell (0.5), Tauri desktop
-shell (0.6+), then a separately reviewed safe command composer and
-approval-gated local bridge.
+The integration order is pasted/local JSON preview (0.3), manual read-only CLI
+catalog (0.4), React/TypeScript app shell (0.5), Tauri desktop shell (0.6+),
+safe command composer preview (0.11), then a separately reviewed approval-gated
+bridge.
 
-## Next milestone (1.0+)
+## Next milestone (0.13+)
 
-0.10 added update pipeline readiness and workspace invalidation polish. Next:
-**wire `tauri-plugin-updater` with CI signing**, **approval-gated write bridge**,
-safe command composer UI, and additional JSON-verified read-only sources.
-See [docs/update-pipeline.md](docs/update-pipeline.md) and [docs/desktop-shell.md](docs/desktop-shell.md).
+0.12 proves approval with one fixed no-write check. A 0.13 milestone should keep
+the same command and add only a threat-modeled workspace-relative `.real` file
+selector with canonical containment, symlink rejection, and input size limits.
+Write actions and signed updater work remain separate. See
+[docs/command-composer.md](docs/command-composer.md),
+[docs/approval-bridge-threat-model.md](docs/approval-bridge-threat-model.md),
+[docs/update-pipeline.md](docs/update-pipeline.md), and
+[docs/desktop-shell.md](docs/desktop-shell.md).

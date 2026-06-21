@@ -20,6 +20,8 @@ export interface BridgeCapabilities {
   shellExecution: boolean;
   cliSpawn: boolean;
   approvalGatedWrites: boolean;
+  approvalGatedDryRun: boolean;
+  approvedDryRunActionCount: number;
   metadataOnly: boolean;
 }
 
@@ -99,6 +101,32 @@ export interface LoadedReadOnlyReport {
 
 export type LoadReadOnlyReportResult =
   | { ok: true; data: LoadedReadOnlyReport }
+  | { ok: false; error: BridgeError };
+
+export type ApprovedDryRunActionId = "realc-check-hello-example";
+
+export interface ApprovedDryRunInput {
+  approvalAcknowledged: boolean;
+}
+
+export interface ApprovedDryRunExecution {
+  actionId: ApprovedDryRunActionId;
+  title: string;
+  commandSummary: string;
+  workspacePath: string;
+  exitCode: number;
+  passed: boolean;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  writesFiles: false;
+  networkRequired: false;
+  untrusted: true;
+  safetyLabels: string[];
+}
+
+export type ApprovedDryRunResult =
+  | { ok: true; data: ApprovedDryRunExecution }
   | { ok: false; error: BridgeError };
 
 export type BridgeResult<T> =

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { loadReadOnlyReportSource } from "../bridge";
+import { getActionDefinition, getActionForSlashCommand, type CommandActionId } from "../composer/action-model";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
 import type { ImportPreview, WorkbenchScreen, WorkbenchState } from "./types";
 
@@ -12,13 +13,14 @@ type WorkbenchActions = {
   closePalette: () => void;
   setCommandQuery: (query: string) => void;
   previewCommand: (command: string) => void;
+  composeActionPreview: (actionId: CommandActionId) => void;
   safePlaceholder: () => void;
   setImportRaw: (raw: string) => void;
   setImportType: (type: string) => void;
   previewImport: () => void;
   clearImport: () => void;
   loadSample: (sampleId: string) => void;
-  loadDesktopReport: (sourceId: string) => Promise<void>;
+  loadDesktopReport: (sourceId: string) => Promise<boolean>;
   copyCliCommand: (sourceId: string) => void;
   stageTask: (task: string) => void;
   showToast: (message: string, tone?: "safe" | "warn") => void;
@@ -35,6 +37,7 @@ const initialState: WorkbenchState = {
   operationStatus: "Idle · ready",
   lastCommand: "none · prototype ready",
   stagedTask: "",
+  composedActionId: "repair-diagnostic-dry-run",
   importRaw: "",
   importType: "auto",
   importPreview: null,
@@ -90,13 +93,35 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
   setCommandQuery: (query) => set({ commandQuery: query }),
 
   previewCommand: (command) => {
+    const action = getActionForSlashCommand(command);
     set({
-      lastCommand: `${command} · previewed`,
-      operationStatus: "Ready · no command executed",
+      screen: action ? "workbench" : get().screen,
+      composedActionId: action?.id ?? get().composedActionId,
+      lastCommand: action ? `${action.title} · composed` : `${command} · previewed`,
+      operationStatus: action ? "Action composed · preview only · no execution" : "Ready · no command executed",
       paletteOpen: false,
       commandQuery: ""
     });
-    get().showToast(`${command} · preview only · no backend action`);
+    get().showToast(
+      action ? `${action.title} · preview only · no backend action` : `${command} · preview only · no backend action`
+    );
+  },
+
+  composeActionPreview: (actionId) => {
+    const action = getActionDefinition(actionId);
+    if (!action) {
+      get().showToast("Unknown composer action", "warn");
+      return;
+    }
+    set({
+      screen: "workbench",
+      composedActionId: actionId,
+      paletteOpen: false,
+      commandQuery: "",
+      lastCommand: `${action.title} · composed`,
+      operationStatus: "Action composed · preview only · no execution"
+    });
+    get().showToast(`${action.title} · preview only · no backend action`);
   },
 
   safePlaceholder: () => {
@@ -167,7 +192,7 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
         desktopLoadError: result.error.message
       });
       get().showToast(result.error.message, "warn");
-      return;
+      return false;
     }
     const { data } = result;
     const importPreview = computePreview(data.stdoutJson, "auto", get().staffPreview);
@@ -181,6 +206,7 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
       lastCommand: `desktop load · ${data.source.displayCommand}`
     });
     get().showToast(`Loaded ${data.source.label} via desktop bridge · untrusted preview`);
+    return true;
   },
 
   copyCliCommand: (sourceId) => {

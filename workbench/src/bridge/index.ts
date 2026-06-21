@@ -12,6 +12,7 @@ export {
   listBridgeCapabilities,
   listReadOnlyReportSources,
   loadReadOnlyReportSource,
+  runApprovedDryRunAction,
   runtimeModeLabel,
   saveWorkspaceSelection,
   selectWorkspaceDirectory
@@ -24,6 +25,10 @@ export {
   workspaceStatusTone
 } from "./workspace-labels";
 export type {
+  ApprovedDryRunActionId,
+  ApprovedDryRunExecution,
+  ApprovedDryRunInput,
+  ApprovedDryRunResult,
   BridgeCapabilities,
   BridgeError,
   BridgeHealth,

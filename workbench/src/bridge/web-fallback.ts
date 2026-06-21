@@ -1,5 +1,8 @@
 import { cliReportSources } from "../data/cli/cli-report-sources";
 import type {
+  ApprovedDryRunActionId,
+  ApprovedDryRunInput,
+  ApprovedDryRunResult,
   BridgeCapabilities,
   BridgeHealth,
   LoadReadOnlyReportResult,
@@ -13,7 +16,7 @@ import type {
   WorkspaceResolution
 } from "./types";
 
-const WORKBENCH_VERSION = "0.10";
+const WORKBENCH_VERSION = "0.12";
 
 const WEB_UPDATE_CONFIGURATION: UpdateConfiguration = {
   configured: false,
@@ -47,7 +50,22 @@ export function webBridgeCapabilities(): BridgeCapabilities {
     shellExecution: false,
     cliSpawn: false,
     approvalGatedWrites: false,
+    approvalGatedDryRun: false,
+    approvedDryRunActionCount: 0,
     metadataOnly: true
+  };
+}
+
+export function webRunApprovedDryRunAction(
+  _actionId: ApprovedDryRunActionId,
+  _input: ApprovedDryRunInput
+): ApprovedDryRunResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Approved local checks are available in the desktop shell only. Web mode never executes commands."
+    }
   };
 }
 

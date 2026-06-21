@@ -1,9 +1,10 @@
-//! Workbench bridge — metadata IPC (0.6), read-only CLI (0.7), workspace health (0.8), persistence (0.9), update readiness (0.10).
+//! Workbench bridge - metadata IPC, read-only reports, and one approved no-write check.
 //!
 //! Uses `std::process::Command` with fixed argv arrays only. No shell, no shell plugin,
 //! no user-supplied command text, no write/apply/scheduler commands.
 
 mod allowlist;
+mod approval;
 mod health;
 mod resolve_python;
 mod spawn;
@@ -13,13 +14,17 @@ mod workspace;
 mod workspace_store;
 
 use allowlist::list_source_metadata;
+use approval::run_approved_dry_run_action as spawn_approved_dry_run;
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
 use serde::Serialize;
 use spawn::load_readonly_report_source as spawn_load;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, FilePath};
-use types::{LoadReadOnlyReportResult, ReadOnlyReportSourceMeta, WorkspacePaths};
+use types::{
+    ApprovedDryRunInput, ApprovedDryRunResult, LoadReadOnlyReportResult,
+    ReadOnlyReportSourceMeta, WorkspacePaths,
+};
 use update::{check_for_update as run_update_check, get_update_status as read_update_status, UpdateCheckResult, UpdateStatus};
 use workspace::{
     get_workspace_resolution as resolve_workspace, is_valid_repo_root, set_session_workspace,
@@ -30,7 +35,7 @@ use workspace_store::{
     save_workspace, SavedWorkspace,
 };
 
-const WORKBENCH_VERSION: &str = "0.10";
+const WORKBENCH_VERSION: &str = "0.12";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -53,6 +58,8 @@ pub struct BridgeCapabilities {
     pub shell_execution: bool,
     pub cli_spawn: bool,
     pub approval_gated_writes: bool,
+    pub approval_gated_dry_run: bool,
+    pub approved_dry_run_action_count: usize,
     pub metadata_only: bool,
 }
 
@@ -84,6 +91,8 @@ pub fn get_bridge_capabilities() -> BridgeCapabilities {
         shell_execution: false,
         cli_spawn: true,
         approval_gated_writes: false,
+        approval_gated_dry_run: true,
+        approved_dry_run_action_count: approval::APPROVED_DRY_RUN_ACTIONS.len(),
         metadata_only: false,
     }
 }
@@ -193,6 +202,14 @@ pub fn load_readonly_report_source(source_id: String) -> LoadReadOnlyReportResul
     spawn_load(&source_id)
 }
 
+#[tauri::command(rename_all = "camelCase")]
+pub fn run_approved_dry_run_action(
+    action_id: String,
+    input: ApprovedDryRunInput,
+) -> ApprovedDryRunResult {
+    spawn_approved_dry_run(&action_id, input)
+}
+
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {
     match path {
         FilePath::Path(path_buf) => path_buf,
@@ -217,6 +234,8 @@ mod tests {
         assert!(!caps.shell_execution);
         assert!(!caps.writes);
         assert!(!caps.network);
+        assert!(caps.approval_gated_dry_run);
+        assert_eq!(caps.approved_dry_run_action_count, 1);
         assert_eq!(caps.bridge_mode, "read-only");
     }
 

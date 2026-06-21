@@ -1,6 +1,12 @@
-import { FormEvent } from "react";
+import { useState } from "react";
+import { composeActionPlan } from "../../composer/action-model";
+import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
-import { Badge, Button, Icon } from "../../components/primitives";
+import { Badge, Icon } from "../../components/primitives";
+import { ActionInspector } from "../composer/ActionInspector";
+import { ActionPreviewCard } from "../composer/ActionPreviewCard";
+import { ApprovedDryRunPanel } from "../composer/ApprovedDryRunPanel";
+import { ComposerDock } from "../composer/ComposerDock";
 
 function PlanCard() {
   const steps = [
@@ -101,75 +107,23 @@ function ValidationCard() {
   );
 }
 
-function Inspector() {
-  return (
-    <aside className="inspector" aria-label="Task inspector">
-      <header>
-        <Icon name="panel-right" />
-        <b>CONTEXT BUNDLE</b>
-      </header>
-      <section>
-        <h3>FILES REFERENCED</h3>
-        {[
-          ["examples/looptest.real", "1.2k"],
-          ["docs/language-semantics.md", "8.4k"],
-          ["tests/test_i32_wrapping_runtime.py", "3.1k"]
-        ].map(([name, size]) => (
-          <div key={name} className="file-row">
-            <Icon name="file-code-2" />
-            <code>{name}</code>
-            <small>{size}</small>
-          </div>
-        ))}
-      </section>
-      <section>
-        <h3>VALIDATION COMMANDS</h3>
-        <code className="command-line">realc --check</code>
-        <code className="command-line">pytest -q tests/test_i32_wrapping_runtime.py</code>
-      </section>
-      <section>
-        <h3>RISKS</h3>
-        <p className="risk-note">
-          <Icon name="triangle-alert" />
-          Generated patch details are illustrative and not valid RealLang syntax.
-        </p>
-      </section>
-      <section className="proposal-facts">
-        <div>
-          <span>Proposal status</span>
-          <b>PENDING</b>
-        </div>
-        <div>
-          <span>Update bundle</span>
-          <b>NONE</b>
-        </div>
-        <div>
-          <span>Patch hash</span>
-          <code>a3f7…91c</code>
-        </div>
-      </section>
-      <section>
-        <h3>NEXT SAFE COMMAND</h3>
-        <code className="next-command">realforge propose-patch --task … --dry-run</code>
-      </section>
-    </aside>
-  );
-}
-
 export function WorkbenchScreen() {
   const stagedTask = useWorkbenchStore((s) => s.stagedTask);
-  const openPalette = useWorkbenchStore((s) => s.openPalette);
-  const stageTask = useWorkbenchStore((s) => s.stageTask);
-  const showToast = useWorkbenchStore((s) => s.showToast);
+  const actionId = useWorkbenchStore((s) => s.composedActionId);
+  const staffPreview = useWorkbenchStore((s) => s.staffPreview);
+  const loadStatus = useWorkbenchStore((s) => s.desktopLoadStatus);
+  const loadingSourceId = useWorkbenchStore((s) => s.desktopLoadSourceId);
+  const loadDesktopReport = useWorkbenchStore((s) => s.loadDesktopReport);
+  const navigate = useWorkbenchStore((s) => s.navigate);
+  const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
+  const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
+  const runtime = useComposerRuntime(staffPreview);
+  const action = composeActionPlan(actionId, runtime);
+  const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const input = (event.currentTarget.elements.namedItem("task-input") as HTMLTextAreaElement | null)?.value.trim() || "";
-    if (!input) {
-      showToast("Enter a task to stage a mock thread", "warn");
-      return;
-    }
-    stageTask(input);
+  const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
+    const loaded = await loadDesktopReport(sourceId);
+    if (loaded) navigate("reports");
   };
 
   return (
@@ -177,13 +131,13 @@ export function WorkbenchScreen() {
       <section className="workbench-main">
         <header className="workbench-header">
           <div>
-            <p className="eyebrow">WORKBENCH · CODE</p>
-            <h1>Dry-run repair plan</h1>
-            <span>Review the plan, proposal, and evidence before any future apply step.</span>
+            <p className="eyebrow">WORKBENCH · SAFE COMMAND COMPOSER</p>
+            <h1>{action.title}</h1>
+            <span>Compose structured intent, inspect the safety boundary, then choose the next safe step.</span>
           </div>
           <div>
-            <Badge label="DRY RUN" tone="blue" />
-            <Badge label="NO WRITES" tone="green" />
+            <Badge label="PREVIEW ONLY" tone="blue" />
+            <Badge label={action.writesFiles ? "WRITES DISABLED" : "NO WRITES"} tone={action.writesFiles ? "violet" : "green"} />
           </div>
         </header>
         <div className="thread-scroll">
@@ -191,43 +145,53 @@ export function WorkbenchScreen() {
             {stagedTask ? (
               <div className="thread-message thread-message--user">
                 {stagedTask}
-                <small>staged locally · not executed</small>
+                <small>reviewed context · session only · not executed</small>
               </div>
             ) : null}
-            <div className="thread-message thread-message--user">
-              Plan a fix for the i32 overflow diagnostic in <code>examples/looptest.real</code> and validate it. Dry run only.
-            </div>
-            <div className="agent-label">
-              <span className="mini-mark" />
-              <b>RealForge</b>
-              <small>mock · planner</small>
-              <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
-            </div>
-            <PlanCard />
-            <PatchCard />
-            <ValidationCard />
+            <ActionPreviewCard
+              action={action}
+              bridgeLoading={runtime.loading}
+              bridgeError={runtime.error}
+              loadStatus={loadStatus}
+              loadingSourceId={loadingSourceId}
+              onLoad={loadReadOnlyAction}
+              onOpenReports={() => navigate("reports")}
+              onRequestApproval={() => setApprovalActionId(action.id)}
+              onOpenSetup={() => setSettingsSection("workspace")}
+            />
+            {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
+              <ApprovedDryRunPanel
+                action={action}
+                workspacePath={runtime.workspacePath}
+                onClose={() => setApprovalActionId(null)}
+              />
+            ) : null}
+            {showsRepairEvidence ? (
+              <>
+                <div className="agent-label">
+                  <span className="mini-mark" />
+                  <b>RealForge</b>
+                  <small>mock · planner</small>
+                  <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
+                </div>
+                <PlanCard />
+                <PatchCard />
+                <ValidationCard />
+              </>
+            ) : (
+              <article className="composer-boundary-card">
+                <Icon name="shield-check" />
+                <div>
+                  <b>Composition boundary active</b>
+                  <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
+                </div>
+              </article>
+            )}
           </div>
         </div>
-        <form className="composer" id="workbench-form" onSubmit={onSubmit}>
-          <div className="composer-context">
-            <span>@RealLang</span>
-            <span>12 files</span>
-            <span>realc diagnostics</span>
-            <small>Provider output remains untrusted</small>
-          </div>
-          <div className="composer-box">
-            <Button label="Slash" iconName="slash" variant="slash" onClick={() => openPalette()} />
-            <label className="sr-only" htmlFor="task-input">
-              Workbench task
-            </label>
-            <textarea id="task-input" name="task-input" rows={1} placeholder="Describe a task, or type / for commands" />
-            <button className="send-button" type="submit" aria-label="Stage mock task">
-              <Icon name="arrow-up" />
-            </button>
-          </div>
-        </form>
+        <ComposerDock action={action} />
       </section>
-      <Inspector />
+      <ActionInspector action={action} runtime={runtime.runtime} bridgeHealthy={runtime.bridgeHealthy} />
     </div>
   );
 }

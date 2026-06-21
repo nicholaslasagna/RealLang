@@ -1,5 +1,8 @@
 import { isDesktopRuntime } from "./detect-runtime";
 import type {
+  ApprovedDryRunActionId,
+  ApprovedDryRunInput,
+  ApprovedDryRunResult,
   BridgeCapabilities,
   BridgeHealth,
   LoadReadOnlyReportResult,
@@ -16,6 +19,7 @@ import {
   webBridgeHealth,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
+  webRunApprovedDryRunAction,
   webRuntimeInfo,
   webSavedWorkspace,
   webUpdateCheckResult,
@@ -64,6 +68,23 @@ export async function loadReadOnlyReportSource(sourceId: string): Promise<LoadRe
   if (!isDesktopRuntime()) return webLoadReadOnlyReportSource(sourceId);
   try {
     return await invokeDesktop<LoadReadOnlyReportResult>("load_readonly_report_source", { sourceId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      error: { code: "ipc_failed", message }
+    };
+  }
+}
+
+/** Run the one fixed, approval-gated, no-write validation action (desktop only). */
+export async function runApprovedDryRunAction(
+  actionId: ApprovedDryRunActionId,
+  input: ApprovedDryRunInput
+): Promise<ApprovedDryRunResult> {
+  if (!isDesktopRuntime()) return webRunApprovedDryRunAction(actionId, input);
+  try {
+    return await invokeDesktop<ApprovedDryRunResult>("run_approved_dry_run_action", { actionId, input });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {

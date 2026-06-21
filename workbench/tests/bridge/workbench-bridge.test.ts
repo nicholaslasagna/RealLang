@@ -7,12 +7,14 @@ import {
   listBridgeCapabilities,
   listReadOnlyReportSources,
   loadReadOnlyReportSource,
+  runApprovedDryRunAction,
   runtimeModeLabel
 } from "../../src/bridge/workbench-bridge";
 import {
   webBridgeCapabilities,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
+  webRunApprovedDryRunAction,
   webRuntimeInfo
 } from "../../src/bridge/web-fallback";
 
@@ -37,7 +39,18 @@ describe("workbench bridge client (web mode)", () => {
     expect(caps.shellExecution).toBe(false);
     expect(caps.writes).toBe(false);
     expect(caps.network).toBe(false);
+    expect(caps.approvalGatedDryRun).toBe(false);
+    expect(caps.approvedDryRunActionCount).toBe(0);
     expect(bridgeModeLabel(caps)).toBe("Metadata only");
+  });
+
+  it("refuses approved local checks in web mode", async () => {
+    const result = await runApprovedDryRunAction("realc-check-hello-example", {
+      approvalAcknowledged: true
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("unsupported_web");
+    expect(webRunApprovedDryRunAction("realc-check-hello-example", { approvalAcknowledged: true }).ok).toBe(false);
   });
 
   it("refuses CLI load in web mode with explicit unsupported result", async () => {
