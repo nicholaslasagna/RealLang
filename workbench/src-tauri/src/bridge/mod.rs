@@ -7,6 +7,7 @@ mod allowlist;
 mod approval;
 mod health;
 mod resolve_python;
+mod security_scan;
 mod spawn;
 mod types;
 mod update;
@@ -16,6 +17,7 @@ mod workspace_store;
 use allowlist::list_source_metadata;
 use approval::run_approved_dry_run_action as spawn_approved_dry_run;
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
+use security_scan::{list_scan_source_meta, run_security_scan as spawn_security_scan};
 use serde::Serialize;
 use spawn::load_readonly_report_source as spawn_load;
 use std::path::PathBuf;
@@ -23,7 +25,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use types::{
     ApprovedDryRunInput, ApprovedDryRunResult, LoadReadOnlyReportResult,
-    ReadOnlyReportSourceMeta, WorkspacePaths,
+    ReadOnlyReportSourceMeta, SecurityScanResult, SecurityScanSourceMeta, WorkspacePaths,
 };
 use update::{check_for_update as run_update_check, get_update_status as read_update_status, UpdateCheckResult, UpdateStatus};
 use workspace::{
@@ -203,6 +205,16 @@ pub fn load_readonly_report_source(source_id: String) -> LoadReadOnlyReportResul
 }
 
 #[tauri::command(rename_all = "camelCase")]
+pub fn list_security_scan_sources() -> Vec<SecurityScanSourceMeta> {
+    list_scan_source_meta()
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn run_security_scan_source(source_id: String) -> SecurityScanResult {
+    spawn_security_scan(&source_id)
+}
+
+#[tauri::command(rename_all = "camelCase")]
 pub fn run_approved_dry_run_action(
     action_id: String,
     input: ApprovedDryRunInput,
@@ -286,6 +298,7 @@ mod tests {
 
     #[test]
     fn rejects_invalid_workspace_save() {
+        let _serialize = workspace_store::lock_config_dir_for_test();
         let stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -305,6 +318,7 @@ mod tests {
 
     #[test]
     fn workspace_config_stays_under_app_config_dir() {
+        let _serialize = workspace_store::lock_config_dir_for_test();
         let stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

@@ -3,6 +3,7 @@ import { CapabilitiesScreen } from "../features/capabilities/CapabilitiesScreen"
 import { BenchmarksScreen } from "../features/benchmarks/BenchmarksScreen";
 import { HomeScreen } from "../features/home/HomeScreen";
 import { ReportsScreen } from "../features/reports/ReportsScreen";
+import { SecurityScreen } from "../features/security/SecurityScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
 import { CodeScreen, ResearchScreen } from "../features/studio/DomainScreens";
 import { StudioScreen } from "../features/studio/StudioScreen";
@@ -33,6 +34,8 @@ export function MainRouter() {
       return <BenchmarksScreen />;
     case "reports":
       return <ReportsScreen />;
+    case "security":
+      return <SecurityScreen />;
     case "updates":
       return <UpdatesScreen />;
     case "settings":

@@ -10,6 +10,20 @@ const CONFIG_FILE: &str = "workspace.json";
 
 static CONFIG_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
 
+// Test-only serialization lock. The process-global CONFIG_DIR is shared across
+// all tests, so tests that set it (via init_config_dir) must run one at a time to
+// avoid racing each other under the default parallel `cargo test`. Production code
+// never touches this; `check:tauri` runs with --test-threads=1 regardless.
+#[cfg(test)]
+pub(crate) static CONFIG_DIR_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+#[cfg(test)]
+pub(crate) fn lock_config_dir_for_test() -> std::sync::MutexGuard<'static, ()> {
+    CONFIG_DIR_TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SavedWorkspace {
@@ -110,6 +124,7 @@ mod tests {
 
     #[test]
     fn saves_and_loads_workspace_under_config_dir() {
+        let _serialize = lock_config_dir_for_test();
         let dir = temp_config_dir("save");
         init_config_dir(dir.clone());
         let _ = clear_saved_workspace();
@@ -126,6 +141,7 @@ mod tests {
 
     #[test]
     fn clears_saved_workspace() {
+        let _serialize = lock_config_dir_for_test();
         let dir = temp_config_dir("clear");
         init_config_dir(dir.clone());
         let repo = dir.join("mock-repo");

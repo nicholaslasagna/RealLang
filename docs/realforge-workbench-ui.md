@@ -27,6 +27,44 @@ Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
 (fixed `argv`, no shell strings), with future installer packaging and code
 signing/notarization.
 
+## Workbench 0.14 - read-only security scan bridge
+
+- New narrowly allowlisted **security scan bridge**: desktop-only IPC
+  `run_security_scan_source` / `list_security_scan_sources`
+- Allowed sources (fixed argv, source ID only): `npm-audit-json`
+  (`npm audit --json`), `cargo-tree` (`cargo tree`), `cargo-tree-glib`
+  (`cargo tree -i glib --target x86_64-unknown-linux-gnu`)
+- No shell, no arbitrary args, install/update/fix tokens rejected, `env_clear` +
+  minimal passthrough, 60 s timeout, 1 MiB/64 KiB output caps
+- Output is untrusted; npm audit JSON maps into live `SecurityFinding`s
+  (`trustedSource: false`); cargo tree is dependency evidence, not vulnerability
+  truth; the glib advisory stays **blocked** (scanning does not resolve it)
+- `npm audit` may query the npm registry (network) and is labeled **MAY REQUIRE
+  NETWORK** even though the posture is NETWORK OFF — shown honestly
+- Web mode refuses scans (`unsupported_web`); no browser `fetch`
+- No remediation, no lockfile/manifest/source mutation; "Plan fix" stays
+  preview-only. `cargo audit` / `npm outdated` / `cargo update` are deferred.
+
+See the [scan bridge threat model](../workbench/docs/security-scan-bridge-threat-model.md).
+
+## Workbench 0.13 - Security Center and vulnerability triage
+
+- New **Security** screen: posture hero, findings list, detail inspector, and
+  preview-only fix planning
+- Typed `SecurityFinding` / `SecurityScanSummary` / `SecurityFixPlan` models with
+  local fixtures for the real advisories
+- esbuild advisory shown **RESOLVED**; glib advisory shown **BLOCKED UPSTREAM** and
+  never marked fixed or hidden
+- "Plan fix" / "Review validation" / "Create tracking plan" compose a preview-only
+  plan that is untrusted, approval-required, and writes no files
+- No automatic fixes, no dependency-file edits from the UI, no tool execution, no
+  new write/IPC path, no shell, no browser network
+- Read-only scan catalog (`npm audit`, `cargo tree`, `cargo audit`) is display-only
+  and marked NOT EXECUTED; deep-review areas are marked FUTURE
+
+See the [Security Center](../workbench/docs/security-center.md) and
+[dependency security notes](../workbench/docs/security-dependencies.md).
+
 ## Workbench 0.12 - one approved no-write check
 
 - Exactly one executable desktop action: `realc-check-hello-example`
@@ -138,6 +176,8 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 5. **Tauri shell + packaging** (0.6–0.10) — read-only IPC, workspace persistence, update readiness
 6. **Safe command composer preview** (0.11) — typed intent, safety review, no write execution
 7. **One approved no-write check** (0.12) - fixed action, explicit approval, untrusted output
-8. Future: controlled path input; write bridge and signed updater require separate reviews
+8. **Security Center + vulnerability triage** (0.13) - honest findings, preview-only fix plans, no auto-fix
+9. **Read-only security scan bridge** (0.14) - allowlisted npm audit / cargo tree; untrusted output, no remediation
+10. Future: controlled path input; write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

@@ -37,7 +37,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "happy-dom": "^20.10.6",
     "playwright": "^1.58.2",
     "typescript": "^6.0.3",

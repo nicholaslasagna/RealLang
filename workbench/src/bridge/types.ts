@@ -188,3 +188,35 @@ export interface UpdateCheckResult {
   latestVersion: string | null;
   releaseNotes: string | null;
 }
+
+/** Metadata for one allowlisted read-only security scan source (no argv in IPC). */
+export interface SecurityScanSourceMeta {
+  id: string;
+  label: string;
+  description: string;
+  displayCommand: string;
+  ecosystem: string;
+  outputFormat: "json" | "text";
+  requiresNetwork: boolean;
+  readOnly: true;
+}
+
+export interface SecurityScanExecution {
+  source: SecurityScanSourceMeta;
+  commandSummary: string;
+  cwd: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  outputFormat: "json" | "text";
+  stdoutTruncated: boolean;
+  durationMs: number;
+  writesFiles: false;
+  networkUsed: boolean;
+  untrusted: true;
+  safetyLabels: string[];
+}
+
+export type SecurityScanResult =
+  | { ok: true; data: SecurityScanExecution }
+  | { ok: false; error: BridgeError };

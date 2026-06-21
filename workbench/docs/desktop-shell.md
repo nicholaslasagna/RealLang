@@ -210,10 +210,21 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `get_update_status` | Update center metadata (`not_configured` until signed) |
 | `check_for_update` | No-op check when updater not configured |
 | `load_readonly_report_source` | Run one allowlisted read-only CLI command |
+| `list_security_scan_sources` | Read-only scan source metadata (0.14; no argv over IPC) |
+| `run_security_scan_source` | Run one allowlisted read-only security scan (0.14) |
 | `run_approved_dry_run_action` | Run the one fixed check after acknowledgement |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
+
+`run_security_scan_source` (0.14) accepts **only** `sourceId`. Rust validates against a
+fixed scan allowlist (`security_scan.rs`) — programs limited to `{npm, cargo}`, fixed
+argv arrays, install/update/fix tokens rejected, `env_clear` + minimal passthrough, 60 s
+timeout, 1 MiB/64 KiB output caps, output marked untrusted, no writes, no remediation.
+Allowed: `npm-audit-json` (cwd `workbench/`, **may use the network**), `cargo-tree` and
+`cargo-tree-glib` (cwd `workbench/src-tauri/`, dependency evidence). npm audit's non-zero
+"vulnerabilities found" exit is reported, not treated as an error. See the
+[scan bridge threat model](security-scan-bridge-threat-model.md).
 
 Structured errors: `unknown_source`, `executable_not_found`, `timeout`,
 `output_too_large`, `invalid_json`, `non_zero_exit`, `spawn_failed`.

@@ -9,6 +9,8 @@ import type {
   ReadOnlyReportSourceMeta,
   RuntimeInfo,
   SavedWorkspace,
+  SecurityScanResult,
+  SecurityScanSourceMeta,
   UpdateCheckResult,
   UpdateStatus,
   WorkspacePaths,
@@ -17,9 +19,11 @@ import type {
 import {
   webBridgeCapabilities,
   webBridgeHealth,
+  webListSecurityScanSources,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webRunSecurityScanSource,
   webRuntimeInfo,
   webSavedWorkspace,
   webUpdateCheckResult,
@@ -74,6 +78,31 @@ export async function loadReadOnlyReportSource(sourceId: string): Promise<LoadRe
       ok: false,
       error: { code: "ipc_failed", message }
     };
+  }
+}
+
+/** Allowlisted read-only security scan source catalog (source IDs only). */
+export async function listSecurityScanSources(): Promise<SecurityScanSourceMeta[]> {
+  if (!isDesktopRuntime()) return webListSecurityScanSources();
+  try {
+    return await invokeDesktop<SecurityScanSourceMeta[]>("list_security_scan_sources");
+  } catch {
+    return webListSecurityScanSources();
+  }
+}
+
+/**
+ * Run one allowlisted read-only security scan by source ID (desktop only).
+ * Source ID only — never argv, never shell. Output is untrusted; nothing is
+ * written and no remediation is performed.
+ */
+export async function runSecurityScanSource(sourceId: string): Promise<SecurityScanResult> {
+  if (!isDesktopRuntime()) return webRunSecurityScanSource(sourceId);
+  try {
+    return await invokeDesktop<SecurityScanResult>("run_security_scan_source", { sourceId });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: { code: "ipc_failed", message } };
   }
 }
 

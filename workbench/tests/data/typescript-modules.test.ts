@@ -12,7 +12,7 @@ describe("TypeScript data modules", () => {
     expect(capability.data.capabilities.length).toBeGreaterThan(0);
     const models = createFixtureViewModels(fixtureBundle, { staffMode: false });
     expect(models.capabilities.length).toBeGreaterThan(0);
-    expect(getWorkbenchData().navigation.length).toBe(14);
+    expect(getWorkbenchData().navigation.length).toBe(15);
   });
 
   it("preserves import trust downgrade regression", () => {

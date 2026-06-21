@@ -15,6 +15,17 @@ read-only source IDs. It adds no write-capable IPC.
 **0.12** adds exactly one approval-gated desktop validation action:
 `realc examples/hello.real --check`. Its action ID, target, and argv are fixed in
 Rust; it writes no files, requires no network, and returns untrusted inert output.
+**0.13** adds a **Security Center** — vulnerability triage, typed security finding
+models, real-advisory fixtures, and **preview-only** fix planning. It makes no
+changes: no auto-fix, no dependency edits from the UI, no tool execution, no new
+write/IPC path. esbuild is shown resolved; glib remains **blocked upstream** and
+is never marked fixed. See [docs/security-center.md](docs/security-center.md).
+**0.14** adds a narrowly allowlisted **read-only security scan bridge**: desktop-only
+`npm audit --json` / `cargo tree` / `cargo tree -i glib` with fixed argv, no shell,
+no arbitrary args, timeout/output caps, and untrusted output mapped into live
+findings/evidence. No remediation, no lockfile/manifest mutation; `npm audit` may use
+the network and is labeled accordingly. See
+[docs/security-scan-bridge-threat-model.md](docs/security-scan-bridge-threat-model.md).
 
 Historical milestones:
 
@@ -33,6 +44,26 @@ Historical milestones:
 - **0.10** Update pipeline readiness + workspace invalidation polish (updater plugin still deferred)
 - **0.11** Safe command composer preview (three existing read-only loads; all writes disabled)
 - **0.12** One threat-modeled, approval-gated, fixed no-write validation action
+- **0.13** Security Center + vulnerability triage (preview-only fix plans; no auto-fix, no dependency edits)
+- **0.14** Read-only security scan bridge (allowlisted `npm audit`/`cargo tree`; untrusted output, no remediation)
+
+## Toolchain and dependency security
+
+- **Node.js:** developed and validated on **Node 22** (npm 10). Vite 8 (Rolldown)
+  and Vitest 4 require a current Node LTS — **Node 18 is end-of-life and not
+  supported** by this toolchain. Use Node 20.19+ or 22.12+.
+- **Rust:** the desktop shell requires recent stable Rust (validated on 1.92).
+- Dependency advisories and their status are tracked in
+  [docs/security-dependencies.md](docs/security-dependencies.md):
+  - **esbuild** dev-server file-read advisory — **resolved** (devDependency bumped
+    to `^0.28.1`; `npm audit` reports 0 vulnerabilities).
+  - **glib `<0.20`** Rust soundness advisory — **blocked upstream** by Tauri 2.11's
+    GTK3 (gtk-rs 0.18) Linux webview stack; Linux-only exposure, tracked for a
+    future Tauri bump.
+- The **Security Center** screen (0.13) surfaces these advisories with severity,
+  exposure, affected files, and **preview-only** fix plans. It never modifies
+  dependency files, runs scanners, or applies changes. See
+  [docs/security-center.md](docs/security-center.md).
 
 ## Run (React app — default)
 

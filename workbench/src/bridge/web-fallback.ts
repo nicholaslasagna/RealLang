@@ -1,4 +1,5 @@
 import { cliReportSources } from "../data/cli/cli-report-sources";
+import { SECURITY_SCAN_CATALOG } from "../data/security/security-model";
 import type {
   ApprovedDryRunActionId,
   ApprovedDryRunInput,
@@ -9,6 +10,8 @@ import type {
   ReadOnlyReportSourceMeta,
   RuntimeInfo,
   SavedWorkspace,
+  SecurityScanResult,
+  SecurityScanSourceMeta,
   UpdateCheckResult,
   UpdateConfiguration,
   UpdateStatus,
@@ -65,6 +68,21 @@ export function webRunApprovedDryRunAction(
     error: {
       code: "unsupported_web",
       message: "Approved local checks are available in the desktop shell only. Web mode never executes commands."
+    }
+  };
+}
+
+export function webListSecurityScanSources(): SecurityScanSourceMeta[] {
+  return SECURITY_SCAN_CATALOG.map((source) => ({ ...source }));
+}
+
+export function webRunSecurityScanSource(_sourceId: string): SecurityScanResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message:
+        "Security scans run in the desktop shell only. Web mode never executes commands — copy the command and run it manually."
     }
   };
 }

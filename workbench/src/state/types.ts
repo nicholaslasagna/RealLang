@@ -13,6 +13,7 @@ export type WorkbenchScreen =
   | "assets"
   | "benchmarks"
   | "reports"
+  | "security"
   | "updates"
   | "settings";
 

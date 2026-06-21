@@ -73,6 +73,7 @@ const navigation: readonly NavigationItem[] = Object.freeze([
   { id: "assets", label: "Assets", icon: "package", group: "Studio" },
   { id: "benchmarks", label: "Benchmarks", icon: "gauge", group: "Evaluate" },
   { id: "reports", label: "Reports", icon: "clipboard-list", group: "Evaluate" },
+  { id: "security", label: "Security", icon: "shield-alert", group: "Advanced" },
   { id: "updates", label: "Updates", icon: "shield", group: "System" },
   { id: "settings", label: "Settings", icon: "settings", group: "System" }
 ]);
