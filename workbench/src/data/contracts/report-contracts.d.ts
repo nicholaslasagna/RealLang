@@ -282,3 +282,49 @@ export interface EnginePipelineReport extends ReportMeta {
   inertCommands: string[];
   validationResults: string[];
 }
+
+// --- Read-only report import (0.3) ---
+
+export type ImportFieldType = "text" | "number" | "flag" | "list" | "count";
+
+export interface ImportPreviewField {
+  label: string;
+  type: ImportFieldType;
+  value: string | number | boolean | string[];
+}
+
+export interface ImportTypeOption {
+  id: string;
+  label: string;
+  adapter: string | null;
+  reviewOnly?: boolean;
+}
+
+/**
+ * Result of parsing pasted JSON and running it through an existing adapter.
+ * Never describes an executable action: imported reports are read-only and
+ * untrusted, and any suggested commands are display-only.
+ */
+export interface ImportedReportPreview {
+  ok: boolean;
+  empty?: boolean;
+  parseError?: boolean;
+  error?: string;
+  generic?: boolean;
+  reviewOnly: boolean;
+  typeId: string;
+  label: string;
+  autoDetected: boolean;
+  detectedId: string | null;
+  reason?: string;
+  meta?: Pick<ReportMeta, "id" | "kind" | "provider" | "model" | "createdAt" | "status">;
+  safetyLabels: SafetyLabel[];
+  untrusted: boolean;
+  staffOnly: boolean;
+  gated: boolean;
+  approvalRequired?: boolean;
+  dryRun?: boolean;
+  fields: ImportPreviewField[];
+  warnings: AdapterWarning[];
+  suggestedCommands: string[];
+}

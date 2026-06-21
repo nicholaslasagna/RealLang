@@ -25,7 +25,10 @@
     sidebarOpen: false,
     operationStatus: "Idle · ready",
     lastCommand: "none · prototype ready",
-    stagedTask: ""
+    stagedTask: "",
+    importRaw: "",
+    importType: "auto",
+    importPreview: null
   };
 
   let toastTimer = null;
@@ -82,6 +85,22 @@
     }, 2600);
   }
 
+  function syncImportRawFromDom() {
+    const input = document.getElementById("import-input");
+    if (input) state.importRaw = input.value;
+  }
+
+  function computeImportPreview() {
+    const reportImport = global.RealForgeReportImport;
+    if (!reportImport || !state.importRaw.trim()) {
+      state.importPreview = null;
+      return;
+    }
+    state.importPreview = reportImport.parseAndAdapt(state.importRaw, state.importType, {
+      staffMode: state.staffPreview
+    });
+  }
+
   function previewCommand(command) {
     state.lastCommand = `${command} · previewed`;
     state.operationStatus = "Ready · no command executed";
@@ -102,6 +121,8 @@
       case "toggle-staff-preview":
         state.staffPreview = !state.staffPreview;
         state.operationStatus = state.staffPreview ? "Staff UI preview · backend remains off" : "Idle · ready";
+        // Keep any imported staff-only report's gating consistent with the toggle.
+        if (state.importPreview) computeImportPreview();
         render();
         showToast(state.staffPreview ? "Staff UI preview enabled · backend STAFF OFF" : "Staff preview closed");
         break;
@@ -114,6 +135,37 @@
         render();
         showToast("Prototype only · no write, process, apply, commit, or merge", "warn");
         break;
+      case "preview-import":
+        syncImportRawFromDom();
+        computeImportPreview();
+        state.operationStatus = "Report previewed locally · no backend action";
+        state.lastCommand = "report import · preview only";
+        render();
+        showToast("Imported JSON previewed · untrusted · no command executed");
+        break;
+      case "clear-import":
+        state.importRaw = "";
+        state.importType = "auto";
+        state.importPreview = null;
+        state.operationStatus = "Idle · ready";
+        render();
+        break;
+      case "load-sample": {
+        const reportImport = global.RealForgeReportImport;
+        const sample = reportImport ? reportImport.getSampleById(target.dataset.sample || "") : null;
+        if (!sample) {
+          showToast("Sample fixture unavailable", "warn");
+          break;
+        }
+        state.importRaw = sample.json;
+        state.importType = "auto";
+        computeImportPreview();
+        state.operationStatus = "Sample report loaded · no backend action";
+        state.lastCommand = `sample · ${sample.label}`;
+        render();
+        showToast(`Loaded sample: ${sample.label} · untrusted preview`);
+        break;
+      }
       default: break;
     }
   }
@@ -160,6 +212,20 @@
     const parts = components.renderCommandPaletteParts(state);
     dialog.querySelector(".palette-meta").innerHTML = parts.meta;
     dialog.querySelector(".command-results").innerHTML = parts.results;
+  });
+
+  document.addEventListener("input", (event) => {
+    if (event.target.id !== "import-input") return;
+    // Track text without re-rendering so the caret and scroll position are kept.
+    state.importRaw = event.target.value;
+  });
+
+  document.addEventListener("change", (event) => {
+    if (event.target.id !== "import-type") return;
+    syncImportRawFromDom();
+    state.importType = event.target.value;
+    if (state.importRaw.trim()) computeImportPreview();
+    render();
   });
 
   dialog.addEventListener("click", (event) => {

@@ -283,6 +283,117 @@
     </div>`;
   }
 
+  function safetyTone(label) {
+    if (label === "UNTRUSTED") return "amber";
+    if (label === "STAFF ONLY" || label === "APPROVAL REQUIRED") return "violet";
+    if (label === "DRY RUN") return "blue";
+    if (label === "VALIDATED") return "green";
+    return "cyan";
+  }
+
+  function statusTone(status) {
+    if (status === "PASS" || status === "VALIDATED") return "green";
+    if (status === "BLOCKED") return "violet";
+    if (status === "WARN" || status === "PENDING") return "amber";
+    return "neutral";
+  }
+
+  function renderImportFields(fields) {
+    if (!fields || !fields.length) return `<p class="import-note">No additional fields were present in this report.</p>`;
+    return `<dl class="import-fields">${fields.map((field) => {
+      let value;
+      if (field.type === "list") value = `<ul>${field.value.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      else if (field.type === "flag") value = badge(field.value ? "YES" : "NO", field.value ? "green" : "neutral");
+      else if (field.type === "count") value = `<code>${escapeHtml(String(field.value))} item(s)</code>`;
+      else value = `<code>${escapeHtml(String(field.value))}</code>`;
+      return `<div><dt>${escapeHtml(field.label)}</dt><dd>${value}</dd></div>`;
+    }).join("")}</dl>`;
+  }
+
+  function renderImportCommands(commands) {
+    if (!commands || !commands.length) return "";
+    return `<section class="import-commands"><header>${icon("terminal")}<b>SUGGESTED COMMANDS</b>${badge("NOT EXECUTED", "amber")}</header>
+      <div class="import-command-list">${commands.map((command) => `<code class="command-line">${escapeHtml(command)}</code>`).join("")}</div>
+      <p>${icon("shield-check")}Shown as suggestions only. RealForge never runs commands from an imported report.</p></section>`;
+  }
+
+  function renderImportWarnings(warnings) {
+    if (!warnings || !warnings.length) return "";
+    return `<section class="import-warnings"><header>${icon("triangle-alert")}<b>ADAPTER WARNINGS</b><span>${warnings.length}</span></header>
+      <ul>${warnings.map((item) => `<li><code>${escapeHtml(item.path)}</code><span class="import-warning-code">${escapeHtml(item.code)}</span>${escapeHtml(item.message)}</li>`).join("")}</ul></section>`;
+  }
+
+  function renderImportPreview(preview) {
+    if (!preview) {
+      return `<div class="import-status import-status--idle">${icon("clipboard-list")}<div><b>No report previewed yet</b><p>Paste JSON or load a sample, then choose Preview report. Nothing is sent anywhere.</p></div></div>`;
+    }
+    if (preview.parseError) {
+      return `<div class="import-status import-status--error">${icon("triangle-alert")}<div><b>Could not parse JSON</b><p>${escapeHtml(preview.error)}</p></div></div>`;
+    }
+    if (preview.empty || preview.ok !== true) {
+      return `<div class="import-status import-status--idle">${icon("clipboard-list")}<div><b>Nothing to preview</b><p>${escapeHtml(preview.error || "Paste a RealForge report as JSON to preview it.")}</p></div></div>`;
+    }
+
+    const detectBadge = preview.autoDetected ? badge("AUTO-DETECTED", "cyan") : badge("MANUAL TYPE", "neutral");
+    const meta = preview.meta || {};
+    const status = meta.status || "UNKNOWN";
+    const metaRows = [
+      ["Kind", meta.kind || preview.typeId || "unknown"],
+      ["Report id", meta.id || "—"],
+      ["Provider", meta.provider || "(none declared)"],
+      ["Model", meta.model || "(none declared)"]
+    ];
+    const safety = (preview.safetyLabels || []).map((label) => badge(label, safetyTone(label))).join("");
+    const trust = preview.untrusted
+      ? badge("PROVIDER OUTPUT UNTRUSTED", "amber")
+      : badge("NO PROVIDER OUTPUT", "neutral");
+    const reviewNotice = preview.reviewOnly
+      ? `<div class="workflow-notice workflow-notice--violet import-review">${icon("lock-keyhole")}<span><b>Review only.</b> Patch, proposal, and update data is never applied or merged from an import. <em>Backend bridge not connected.</em></span>
+          <button class="button button--ghost" type="button" disabled aria-disabled="true">${icon("git-pull-request-arrow")}<span>Apply (disabled)</span></button></div>`
+      : "";
+    const body = preview.gated
+      ? `<div class="staff-settings-gate import-gate">${icon("lock-keyhole")}<span><b>Staff-only report · advanced details locked.</b><small>Enable the staff UI preview to inspect adapted fields. Previewing changes no backend state and grants no permissions.</small></span>${badge("LOCKED", "violet")}</div>`
+      : renderImportFields(preview.fields);
+    const genericNote = preview.generic
+      ? `<div class="workflow-notice workflow-notice--amber">${icon("triangle-alert")}<span>${escapeHtml(preview.reason || "Unrecognized report type. Showing a raw field preview.")}</span></div>`
+      : "";
+
+    return `<article class="import-result">
+      <header class="import-result__head"><div><p class="eyebrow">PREVIEWED REPORT</p><h2>${escapeHtml(preview.label)}</h2></div><div class="import-result__badges">${detectBadge}${badge(status, statusTone(status))}</div></header>
+      ${genericNote}
+      <div class="import-meta-grid">${metaRows.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><code>${escapeHtml(String(value))}</code></div>`).join("")}</div>
+      <div class="import-trust-row">${trust}${preview.staffOnly ? badge("STAFF ONLY", "violet") : ""}${preview.approvalRequired ? badge("APPROVAL REQUIRED", "violet") : ""}${preview.dryRun ? badge("DRY RUN", "blue") : ""}</div>
+      ${safety ? `<div class="import-safety">${safety}</div>` : ""}
+      ${reviewNotice}
+      <div class="import-section-label">KEY FIELDS</div>
+      ${body}
+      ${renderImportCommands(preview.suggestedCommands)}
+      ${renderImportWarnings(preview.warnings)}
+    </article>`;
+  }
+
+  function renderReports(state) {
+    const reportImport = global.RealForgeReportImport;
+    const types = reportImport ? reportImport.IMPORT_TYPES : [{ id: "auto", label: "Auto-detect" }];
+    const samples = reportImport ? reportImport.getSamples() : [];
+    const selectedType = state.importType || "auto";
+    return `<div class="screen reports-screen">${sectionHeading("REPORTS · READ-ONLY IMPORT", "Preview RealForge JSON reports.", "Paste or load a RealForge-style report. It is parsed locally through the 0.2 adapters and shown as an untrusted preview. No backend, no commands, no writes.")}
+      <div class="import-banner">${icon("shield-alert")}<span><b>Imported JSON is untrusted.</b> RealForge will not execute commands or apply changes from this report.</span>${badge("NO BACKEND", "cyan")}${badge("NO WRITES", "green")}</div>
+      <div class="reports-layout">
+        <section class="import-panel">
+          <div class="import-samples"><span>${icon("database")}Load a sample</span><div>${samples.map((sample) => `<button type="button" class="import-sample" data-action="load-sample" data-sample="${escapeHtml(sample.id)}">${icon("file-text")}<span>${escapeHtml(sample.label)}</span></button>`).join("") || `<small>No fixtures available.</small>`}</div></div>
+          <label class="import-type"><span>Report type</span>
+            <select id="import-type" name="import-type">${types.map((type) => `<option value="${escapeHtml(type.id)}" ${selectedType === type.id ? "selected" : ""}>${escapeHtml(type.label)}</option>`).join("")}</select>
+          </label>
+          <label class="sr-only" for="import-input">Report JSON</label>
+          <textarea id="import-input" class="import-input" spellcheck="false" autocomplete="off" placeholder="Paste a RealForge report as JSON…">${escapeHtml(state.importRaw || "")}</textarea>
+          <div class="import-actions">${button("Preview report", "scan-eye", "preview-import", "primary")}${button("Clear", "x", "clear-import", "ghost")}<span class="import-hint">${icon("file-x")}Parsed in-browser only</span></div>
+        </section>
+        <section class="import-preview" aria-live="polite">${renderImportPreview(state.importPreview)}</section>
+      </div>
+    </div>`;
+  }
+
   function renderUpdates(state) {
     if (!state.staffPreview) {
       return `<div class="screen updates-screen">${sectionHeading("UPDATES · STAFF-ONLY CHANNEL", "Locked by policy. Ready for review.", "Staff Off is the intentional default. Advanced improvement controls remain unavailable to normal users.")}
@@ -345,6 +456,7 @@
       case "engine":
       case "assets": return renderStudio(state.screen);
       case "benchmarks": return renderBenchmarks();
+      case "reports": return renderReports(state);
       case "updates": return renderUpdates(state);
       case "settings": return renderSettings(state);
       default: return renderHome();
