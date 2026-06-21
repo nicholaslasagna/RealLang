@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-const WORKBENCH_VERSION: &str = "0.10";
+const WORKBENCH_VERSION: &str = "0.16.0";
 
 const ENV_ENDPOINT: &str = "REALFORGE_UPDATE_ENDPOINT";
 const ENV_PUBKEY: &str = "REALFORGE_UPDATER_PUBKEY";

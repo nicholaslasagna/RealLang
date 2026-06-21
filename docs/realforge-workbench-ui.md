@@ -27,6 +27,28 @@ Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
 (fixed `argv`, no shell strings), with future installer packaging and code
 signing/notarization.
 
+## Workbench 0.15 - UI declutter, navigation hierarchy, Security UX polish
+
+- Calmer grouped sidebar: **Core** (Home/Workbench/Capabilities), **Engineering**
+  (Code/Research), **Studio** (Creative/Image/Vision/Engine/Assets), **Evaluate**
+  (Benchmarks/Security), **System** (Reports/Updates/Settings). The old "Advanced"
+  group is removed; Security joins Evaluate, Reports joins System.
+- Compact top **safety-status cluster**: one loud primary (green SAFE) plus quiet
+  detail pills with tooltips (READONLY/LOCAL ONLY/NETWORK OFF/DOCTOR PASS/STAFF).
+  No safety labels removed; pills collapse to icons on narrower desktops.
+- Accurate version labeling: **Workbench 0.15 · RealForge backend 2.7** (no more
+  stale "Version 2.7").
+- Composer/inspector polish: argv preview stays visible but secondary; the
+  inspector summarizes first, details second.
+- Security Center reads as a calmer cockpit: clear Known findings / Read-only scan
+  bridge / Deep review sections; fewer badges per card; esbuild **RESOLVED**, glib
+  **BLOCKED UPSTREAM · TRACKED** (never fixed); npm audit network warning kept;
+  "Plan fix" stays preview-only; no scan runs without an explicit click.
+- **No behavior or safety changes** — no backend execution, auto-fix, write bridge,
+  shell, arbitrary args, or weakened staff gating.
+
+See [workbench/docs/ui-navigation.md](../workbench/docs/ui-navigation.md).
+
 ## Workbench 0.14 - read-only security scan bridge
 
 - New narrowly allowlisted **security scan bridge**: desktop-only IPC
@@ -178,6 +200,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 7. **One approved no-write check** (0.12) - fixed action, explicit approval, untrusted output
 8. **Security Center + vulnerability triage** (0.13) - honest findings, preview-only fix plans, no auto-fix
 9. **Read-only security scan bridge** (0.14) - allowlisted npm audit / cargo tree; untrusted output, no remediation
-10. Future: controlled path input; write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+10. **UI declutter + navigation hierarchy + Security UX polish** (0.15) - no behavior or safety changes
+11. Future: controlled path input; write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

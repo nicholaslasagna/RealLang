@@ -86,7 +86,7 @@ export const securityFindings: readonly SecurityFinding[] = Object.freeze([
     source: "realforge_audit",
     ecosystem: "tauri",
     packageName: "workbench-approval-bridge",
-    currentVersion: "0.12",
+    currentVersion: "0.16.0",
     patchedVersion: null,
     severity: "info",
     status: "resolved",

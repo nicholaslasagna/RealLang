@@ -1,6 +1,6 @@
 {
   "name": "realforge-workbench-prototype",
-  "version": "0.12.0",
+  "version": "0.16.0",
   "private": true,
   "description": "RealForge Workbench — React + TypeScript local-first UI",
   "type": "module",

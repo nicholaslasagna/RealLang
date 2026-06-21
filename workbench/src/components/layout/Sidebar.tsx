@@ -40,9 +40,12 @@ export function Sidebar() {
       <div className="sidebar-version">
         <div>
           <Icon name="git-commit-horizontal" />
-          <strong>VERSION {data.version}</strong>
+          <strong>Workbench {data.workbenchVersion}</strong>
         </div>
-        <p>Skill benchmarks · bounded improvement · output untrusted until validated.</p>
+        <p>
+          <span className="sidebar-backend">RealForge backend {data.version}</span>
+          Read-only · output untrusted until validated.
+        </p>
       </div>
     </>
   );

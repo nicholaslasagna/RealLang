@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Badge, Button, Icon } from "../../components/primitives";
+import { Badge, Button, Icon, StateNote } from "../../components/primitives";
 import { checkBridgeHealth, isDesktopRuntime, runSecurityScanSource } from "../../bridge";
 import type { SecurityScanExecution } from "../../bridge";
 import {
@@ -55,7 +55,7 @@ function NpmAuditEvidence({
               <Badge label="LIVE · npm audit" tone="cyan" />
             </header>
             <p>{finding.summary}</p>
-            <FindingBadges finding={finding} />
+            <FindingBadges finding={finding} compact />
             <div className="security-live-finding__actions">
               <Button label="Plan fix (preview)" iconName="wrench" variant="secondary" onClick={() => onPlanFix(finding)} />
               <span className="security-muted">
@@ -209,14 +209,29 @@ export function SecurityScanPanel() {
                   onClick={() => runScan(source.id)}
                 />
               ) : (
-                <p className="security-muted">
-                  <Icon name="lock-keyhole" /> Desktop only — run the command above manually in a terminal.
-                </p>
+                <StateNote
+                  icon="lock-keyhole"
+                  what="Desktop only"
+                  why="Web mode never executes commands."
+                  next="Run the command above in a terminal, then paste the JSON into Reports."
+                />
               )}
               {desktop && !ready ? (
-                <p className="security-muted">
-                  <Icon name="triangle-alert" /> Bridge/workspace health is not ready; Run scan stays disabled.
-                </p>
+                <StateNote
+                  icon="triangle-alert"
+                  tone="warn"
+                  what="Bridge not ready"
+                  why="Scans need a resolved workspace and the local CLI."
+                  next="Select a RealForge repo in Settings → Workspace, then retry."
+                />
+              ) : null}
+              {desktop && ready && state.status === "idle" ? (
+                <StateNote
+                  icon="circle-dot"
+                  what="No scan run yet"
+                  why="Scans are read-only and never run automatically."
+                  next="Run the scan when you want fresh, untrusted evidence."
+                />
               ) : null}
               {state.status === "error" ? (
                 <div className="security-scan-error" role="alert">

@@ -24,7 +24,12 @@ function planStatusLabel(plan: SecurityFixPlan): string {
   return "DRY RUN AVAILABLE";
 }
 
-export function FindingBadges({ finding }: { finding: SecurityFinding }) {
+/**
+ * `compact` (the default for cards) shows only the essentials — status, severity,
+ * and fix availability — to keep cards calm. The full badge set (human review,
+ * untrusted, platform tags) is shown in the detail inspector with `compact={false}`.
+ */
+export function FindingBadges({ finding, compact = false }: { finding: SecurityFinding; compact?: boolean }) {
   return (
     <div className="security-badges">
       <Badge label={statusLabel(finding.status)} tone={statusTone(finding.status)} />
@@ -32,13 +37,17 @@ export function FindingBadges({ finding }: { finding: SecurityFinding }) {
       {finding.fixAvailable ? (
         <Badge label="FIX AVAILABLE" tone="cyan" />
       ) : finding.status === "blocked" ? (
-        <Badge label="NO FIX AVAILABLE" tone="violet" />
+        <Badge label="TRACKED · NO FIX YET" tone="violet" />
       ) : null}
-      {finding.needsHumanReview ? <Badge label="HUMAN REVIEW" tone="amber" /> : null}
-      {!finding.trustedSource ? <Badge label="UNTRUSTED UNTIL VERIFIED" tone="amber" /> : null}
-      {(finding.platformTags ?? []).map((tag) => (
-        <Badge key={tag} label={tag} tone={tag === "TAURI" ? "blue" : tag === "LIVE" ? "cyan" : "neutral"} />
-      ))}
+      {compact ? null : (
+        <>
+          {finding.needsHumanReview ? <Badge label="HUMAN REVIEW" tone="amber" /> : null}
+          {!finding.trustedSource ? <Badge label="UNTRUSTED UNTIL VERIFIED" tone="amber" /> : null}
+          {(finding.platformTags ?? []).map((tag) => (
+            <Badge key={tag} label={tag} tone={tag === "TAURI" ? "blue" : tag === "LIVE" ? "cyan" : "neutral"} />
+          ))}
+        </>
+      )}
     </div>
   );
 }

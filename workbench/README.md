@@ -26,6 +26,27 @@ no arbitrary args, timeout/output caps, and untrusted output mapped into live
 findings/evidence. No remediation, no lockfile/manifest mutation; `npm audit` may use
 the network and is labeled accordingly. See
 [docs/security-scan-bridge-threat-model.md](docs/security-scan-bridge-threat-model.md).
+**0.15** is a **UI declutter** pass: calmer grouped navigation (Core / Engineering /
+Studio / Evaluate / System), a compact top safety-status cluster (tooltips, one clear
+primary), composer/inspector polish, a calmer Security Center, and accurate version
+labels (Workbench 0.15 · RealForge backend 2.7). No behavior or safety changes. See
+[docs/ui-navigation.md](docs/ui-navigation.md).
+**0.16** aligns every version surface to **Workbench 0.16.0** (package.json,
+Cargo.toml, tauri.conf.json, Rust/frontend constants, sidebar, Update Center, bundle
+metadata) while keeping **RealForge backend 2.7** separate; adds a **Settings → General
+→ About** surface (versions, runtime, bridge mode, update/workspace status, security
+posture, inert Copy diagnostics), applies a consistent what/why/next pattern to
+onboarding states, and adds a **1280px** visual-smoke checkpoint. No behavior/safety
+changes.
+
+### Versioning
+
+Two versions are tracked and never conflated:
+
+- **Workbench** (this desktop UI): `0.16.0` — shown in the sidebar footer, Settings →
+  General → About, the Update Center "Current version", and the desktop bundle.
+- **RealForge backend** (the Python engine): `2.7` — shown beside the Workbench
+  version. The Update Center uses the **Workbench** version for app-update metadata.
 
 Historical milestones:
 
@@ -46,6 +67,8 @@ Historical milestones:
 - **0.12** One threat-modeled, approval-gated, fixed no-write validation action
 - **0.13** Security Center + vulnerability triage (preview-only fix plans; no auto-fix, no dependency edits)
 - **0.14** Read-only security scan bridge (allowlisted `npm audit`/`cargo tree`; untrusted output, no remediation)
+- **0.15** UI declutter + navigation hierarchy + Security UX polish (no behavior/safety changes)
+- **0.16** Version alignment (Workbench 0.16.0), Settings About surface, onboarding polish, 1280px smoke (no behavior/safety changes)
 
 ## Toolchain and dependency security
 

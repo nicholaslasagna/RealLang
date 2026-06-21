@@ -57,6 +57,33 @@ export function SectionHeading({ eyebrow, title, description = "" }: SectionHead
   );
 }
 
+interface StateNoteProps {
+  icon: string;
+  tone?: "info" | "warn" | "muted";
+  what: string;
+  why?: string;
+  next?: string;
+}
+
+/** Consistent empty/loading/error note: what happened, why it matters, next safe action. */
+export function StateNote({ icon, tone = "muted", what, why, next }: StateNoteProps) {
+  return (
+    <div className={`state-note state-note--${tone}`} role="note">
+      <Icon name={icon} />
+      <div>
+        <b>{what}</b>
+        {why ? <span className="state-note__why">{why}</span> : null}
+        {next ? (
+          <span className="state-note__next">
+            <Icon name="arrow-right" />
+            {next}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 interface MetricCardProps {
   title: string;
   iconName: string;

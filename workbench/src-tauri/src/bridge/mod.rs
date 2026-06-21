@@ -37,7 +37,7 @@ use workspace_store::{
     save_workspace, SavedWorkspace,
 };
 
-const WORKBENCH_VERSION: &str = "0.12";
+const WORKBENCH_VERSION: &str = "0.16.0";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

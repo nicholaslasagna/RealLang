@@ -78,6 +78,11 @@ export function SecurityScreen() {
         </div>
       </section>
 
+      <div className="security-section-head">
+        <p className="eyebrow">KNOWN FINDINGS</p>
+        <span>Tracked advisories &amp; review records · select one for detail and a preview-only fix plan</span>
+      </div>
+
       <div className="security-layout">
         <section className="security-finding-list" aria-label="Security findings">
           {findings.map((finding) => {
@@ -96,7 +101,7 @@ export function SecurityScreen() {
                   <Badge label={finding.ecosystem.toUpperCase()} tone="neutral" />
                 </header>
                 <p>{finding.summary}</p>
-                <FindingBadges finding={finding} />
+                <FindingBadges finding={finding} compact />
                 <footer>
                   <span>
                     {finding.currentVersion ?? "—"} → {finding.patchedVersion ?? "n/a"}

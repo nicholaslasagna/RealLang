@@ -1,5 +1,6 @@
 import { getWorkbenchData } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { AboutPanel } from "../../components/AboutPanel";
 import { RuntimeIndicator } from "../../components/RuntimeIndicator";
 import { UpdateCenterPanel } from "../../components/UpdateCenterPanel";
 import { WorkspacePanel } from "../../components/WorkspacePanel";
@@ -107,7 +108,12 @@ export function SettingsScreen() {
             <b>STAFF OFF</b>
           </span>
         </div>
-        {current.id === "general" ? <RuntimeIndicator /> : null}
+        {current.id === "general" ? (
+          <>
+            <AboutPanel />
+            <RuntimeIndicator />
+          </>
+        ) : null}
         {current.id === "workspace" ? <WorkspacePanel /> : null}
         {current.id === "updates" ? <UpdateCenterPanel /> : null}
         {staffSection ? (

@@ -9,12 +9,20 @@ interface ActionInspectorProps {
 }
 
 export function ActionInspector({ action, runtime, bridgeHealthy }: ActionInspectorProps) {
+  const summary =
+    action.currentExecutionStatus === "approval_required"
+      ? "Preview only. Running it requires one explicit local approval — no writes, no network."
+      : action.currentExecutionStatus === "read_only_available"
+        ? "Read-only. Loads untrusted report data through the desktop bridge; nothing is written."
+        : "Preview only. This action composes structured intent; no command runs from here.";
+
   return (
     <aside className="inspector" aria-label="Composed action inspector">
       <header>
         <Icon name="panel-right" />
         <b>ACTION INSPECTOR</b>
       </header>
+      <p className="inspector-summary">{summary}</p>
       <section className="proposal-facts">
         <div><span>Domain</span><b>{action.domain.toUpperCase()}</b></div>
         <div><span>Runtime</span><b>{runtime.toUpperCase()}</b></div>

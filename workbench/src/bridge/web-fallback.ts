@@ -19,7 +19,7 @@ import type {
   WorkspaceResolution
 } from "./types";
 
-const WORKBENCH_VERSION = "0.12";
+const WORKBENCH_VERSION = "0.16.0";
 
 const WEB_UPDATE_CONFIGURATION: UpdateConfiguration = {
   configured: false,

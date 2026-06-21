@@ -37,7 +37,7 @@ const releaseChecklist = [
 const notConfiguredStatus = {
   state: "not_configured" as const,
   configured: false,
-  currentVersion: "0.10",
+  currentVersion: "0.16.0",
   platform: "macos",
   arch: "aarch64",
   channel: "stable" as const,
@@ -58,7 +58,7 @@ describe("Update center panel", () => {
     mocks.getUpdateStatus.mockResolvedValue({
       state: "unavailable_web",
       configured: false,
-      currentVersion: "0.10",
+      currentVersion: "0.16.0",
       platform: "MacIntel",
       arch: "unknown",
       channel: "stable",

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const widths = [1024, 1440];
+const widths = [1024, 1280, 1440];
 
 async function waitForServer(url, timeoutMs = 30000) {
   const start = Date.now();
@@ -69,10 +69,18 @@ async function run() {
             if (command === "list_readonly_report_sources") return sources;
             if (command === "get_workspace_resolution") return resolution;
             if (command === "get_runtime_info") {
-              return { runtime: "desktop", appName: "RealForge Workbench", workbenchVersion: "0.12", platform: "windows", arch: "x86_64", bridgeMode: "read-only" };
+              return { runtime: "desktop", appName: "RealForge Workbench", workbenchVersion: "0.16.0", platform: "windows", arch: "x86_64", bridgeMode: "read-only" };
             }
             if (command === "get_bridge_capabilities") {
               return { bridgeMode: "read-only", readOnly: true, writes: false, network: false, shellExecution: false, cliSpawn: true, approvalGatedWrites: false, approvalGatedDryRun: true, approvedDryRunActionCount: 1, metadataOnly: false };
+            }
+            if (command === "get_update_status") {
+              return {
+                state: "not_configured", configured: false, currentVersion: "0.16.0", platform: "windows", arch: "x86_64", channel: "stable",
+                configuration: { configured: false, channel: "stable", endpointConfigured: false, endpointUrl: null, publicKeyConfigured: false, signingRequired: true, installAllowed: false, disabledReason: "Signed update endpoint and public key are not configured for this build." },
+                latestVersion: null, releaseNotes: null, message: "Signed update endpoint and public key are not configured for this build.",
+                safetyNotes: ["Only signed update packages may be installed."], releaseChecklist: []
+              };
             }
             throw new Error(`visual mock does not implement ${command}`);
           }
@@ -90,6 +98,20 @@ async function run() {
       const title = await page.textContent("h1");
       if (!title || !title.includes("RealForge")) {
         throw new Error(`Home screen did not render at ${width}px`);
+      }
+
+      const overflows = () =>
+        page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
+
+      // 0.16: verify Security, Reports, and Settings (About) render without overflow.
+      for (const [navName, selector] of [
+        ["Security", ".security-hero"],
+        ["Reports", ".import-banner"],
+        ["Settings", '[data-testid="about-panel"]']
+      ]) {
+        await page.getByRole("button", { name: navName, exact: true }).click();
+        await page.waitForSelector(selector);
+        if (await overflows()) throw new Error(`${navName} horizontal overflow detected at ${width}px`);
       }
 
       await page.getByRole("button", { name: "Workbench", exact: true }).click();

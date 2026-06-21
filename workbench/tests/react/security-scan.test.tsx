@@ -140,7 +140,8 @@ describe("SecurityScanPanel — web mode", () => {
     mocks.isDesktopRuntime.mockReturnValue(false);
     render(<SecurityScanPanel />);
     expect(screen.getByText(/WEB · MANUAL/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Desktop only — run the command/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Desktop only/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Run the command above in a terminal/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: /run scan/i })).toBeNull();
   });
 });

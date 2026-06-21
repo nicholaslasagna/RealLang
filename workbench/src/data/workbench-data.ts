@@ -72,8 +72,8 @@ const navigation: readonly NavigationItem[] = Object.freeze([
   { id: "engine", label: "Engine", icon: "box", group: "Studio" },
   { id: "assets", label: "Assets", icon: "package", group: "Studio" },
   { id: "benchmarks", label: "Benchmarks", icon: "gauge", group: "Evaluate" },
-  { id: "reports", label: "Reports", icon: "clipboard-list", group: "Evaluate" },
-  { id: "security", label: "Security", icon: "shield-alert", group: "Advanced" },
+  { id: "security", label: "Security", icon: "shield-alert", group: "Evaluate" },
+  { id: "reports", label: "Reports", icon: "clipboard-list", group: "System" },
   { id: "updates", label: "Updates", icon: "shield", group: "System" },
   { id: "settings", label: "Settings", icon: "settings", group: "System" }
 ]);
@@ -86,7 +86,7 @@ export function ensureMockData(): WorkbenchMockData {
   cachedMockData = Object.freeze({
     ...reports,
     version: "2.7",
-    workbenchVersion: "0.12",
+    workbenchVersion: "0.16.0",
     navigation
   }) as WorkbenchMockData;
   return cachedMockData;
