@@ -27,6 +27,100 @@ Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
 (fixed `argv`, no shell strings), with future installer packaging and code
 signing/notarization.
 
+## Workbench 0.18 - controlled workspace-relative .real file check
+
+Workbench 0.18 extends the approved dry-run model to **select** a workspace-relative
+`.real` file to typecheck, while preserving every safety property. It is still
+dry-run/check-only and **not** a write bridge.
+
+- **Read-only file discovery** (`list_real_files` IPC): scans only inside the
+  resolved workspace, returns workspace-relative `.real` paths, excludes hidden/
+  vendor/build dirs (`.git`, `.venv`, `node_modules`, `target`, `dist`, `build`,
+  `__pycache__`, `.realforge`, …), never follows symlinks, and caps file count (500)
+  and depth (12).
+- **Second approval-gated action** `realc-check-workspace-file`: runs
+  `realc <relative-path> --check`. Rust strictly validates the chosen path — `.real`
+  only, workspace-relative, no traversal, canonicalized + contained, no symlink
+  escape, no control characters, length-capped — and the fixed
+  `realc-check-hello-example` action still works.
+- **UI**: a **dropdown** of discovered files (no raw path textbox), workspace + selected
+  path shown, exact validated argv preview, explicit acknowledgement, and helpful empty
+  states (no files, list error, web/unhealthy upstream). Run is disabled without a
+  selected file or acknowledgement.
+- **Unchanged boundaries**: web mode is execution-free, no arbitrary argv/flags, no
+  shell, no writes, no network, no new write IPC; output stays inert and `UNTRUSTED`.
+
+## Workbench 0.19 - approval audit log and execution transparency
+
+Workbench 0.19 adds a typed, session-only audit trail for the two existing approved
+dry-run checks. It does not expand the bridge allowlist or add an IPC command.
+
+- **Audit model**: action ID/title, fixed or validated relative target, sanitized
+  command summary, explicit-checkbox acknowledgement kind, normalized result status,
+  exit code when available, duration, and independently capped stdout/stderr previews.
+- **Fixed safety posture**: every entry is `UNTRUSTED OUTPUT`, `NO WRITES`, and
+  `NO NETWORK`; backend-provided trust labels cannot weaken these fields.
+- **UI**: Workbench shows recent approved runs. Reports shows the full current-session
+  list, with process output collapsed by default and a safe-copy summary that omits
+  stdout/stderr and absolute workspace paths.
+- **Storage**: memory only. No repository, workspace, `.realforge`, browser-storage,
+  or app-config write occurs. Closing or reloading the frontend clears the list.
+- **Unchanged authority**: web-mode blocks and pre-approval validation failures are
+  not logged as approved runs; there is still no write, patch/proposal apply,
+  scheduler, update install, commit, merge, shell, or arbitrary-argv path.
+
+Persistent audit history is deferred. It would require app-config-only storage plus
+a separate retention, redaction, and tamper-evidence threat model. The bundle version
+remains `0.16.0` until the signed-release requirements documented in 0.17 are met.
+
+## Workbench 0.17 - release readiness & signed-updater threat model
+
+Workbench 0.17 is a **release-readiness / threat-model** milestone. It prepares for a
+real signed updater **without** shipping one: no update download, no install, no
+unsigned-install path, and no fake endpoint or key.
+
+- **Signed-updater threat model** (`workbench/docs/signed-updater-threat-model.md`):
+  update trust boundary, signed-artifact + public-key handling, the private key never
+  in the repo, channel model (stable/preview/local-dev), downgrade/replay and metadata
+  integrity, user-confirmed install, macOS notarization / Windows Authenticode futures,
+  failure/offline states, and how app updates differ from RealForge self-improvement /
+  update bundles.
+- **Typed release-readiness checklist** (`src/data/release/release-readiness.ts`): 15
+  items with `pass`/`warn`/`missing`/`deferred` status, `platform`, `requiredFor`
+  track, `details`, and `nextAction`. Signing, notarization, and updater config stay
+  honestly `missing`/`deferred` — never faked as ready. Rendered in the Update Center
+  with display-only validation commands and explicit "no unsigned updates" /
+  "private keys never stored" statements.
+- **No behavior/safety change**: no real updater, no install, no new IPC, no write
+  bridge, no shell, no network. The bundle version stays `0.16.0` until a real signed
+  release.
+
+## Workbench 0.16 - version alignment, About surface, onboarding polish
+
+Workbench 0.16 is a **metadata / About / onboarding** milestone. It adds **no**
+backend command, write bridge, shell, network call, or auto-fix.
+
+- **Version alignment.** Every Workbench surface now reports **0.16.0**:
+  `package.json`/`package-lock.json`, `src-tauri/Cargo.toml`,
+  `src-tauri/tauri.conf.json`, the Rust constants (`mod.rs`, `update.rs`), the
+  frontend constant (`web-fallback.ts`), the sidebar footer, the runtime/About
+  surface, and the Update Center "Current version". The desktop bundle metadata
+  matches the UI. The **RealForge backend** version (`2.7`) stays separate and is
+  never conflated. A `version-alignment` test pins these so stale `0.12.0`/`0.10`/
+  `0.15` labels cannot silently return.
+- **About surface.** A new **Settings → General → About** card ("About RealForge
+  Workbench") shows Workbench version, backend version, runtime mode, platform,
+  bridge mode, update status, build channel, workspace status, and a
+  security-posture summary. **Copy diagnostics** copies inert JSON only (versions,
+  modes, statuses) — no environment variables, secrets, keys, file paths, or
+  command output.
+- **Onboarding polish.** A shared `StateNote` (what happened / why it matters /
+  next safe action) gives empty, loading, and error states a calm, consistent
+  voice across workspace, bridge-health, web-mode, Update Center, and
+  security-scan surfaces.
+- **Responsive.** The visual smoke now checks **1024 / 1280 / 1440** and walks the
+  Security, Reports, and Settings/About screens for overflow and console errors.
+
 ## Workbench 0.15 - UI declutter, navigation hierarchy, Security UX polish
 
 - Calmer grouped sidebar: **Core** (Home/Workbench/Capabilities), **Engineering**
@@ -201,6 +295,8 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 8. **Security Center + vulnerability triage** (0.13) - honest findings, preview-only fix plans, no auto-fix
 9. **Read-only security scan bridge** (0.14) - allowlisted npm audit / cargo tree; untrusted output, no remediation
 10. **UI declutter + navigation hierarchy + Security UX polish** (0.15) - no behavior or safety changes
-11. Future: controlled path input; write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+11. **Controlled workspace `.real` path input** (0.18) - validated relative picker, no arbitrary argv
+12. **Session-only approval audit log** (0.19) - sanitized transparency, no persistence or new authority
+13. Future: app-config audit persistence, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

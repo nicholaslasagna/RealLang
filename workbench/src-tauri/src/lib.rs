@@ -4,8 +4,9 @@ use bridge::{
     check_bridge_health, check_for_update, clear_saved_workspace, get_bridge_capabilities,
     get_runtime_info, get_saved_workspace, get_update_status, get_workspace_paths,
     get_workspace_resolution, init_app_config_dir, list_readonly_report_sources,
-    list_security_scan_sources, load_readonly_report_source, run_approved_dry_run_action,
-    run_security_scan_source, save_workspace_selection, select_workspace_directory,
+    list_real_files, list_security_scan_sources, load_readonly_report_source,
+    run_approved_dry_run_action, run_security_scan_source, save_workspace_selection,
+    select_workspace_directory,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -28,6 +29,7 @@ pub fn run() {
             load_readonly_report_source,
             list_security_scan_sources,
             run_security_scan_source,
+            list_real_files,
             run_approved_dry_run_action,
         ])
         .setup(|app| {

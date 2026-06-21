@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.12)
+# RealForge Workbench - Tauri desktop shell (0.6-0.19)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -9,6 +9,41 @@ Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 commands or widening the read-only allowlist.
 **0.12** adds exactly one threat-modeled, approval-gated, no-write validation
 action. It does not enable a write bridge.
+**0.13-0.14** add the Security Center and a read-only, allowlisted security scan
+bridge (`npm audit --json`, `cargo tree`) — read-only, no remediation.
+**0.15** is a UI declutter / navigation-hierarchy pass.
+**0.16** aligns desktop bundle metadata to **Workbench 0.16.0** and adds a Settings
+About surface. No new commands or write authority.
+**0.17** adds a signed-updater **threat model** and a typed **release-readiness
+checklist**. No real updater, no install path, no endpoints/keys, no new commands.
+**0.18** adds a controlled, validated workspace-relative **`.real` file check**
+(`list_real_files` read-only IPC + a second approval-gated `realc … --check`
+action). Still dry-run/check-only — no write bridge, no arbitrary argv, no shell.
+**0.19** adds frontend-only, session-memory execution auditing for those approved
+checks. It adds no Tauri command, filesystem write, persistence, or execution power.
+
+## What 0.16 includes (version metadata)
+
+0.16 is a metadata/About/onboarding milestone — **no** new Tauri commands, write
+bridge, shell, or network. The desktop bundle and runtime now report the same
+version as the UI:
+
+| Surface | Value |
+|---------|-------|
+| `package.json` / `package-lock.json` | `0.16.0` |
+| `src-tauri/Cargo.toml` | `0.16.0` |
+| `src-tauri/tauri.conf.json` (bundle metadata) | `0.16.0` |
+| Rust `WORKBENCH_VERSION` (`mod.rs`, `update.rs`) | `0.16.0` |
+| Frontend `WORKBENCH_VERSION` (`web-fallback.ts`) | `0.16.0` |
+| Runtime IPC `get_runtime_info.workbenchVersion` | `0.16.0` |
+| Update Center `get_update_status.currentVersion` | `0.16.0` |
+
+The **RealForge backend** version (`2.7`) stays separate and is shown beside the
+Workbench version. The Update Center / `tauri-plugin-updater` readiness scaffold
+uses the **Workbench** version for app-update metadata, never the backend version.
+`tauri build` therefore produces a `0.16.0` bundle whose reported version matches
+the sidebar, About surface, and Update Center. A `version-alignment` test pins all
+of these so a stale `0.12.0` cannot silently return.
 
 ## What 0.12 includes
 
@@ -124,11 +159,13 @@ trust rules as paste/import.
 
 ```text
 workbench/
+  src/audit/                     → typed sanitized session-only approval entries
   src/composer/                  → typed action catalog + bridge availability
+  src/features/audit/            → recent/full audit views; safe summary copy
   src/features/composer/         → preview UI; no process or IPC primitives
   src/bridge/                    → frontend bridge (web fallback + Tauri invoke)
   src-tauri/src/bridge/
-    approval.rs                  → one approved fixed no-write validation action
+    approval.rs                  → two approved no-write validation actions
     allowlist.rs                 → Rust-side source IDs + fixed argv
     workspace.rs                 → repo discovery, validation, session override
     health.rs                    → bridge health + optional probe
@@ -212,7 +249,7 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `load_readonly_report_source` | Run one allowlisted read-only CLI command |
 | `list_security_scan_sources` | Read-only scan source metadata (0.14; no argv over IPC) |
 | `run_security_scan_source` | Run one allowlisted read-only security scan (0.14) |
-| `run_approved_dry_run_action` | Run the one fixed check after acknowledgement |
+| `run_approved_dry_run_action` | Run one of two allowlisted checks after acknowledgement |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -277,16 +314,17 @@ dev bridge.
 - Denied subcommands list blocks write/apply/scheduler paths in allowlist validation
 - Imported JSON remains untrusted; staff gating unchanged
 - No approval-gated writes until a future milestone
+- Approval audit entries live only in frontend session memory; no audit IPC or persistence
 - Composer argv tokens are display-only and cannot be submitted to IPC
 - Composer live loads are restricted to the unchanged three-source allowlist
-- The approved action accepts only its fixed ID and `approvalAcknowledged`; Rust
-  owns the target, module, and argv
+- Approved actions accept a fixed ID, `approvalAcknowledged`, and only the validated
+  relative path slot for the workspace-file action; Rust owns the module and flags
 - Health probe uses the same allowlisted `capabilities --json` path as report load
 
 ## Future milestones
 
 - Signed Tauri updater (endpoints + pubkey + CI artifacts)
 - Approval-gated write bridge (separate milestone)
-- Controlled workspace-relative input for the same check, after a separate path threat review
+- App-config-only persistent audit history, after a separate retention/redaction threat review
 - Additional JSON-verified read-only sources (eval, bench, leaderboard)
 - Installers, signing, notarization

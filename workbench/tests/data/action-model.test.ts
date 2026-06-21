@@ -43,18 +43,29 @@ describe("safe command composer model", () => {
     expect(desktop.fixedSourceId).toBe("capabilities");
   });
 
-  it("exposes exactly one fixed no-write action as approval-required on healthy desktop", () => {
+  it("exposes exactly two no-write check actions as approval-required on healthy desktop", () => {
     const approved = commandActionDefinitions.filter((action) => action.approvedDryRunActionId);
-    expect(approved).toHaveLength(1);
-    expect(approved[0].approvedDryRunActionId).toBe("realc-check-hello-example");
-    expect(approved[0].fixedArgvTemplate).toEqual(["realc", "examples/hello.real", "--check"]);
-    expect(approved[0].allowedInputs).toEqual(["approvalAcknowledged: true"]);
-    expect(approved[0].writesFiles).toBe(false);
-    expect(approved[0].networkRequired).toBe(false);
-    expect(composeActionPlan(approved[0].id, webContext).currentExecutionStatus).toBe("unsupported");
-    const desktop = composeActionPlan(approved[0].id, desktopContext);
-    expect(desktop.currentExecutionStatus).toBe("approval_required");
-    expect(desktop.canRequestApproval).toBe(true);
+    expect(approved).toHaveLength(2);
+    expect(approved.map((a) => a.approvedDryRunActionId)).toEqual([
+      "realc-check-hello-example",
+      "realc-check-workspace-file"
+    ]);
+    for (const action of approved) {
+      expect(action.writesFiles).toBe(false);
+      expect(action.networkRequired).toBe(false);
+      expect(action.approvalRequired).toBe(true);
+      expect(composeActionPlan(action.id, webContext).currentExecutionStatus).toBe("unsupported");
+      const desktop = composeActionPlan(action.id, desktopContext);
+      expect(desktop.currentExecutionStatus).toBe("approval_required");
+      expect(desktop.canRequestApproval).toBe(true);
+    }
+    // The fixed hello action templates no argv; the workspace-file action templates exactly one path slot.
+    const hello = approved.find((a) => a.approvedDryRunActionId === "realc-check-hello-example")!;
+    expect(hello.fixedArgvTemplate).toEqual(["realc", "examples/hello.real", "--check"]);
+    expect(hello.requiresWorkspaceFile).toBeFalsy();
+    const wsFile = approved.find((a) => a.approvedDryRunActionId === "realc-check-workspace-file")!;
+    expect(wsFile.fixedArgvTemplate).toEqual(["realc", "<relative-path>", "--check"]);
+    expect(wsFile.requiresWorkspaceFile).toBe(true);
   });
 
   it("keeps every write or destructive action behind the future approval bridge", () => {

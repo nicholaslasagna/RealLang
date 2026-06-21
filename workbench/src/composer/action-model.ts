@@ -59,6 +59,8 @@ export interface CommandActionDefinition {
   readonly fixedSourceId?: FixedReadOnlySourceId;
   readonly approvedDryRunActionId?: ApprovedDryRunActionId;
   readonly fixedArgvTemplate?: readonly string[];
+  /** When true, the action picks a validated workspace-relative `.real` file. */
+  readonly requiresWorkspaceFile?: boolean;
   readonly allowedInputs?: readonly string[];
   /** Display-only tokens. These are never passed to IPC or a process API. */
   readonly proposedArgvPreview?: readonly string[];
@@ -230,9 +232,38 @@ const definitions = [
     fixedArgvTemplate: ["realc", "examples/hello.real", "--check"],
     allowedInputs: ["approvalAcknowledged: true"],
     proposedArgvPreview: ["realc", "examples/hello.real", "--check"],
-    warnings: ["Execution output remains untrusted. The target and argv cannot be changed in 0.12."],
+    warnings: ["Execution output remains untrusted. The target and argv cannot be changed."],
     futureRequirements: ["Explicit local check approval", ...NO_WRITE_REQUIREMENTS],
     nextSafeStep: "Review the exact fixed check, then explicitly approve one local run."
+  },
+  {
+    id: "check-reallang-workspace-file",
+    title: "Check a workspace .real file",
+    category: "check",
+    description: "Run one approval-gated RealLang typecheck against a workspace-relative .real file you choose from the read-only file list.",
+    source: "approved_dry_run_bridge",
+    domain: "code",
+    slashCommands: [],
+    staffRequired: false,
+    writesFiles: false,
+    runsCommands: true,
+    networkRequired: false,
+    approvalRequired: true,
+    destructive: false,
+    supportedInWeb: false,
+    supportedInDesktop: true,
+    safetyLabels: ["UNTRUSTED", "DRY RUN", "APPROVAL REQUIRED", "NO WRITES", "LOCAL ONLY", "NETWORK OFF"],
+    approvedDryRunActionId: "realc-check-workspace-file",
+    requiresWorkspaceFile: true,
+    fixedArgvTemplate: ["realc", "<relative-path>", "--check"],
+    allowedInputs: ["approvalAcknowledged: true", "relativePath: <validated workspace-relative .real>"],
+    proposedArgvPreview: ["realc", "<relative-path>", "--check"],
+    warnings: [
+      "Only a workspace-relative .real file may be chosen; argv, flags, and command text cannot be changed.",
+      "Paths are validated: no absolute paths, no traversal, no symlink escape, .real only. Output remains untrusted."
+    ],
+    futureRequirements: ["Explicit local check approval", "Workspace-relative .real selection", ...NO_WRITE_REQUIREMENTS],
+    nextSafeStep: "Choose a .real file from the workspace list, review the exact argv, then approve one local run."
   },
   {
     id: "repair-diagnostic-dry-run",
@@ -668,14 +699,23 @@ export function validateActionCatalog(): readonly string[] {
       if (action.writesFiles || action.networkRequired || action.destructive || !action.approvalRequired) {
         errors.push(`Approved dry-run action has unsafe metadata: ${action.id}`);
       }
-      if (!action.fixedArgvTemplate?.length || action.fixedArgvTemplate.some((token) => token.includes("<"))) {
+      const template = action.fixedArgvTemplate;
+      const placeholders = (template ?? []).filter((token) => token.includes("<"));
+      if (!template?.length) {
         errors.push(`Approved dry-run action lacks a fixed argv template: ${action.id}`);
+      } else if (action.requiresWorkspaceFile) {
+        // Exactly one placeholder, and it must be the validated path slot.
+        if (placeholders.length !== 1 || placeholders[0] !== "<relative-path>") {
+          errors.push(`Workspace-file action must template exactly one <relative-path>: ${action.id}`);
+        }
+      } else if (placeholders.length > 0) {
+        errors.push(`Fixed approved dry-run action must not template argv: ${action.id}`);
       }
     }
     if ((action.writesFiles || action.destructive) && !action.safetyLabels.includes("APPROVAL BRIDGE REQUIRED")) {
       errors.push(`Write action lacks approval bridge label: ${action.id}`);
     }
   }
-  if (approvedDryRunActions !== 1) errors.push(`Expected exactly one approved dry-run action, found ${approvedDryRunActions}`);
+  if (approvedDryRunActions !== 2) errors.push(`Expected exactly two approved dry-run actions, found ${approvedDryRunActions}`);
   return Object.freeze(errors);
 }

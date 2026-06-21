@@ -6,6 +6,7 @@ import { useWorkbenchStore } from "../../state/workbench-store";
 
 const quickActionIds: readonly CommandActionId[] = [
   "check-reallang-file",
+  "check-reallang-workspace-file",
   "load-capabilities",
   "load-slash-registry",
   "settings-doctor",

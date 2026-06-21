@@ -49,19 +49,27 @@ test("0.12 composer has no browser network or process execution primitive", asyn
   assert.match(source, /Approval bridge required/);
 });
 
-test("approved dry-run IPC contains exactly one fixed no-write action", async () => {
+test("approved dry-run IPC contains only two no-write check actions", async () => {
   const approval = await read("src-tauri/src/bridge/approval.rs");
   const types = await read("src-tauri/src/bridge/types.rs");
   const lib = await read("src-tauri/src/lib.rs");
   const allowlistBlock = approval.match(/APPROVED_DRY_RUN_ACTIONS:[\s\S]*?\n\];/)?.[0] ?? "";
-  assert.match(allowlistBlock, /realc-check-hello-example/);
+  // Exactly two approved actions: the fixed hello check and the workspace-file check.
+  assert.match(allowlistBlock, /id: "realc-check-hello-example"/);
+  assert.match(allowlistBlock, /id: "realc-check-workspace-file"/);
   assert.match(allowlistBlock, /python_module: "reallang\.cli"/);
   assert.match(allowlistBlock, /target: "examples\/hello\.real"/);
   assert.match(allowlistBlock, /argv_suffix: &\["--check"\]/);
-  assert.equal((allowlistBlock.match(/id: "/g) ?? []).length, 1);
+  assert.equal((allowlistBlock.match(/id: "/g) ?? []).length, 2);
+  // Only ONE action accepts a (validated) relative path; the other is fixed.
+  assert.equal((allowlistBlock.match(/accepts_relative_path: true/g) ?? []).length, 1);
   for (const forbidden of ["repair", "apply-proposal", "scheduler-run", "commit", "merge", "update-check"]) {
     assert.doesNotMatch(allowlistBlock, new RegExp(forbidden));
   }
+  // The workspace-file path is strictly validated: relative-only, traversal/symlink/extension checked.
+  assert.match(approval, /validate_relative_real_path/);
+  assert.match(approval, /is_control\(\)/);
+  assert.match(approval, /MAX_RELATIVE_PATH_LEN/);
   assert.match(approval, /env_clear\(\)/);
   assert.match(approval, /PYTHONDONTWRITEBYTECODE/);
   assert.match(approval, /APPROVED_ACTION_TIMEOUT_MS/);
@@ -70,7 +78,26 @@ test("approved dry-run IPC contains exactly one fixed no-write action", async ()
   assert.match(approval, /validate_workspace_target/);
   assert.match(types, /deny_unknown_fields/);
   assert.match(lib, /run_approved_dry_run_action/);
+  // The new file-listing IPC is read-only and present.
+  assert.match(lib, /list_real_files/);
   assert.doesNotMatch(approval, /cmd\.exe|sh\s+-c|shell_execute/);
+});
+
+test("real file listing is read-only, no shell, no writes, with caps", async () => {
+  const realFiles = await read("src-tauri/src/bridge/real_files.rs");
+  // Scan production code only (the #[cfg(test)] module legitimately creates temp dirs).
+  const production = realFiles.split("#[cfg(test)]")[0];
+  assert.match(production, /MAX_REAL_FILES/);
+  assert.match(production, /MAX_DEPTH/);
+  assert.match(production, /is_symlink\(\)/);
+  assert.match(production, /EXCLUDED_DIRS/);
+  for (const excluded of ["node_modules", "target", "\\.git", "\\.venv", "__pycache__"]) {
+    assert.match(production, new RegExp(excluded));
+  }
+  // No writes, no process spawn (hence no shell), no network in the production listing code.
+  for (const forbidden of [/fs::write/, /fs::create/, /Command::new/, /reqwest|TcpStream/]) {
+    assert.doesNotMatch(production, forbidden);
+  }
 });
 
 test("loaded report payload marks output untrusted", async () => {

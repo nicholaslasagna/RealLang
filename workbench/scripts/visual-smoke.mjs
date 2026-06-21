@@ -72,7 +72,7 @@ async function run() {
               return { runtime: "desktop", appName: "RealForge Workbench", workbenchVersion: "0.16.0", platform: "windows", arch: "x86_64", bridgeMode: "read-only" };
             }
             if (command === "get_bridge_capabilities") {
-              return { bridgeMode: "read-only", readOnly: true, writes: false, network: false, shellExecution: false, cliSpawn: true, approvalGatedWrites: false, approvalGatedDryRun: true, approvedDryRunActionCount: 1, metadataOnly: false };
+              return { bridgeMode: "read-only", readOnly: true, writes: false, network: false, shellExecution: false, cliSpawn: true, approvalGatedWrites: false, approvalGatedDryRun: true, approvedDryRunActionCount: 2, metadataOnly: false };
             }
             if (command === "get_update_status") {
               return {
@@ -80,6 +80,27 @@ async function run() {
                 configuration: { configured: false, channel: "stable", endpointConfigured: false, endpointUrl: null, publicKeyConfigured: false, signingRequired: true, installAllowed: false, disabledReason: "Signed update endpoint and public key are not configured for this build." },
                 latestVersion: null, releaseNotes: null, message: "Signed update endpoint and public key are not configured for this build.",
                 safetyNotes: ["Only signed update packages may be installed."], releaseChecklist: []
+              };
+            }
+            if (command === "run_approved_dry_run_action") {
+              return {
+                ok: true,
+                data: {
+                  actionId: "realc-check-hello-example",
+                  title: "Check the fixed hello.real example",
+                  commandSummary: "realc examples/hello.real --check",
+                  relativePath: "examples/hello.real",
+                  workspacePath: "C:\\RealLang",
+                  exitCode: 0,
+                  passed: true,
+                  stdout: "check ok",
+                  stderr: "",
+                  durationMs: 16,
+                  writesFiles: false,
+                  networkRequired: false,
+                  untrusted: true,
+                  safetyLabels: ["UNTRUSTED", "NO WRITES", "NETWORK OFF"]
+                }
               };
             }
             throw new Error(`visual mock does not implement ${command}`);
@@ -121,6 +142,10 @@ async function run() {
       await page.waitForSelector('[data-testid="approval-panel"]');
       const runApprovedCheck = page.getByRole("button", { name: "Run approved check", exact: true });
       if (await runApprovedCheck.isEnabled()) throw new Error(`Approval execution started enabled at ${width}px`);
+      await page.getByRole("checkbox", { name: /I understand this runs a local dry-run\/check command/i }).check();
+      await runApprovedCheck.click();
+      await page.waitForSelector('[data-testid="approved-dry-run-result"]');
+      await page.waitForSelector('[data-testid="recent-approval-runs"] .approval-audit-entry');
       const workbenchOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
       if (workbenchOverflow) throw new Error(`Workbench horizontal overflow detected at ${width}px`);
 
@@ -128,6 +153,11 @@ async function run() {
       await page.waitForSelector('[data-testid="command-action-detail"]');
       const paletteOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
       if (paletteOverflow) throw new Error(`Command palette horizontal overflow detected at ${width}px`);
+      await page.keyboard.press("Escape");
+
+      await page.getByRole("button", { name: "Reports", exact: true }).click();
+      await page.waitForSelector('[data-testid="approval-audit-log"] .approval-audit-entry');
+      if (await overflows()) throw new Error(`Approval log horizontal overflow detected at ${width}px`);
       if (runtimeErrors.length) throw new Error(`Browser errors at ${width}px: ${runtimeErrors.join(" | ")}`);
       console.log(`visual smoke OK at ${width}px`);
       await page.close();

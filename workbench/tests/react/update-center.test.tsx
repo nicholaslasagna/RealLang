@@ -92,7 +92,7 @@ describe("Update center panel", () => {
       expect(screen.getAllByText(/not configured/i).length).toBeGreaterThan(0);
     });
     expect(screen.getAllByText(/public key/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/release endpoint/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/release endpoint/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId("update-release-checklist")).toBeInTheDocument();
     const buttons = screen.getAllByRole("button", { name: /check for updates/i });
     expect(buttons[buttons.length - 1]).toBeDisabled();

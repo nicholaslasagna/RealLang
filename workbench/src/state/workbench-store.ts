@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { appendApprovalAuditEntry, type ApprovalAuditEntry } from "../audit/approval-audit";
 import { loadReadOnlyReportSource } from "../bridge";
 import { getActionDefinition, getActionForSlashCommand, type CommandActionId } from "../composer/action-model";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
@@ -26,6 +27,7 @@ type WorkbenchActions = {
   showToast: (message: string, tone?: "safe" | "warn") => void;
   clearToast: () => void;
   computeImportPreview: () => void;
+  recordApprovalAuditEntry: (entry: ApprovalAuditEntry) => void;
 };
 
 const initialState: WorkbenchState = {
@@ -45,7 +47,8 @@ const initialState: WorkbenchState = {
   toast: null,
   desktopLoadStatus: "idle",
   desktopLoadSourceId: null,
-  desktopLoadError: null
+  desktopLoadError: null,
+  approvalAuditEntries: []
 };
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -252,7 +255,14 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
     }, 2600);
   },
 
-  clearToast: () => set({ toast: null })
+  clearToast: () => set({ toast: null }),
+
+  recordApprovalAuditEntry: (entry) =>
+    set((state) => ({
+      approvalAuditEntries: appendApprovalAuditEntry(state.approvalAuditEntries, entry),
+      operationStatus: `Approved dry-run · ${entry.status.replace("_", " ")}`,
+      lastCommand: `${entry.actionTitle} · ${entry.status.replace("_", " ")}`
+    }))
 }));
 
 export function filterCommands(query: string) {

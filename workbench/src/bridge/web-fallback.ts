@@ -8,6 +8,7 @@ import type {
   BridgeHealth,
   LoadReadOnlyReportResult,
   ReadOnlyReportSourceMeta,
+  RealFileListResult,
   RuntimeInfo,
   SavedWorkspace,
   SecurityScanResult,
@@ -74,6 +75,19 @@ export function webRunApprovedDryRunAction(
 
 export function webListSecurityScanSources(): SecurityScanSourceMeta[] {
   return SECURITY_SCAN_CATALOG.map((source) => ({ ...source }));
+}
+
+export function webListRealFiles(): RealFileListResult {
+  return {
+    ok: false,
+    files: [],
+    truncated: false,
+    workspacePath: null,
+    error: {
+      code: "unsupported_web",
+      message: "Listing workspace .real files is available in the desktop shell only. Web mode never reads the workspace."
+    }
+  };
 }
 
 export function webRunSecurityScanSource(_sourceId: string): SecurityScanResult {

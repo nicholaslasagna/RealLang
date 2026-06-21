@@ -6,6 +6,7 @@
 mod allowlist;
 mod approval;
 mod health;
+mod real_files;
 mod resolve_python;
 mod security_scan;
 mod spawn;
@@ -17,6 +18,7 @@ mod workspace_store;
 use allowlist::list_source_metadata;
 use approval::run_approved_dry_run_action as spawn_approved_dry_run;
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
+use real_files::list_real_files as list_real;
 use security_scan::{list_scan_source_meta, run_security_scan as spawn_security_scan};
 use serde::Serialize;
 use spawn::load_readonly_report_source as spawn_load;
@@ -24,7 +26,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use types::{
-    ApprovedDryRunInput, ApprovedDryRunResult, LoadReadOnlyReportResult,
+    ApprovedDryRunInput, ApprovedDryRunResult, LoadReadOnlyReportResult, RealFileListResult,
     ReadOnlyReportSourceMeta, SecurityScanResult, SecurityScanSourceMeta, WorkspacePaths,
 };
 use update::{check_for_update as run_update_check, get_update_status as read_update_status, UpdateCheckResult, UpdateStatus};
@@ -215,6 +217,11 @@ pub fn run_security_scan_source(source_id: String) -> SecurityScanResult {
 }
 
 #[tauri::command(rename_all = "camelCase")]
+pub fn list_real_files() -> RealFileListResult {
+    list_real()
+}
+
+#[tauri::command(rename_all = "camelCase")]
 pub fn run_approved_dry_run_action(
     action_id: String,
     input: ApprovedDryRunInput,
@@ -247,7 +254,7 @@ mod tests {
         assert!(!caps.writes);
         assert!(!caps.network);
         assert!(caps.approval_gated_dry_run);
-        assert_eq!(caps.approved_dry_run_action_count, 1);
+        assert_eq!(caps.approved_dry_run_action_count, 2);
         assert_eq!(caps.bridge_mode, "read-only");
     }
 

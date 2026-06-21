@@ -37,7 +37,8 @@ function resetStore(actionId: CommandActionId = "repair-diagnostic-dry-run") {
     paletteOpen: false,
     desktopLoadStatus: "idle",
     desktopLoadSourceId: null,
-    desktopLoadError: null
+    desktopLoadError: null,
+    approvalAuditEntries: []
   });
 }
 
@@ -99,6 +100,7 @@ describe("safe command composer UI", () => {
     expect(await screen.findByRole("button", { name: /desktop approval unavailable/i })).toBeDisabled();
     expect(screen.queryByTestId("approval-panel")).not.toBeInTheDocument();
     expect(mocks.runApprovedDryRunAction).not.toHaveBeenCalled();
+    expect(useWorkbenchStore.getState().approvalAuditEntries).toEqual([]);
   });
 
   it("keeps approval disabled when desktop bridge health is not ready", async () => {
@@ -125,6 +127,7 @@ describe("safe command composer UI", () => {
         actionId: "realc-check-hello-example",
         title: "Check the fixed hello.real example",
         commandSummary: "realc examples/hello.real --check",
+        relativePath: "examples/hello.real",
         workspacePath: "C:\\RealLang",
         exitCode: 0,
         passed: true,
@@ -149,7 +152,8 @@ describe("safe command composer UI", () => {
     fireEvent.click(run);
 
     expect(await screen.findByTestId("approved-dry-run-result")).toBeInTheDocument();
-    expect(screen.getByText("UNTRUSTED OUTPUT")).toBeInTheDocument();
+    const executionReport = screen.getByTestId("approved-dry-run-result");
+    expect(executionReport).toHaveTextContent("UNTRUSTED OUTPUT");
     expect(screen.getByLabelText("Approved check stdout")).toHaveTextContent("ok: examples/hello.real");
     expect(mocks.runApprovedDryRunAction).toHaveBeenCalledWith(
       "realc-check-hello-example",

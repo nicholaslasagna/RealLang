@@ -3,6 +3,7 @@ import { useWorkbenchStore } from "../../state/workbench-store";
 import { Badge, Button, Icon, SectionHeading } from "../../components/primitives";
 import { CliBridgePanel } from "./CliBridgePanel";
 import { ImportPreviewPanel } from "./ImportPreview";
+import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 
 export function ReportsScreen() {
   const importRaw = useWorkbenchStore((s) => s.importRaw);
@@ -32,6 +33,7 @@ export function ReportsScreen() {
         <Badge label="NO BACKEND" tone="cyan" />
         <Badge label="NO WRITES" tone="green" />
       </div>
+      <ApprovalAuditLog />
       <div className="reports-layout">
         <div className="reports-left">
           <CliBridgePanel />

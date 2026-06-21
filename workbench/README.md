@@ -39,6 +39,37 @@ posture, inert Copy diagnostics), applies a consistent what/why/next pattern to
 onboarding states, and adds a **1280px** visual-smoke checkpoint. No behavior/safety
 changes.
 
+**0.17** is a **release-readiness / threat-model** milestone. It adds a
+[signed-updater threat model](docs/signed-updater-threat-model.md) and a typed,
+honest **release readiness checklist** in the Update Center (Settings → Updates):
+15 items with `pass`/`warn`/`missing`/`deferred` status, platform, required track,
+and next action; display-only validation commands; and explicit "no unsigned
+updates" / "private keys never stored" statements. It does **not** wire a real
+updater, download or install anything, add endpoints/keys, or change any safety
+boundary. Signing, notarization, and updater config stay honestly `missing`/
+`deferred`; the bundle stays `0.16.0` until an actual signed release. See
+[docs/update-pipeline.md](docs/update-pipeline.md).
+
+**0.18** extends the approved dry-run model with a **controlled workspace-relative
+`.real` file check**. A read-only `list_real_files` IPC (hidden/vendor/build dirs
+excluded, symlinks skipped, count/depth capped) feeds a **dropdown**; a second
+approval-gated action runs `realc <relative-path> --check`. The path is strictly
+validated in Rust (`.real` only, workspace-relative, no traversal, canonicalized +
+contained, no symlink escape, no control chars, length-capped). It is still
+dry-run/check-only — **no** write bridge, arbitrary argv, raw path textbox, shell,
+or network — and the fixed `hello.real` check still works. See
+[docs/approval-bridge-threat-model.md](docs/approval-bridge-threat-model.md).
+
+**0.19** adds a **session-only approval audit log** for those two approved checks.
+Each completed, explicitly approved run records sanitized action/target metadata,
+status, exit code, duration, capped stdout/stderr previews, and fixed no-write,
+no-network, and untrusted-output labels. Recent runs appear in Workbench; the full
+session list appears in Reports with output collapsed by default and a metadata-only
+safe-copy action. Nothing is written to the workspace, `.realforge`, app config, or
+the repository. No IPC command or execution authority is added. Persistent audit
+storage remains deferred pending an app-config-only design and separate threat model.
+The signed bundle version remains `0.16.0` under the 0.17 release policy.
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -69,6 +100,9 @@ Historical milestones:
 - **0.14** Read-only security scan bridge (allowlisted `npm audit`/`cargo tree`; untrusted output, no remediation)
 - **0.15** UI declutter + navigation hierarchy + Security UX polish (no behavior/safety changes)
 - **0.16** Version alignment (Workbench 0.16.0), Settings About surface, onboarding polish, 1280px smoke (no behavior/safety changes)
+- **0.17** Signed-updater threat model + typed release-readiness checklist (no real updater, no unsigned install, no fake endpoints/keys)
+- **0.18** Controlled workspace-relative `.real` file check (validated picker; still dry-run/check-only, no write bridge, no arbitrary argv)
+- **0.19** Session-only approval audit log and sanitized execution transparency (no persistence, no new IPC or execution power)
 
 ## Toolchain and dependency security
 
@@ -116,7 +150,7 @@ npm run check      # fixtures + syntax + tsc
 npm test           # node tests + vitest React tests
 npm run build      # production dist/ (offline bundle)
 npm run build:data # legacy bundle + Node CLI allowlist artifacts
-npm run smoke:visual  # Playwright layout smoke at 1024px and 1440px (after build)
+npm run smoke:visual  # Playwright layout smoke at 1024px, 1280px, and 1440px (after build)
 npm run check:tauri   # Rust IPC bridge unit tests (requires cargo)
 ```
 

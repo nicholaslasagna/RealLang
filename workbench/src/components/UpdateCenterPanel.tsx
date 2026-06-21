@@ -7,18 +7,13 @@ import {
   updateStatusLabel
 } from "../bridge";
 import type { UpdateCheckResult, UpdateStatus } from "../bridge";
+import { ReleaseReadinessPanel } from "../features/updates/ReleaseReadinessPanel";
 import { Badge, Button, Icon } from "./primitives";
 
 function channelLabel(channel: string): string {
   if (channel === "local_dev") return "Local dev";
   if (channel === "preview") return "Preview";
   return "Stable";
-}
-
-function checklistTone(status: string): "green" | "amber" | "neutral" | "cyan" {
-  if (status === "complete") return "green";
-  if (status === "future") return "cyan";
-  return "neutral";
 }
 
 export function UpdateCenterPanel() {
@@ -148,23 +143,11 @@ export function UpdateCenterPanel() {
           ))}
         </ul>
       </div>
-      {status.releaseChecklist.length > 0 ? (
-        <article className="update-center__checklist" data-testid="update-release-checklist">
-          <p className="eyebrow">RELEASE READINESS CHECKLIST</p>
-          <ul>
-            {status.releaseChecklist.map((item) => (
-              <li key={item.id}>
-                <Badge label={item.status.toUpperCase()} tone={checklistTone(item.status)} />
-                <span>{item.label}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="update-center__checklist-note">
-            Checklist is informational until signed release infrastructure is live. No automatic release actions run from
-            this panel.
-          </p>
-        </article>
-      ) : null}
+      <ReleaseReadinessPanel
+        currentVersion={status.currentVersion}
+        publicKeyConfigured={configuration.publicKeyConfigured}
+        endpointConfigured={configuration.endpointConfigured}
+      />
       <article className="update-center__release-notes">
         <p className="eyebrow">RELEASE NOTES</p>
         <p>{status.releaseNotes ?? "Release notes will appear here after signed updates are configured and checked."}</p>

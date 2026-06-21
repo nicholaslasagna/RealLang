@@ -103,16 +103,19 @@ export type LoadReadOnlyReportResult =
   | { ok: true; data: LoadedReadOnlyReport }
   | { ok: false; error: BridgeError };
 
-export type ApprovedDryRunActionId = "realc-check-hello-example";
+export type ApprovedDryRunActionId = "realc-check-hello-example" | "realc-check-workspace-file";
 
 export interface ApprovedDryRunInput {
   approvalAcknowledged: boolean;
+  /** Workspace-relative .real path for the workspace-file check (validated in Rust). */
+  relativePath?: string;
 }
 
 export interface ApprovedDryRunExecution {
   actionId: ApprovedDryRunActionId;
   title: string;
   commandSummary: string;
+  relativePath: string | null;
   workspacePath: string;
   exitCode: number;
   passed: boolean;
@@ -128,6 +131,15 @@ export interface ApprovedDryRunExecution {
 export type ApprovedDryRunResult =
   | { ok: true; data: ApprovedDryRunExecution }
   | { ok: false; error: BridgeError };
+
+/** Read-only workspace .real file listing (desktop only). */
+export interface RealFileListResult {
+  ok: boolean;
+  files: string[];
+  truncated: boolean;
+  workspacePath: string | null;
+  error?: BridgeError;
+}
 
 export type BridgeResult<T> =
   | { ok: true; data: T }

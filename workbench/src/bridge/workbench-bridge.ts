@@ -7,6 +7,7 @@ import type {
   BridgeHealth,
   LoadReadOnlyReportResult,
   ReadOnlyReportSourceMeta,
+  RealFileListResult,
   RuntimeInfo,
   SavedWorkspace,
   SecurityScanResult,
@@ -19,6 +20,7 @@ import type {
 import {
   webBridgeCapabilities,
   webBridgeHealth,
+  webListRealFiles,
   webListSecurityScanSources,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
@@ -106,7 +108,18 @@ export async function runSecurityScanSource(sourceId: string): Promise<SecurityS
   }
 }
 
-/** Run the one fixed, approval-gated, no-write validation action (desktop only). */
+/** List workspace-relative `.real` files (read-only; desktop only). */
+export async function listRealFiles(): Promise<RealFileListResult> {
+  if (!isDesktopRuntime()) return webListRealFiles();
+  try {
+    return await invokeDesktop<RealFileListResult>("list_real_files");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, files: [], truncated: false, workspacePath: null, error: { code: "ipc_failed", message } };
+  }
+}
+
+/** Run an approval-gated, no-write validation action (desktop only). */
 export async function runApprovedDryRunAction(
   actionId: ApprovedDryRunActionId,
   input: ApprovedDryRunInput

@@ -7,6 +7,7 @@ import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
 import { ApprovedDryRunPanel } from "../composer/ApprovedDryRunPanel";
 import { ComposerDock } from "../composer/ComposerDock";
+import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 
 function PlanCard() {
   const steps = [
@@ -166,6 +167,7 @@ export function WorkbenchScreen() {
                 onClose={() => setApprovalActionId(null)}
               />
             ) : null}
+            <ApprovalAuditLog compact />
             {showsRepairEvidence ? (
               <>
                 <div className="agent-label">

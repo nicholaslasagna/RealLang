@@ -1,4 +1,4 @@
-# Workbench navigation & UI hierarchy (0.15)
+# Workbench navigation & UI hierarchy (0.15-0.16)
 
 0.15 is a **UI declutter** milestone — it polishes hierarchy and reduces visual
 noise. It changes **no** behavior, execution, or safety boundary.
@@ -73,7 +73,42 @@ Verified at 1024 / 1280 / 1440 with no horizontal overflow: the inspector hides
 below 1100px, the status cluster collapses to icon-only pills below 1100px, and
 the sidebar narrows to icons below 980px.
 
+## Versioning & About (0.16)
+
+Two versions are tracked and **never conflated**:
+
+- **Workbench** (this desktop UI): `0.16.0`
+- **RealForge backend** (the Python engine): `2.7`
+
+0.16 aligns every Workbench version surface to `0.16.0`: `package.json`,
+`package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, the Rust
+constants (`mod.rs`, `update.rs`), the frontend constant (`web-fallback.ts`), the
+sidebar footer, the runtime/About surface, and the Update Center "Current version".
+The desktop bundle metadata therefore matches the UI. A `version-alignment`
+regression test pins these so a stale `0.12.0`/`0.10`/`0.15` label cannot silently
+return.
+
+The sidebar footer shows **Workbench 0.16.0** with **RealForge backend 2.7** beside
+it. **Settings → General → About** ("About RealForge Workbench") adds a calm runtime
+surface: Workbench version, backend version, runtime mode (web preview / desktop),
+platform, bridge mode, update status, build channel, workspace status, and a
+security-posture summary. Its **Copy diagnostics** button copies inert JSON only —
+versions, modes, and statuses — with **no** environment variables, secrets, keys,
+file paths, or command output. The Update Center uses the **Workbench** version (not
+the backend version) for app-update metadata.
+
+## Onboarding states (what / why / next)
+
+Empty, loading, and error states answer three questions consistently — *what
+happened*, *why it matters*, and the *next safe action* — via the shared
+`StateNote` component and the existing workspace/update panels. This covers
+workspace missing, saved workspace moved/deleted, Python/CLI missing, bridge
+unhealthy, web-mode unsupported, Update Center not configured, "no scan run yet",
+`npm audit` clean, scan failed, and staff-off. States stay calm unless genuinely
+dangerous.
+
 ## What did not change
 
 No backend execution, no auto-fix, no write bridge, no shell, no arbitrary args,
-no weakened staff gating, and no removed warnings.
+no new IPC commands, no weakened staff gating, and no removed warnings. 0.16 is a
+metadata/About/onboarding polish milestone only.

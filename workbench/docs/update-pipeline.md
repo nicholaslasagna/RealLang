@@ -58,20 +58,58 @@ Detection rules:
 When `ready_to_check`, **Check for Updates** is enabled but returns an honest
 message that network check/install are not wired yet — no fake “up to date”.
 
-## Release readiness checklist
+## Release readiness checklist (0.17)
 
-The Update Center shows an informational checklist:
+The Update Center renders a **typed, honest** release readiness checklist
+(`src/data/release/release-readiness.ts`, rendered by `ReleaseReadinessPanel`).
+Each of the 15 items has `id`, `label`, `status` (`pass`/`warn`/`missing`/
+`deferred`), `platform` (`all`/`macOS`/`Windows`), `requiredFor` (`dev`/`preview`/
+`stable`), `details`, and `nextAction`:
 
-1. App version bumped
-2. Tauri build passes
-3. Signed bundle generated
-4. Update manifest generated
-5. Signature verified
-6. Release notes attached
-7. macOS notarization (future)
-8. Windows signing (future)
+| Item | Default status |
+|------|----------------|
+| Workbench version aligned | `pass` (derived) |
+| Tauri build passes | `warn` (verify in CI) |
+| npm audit clean | `warn` (verify in CI) |
+| Security Center reviewed | `pass` |
+| glib upstream-blocked advisory documented | `pass` |
+| App icons finalized | `warn` (placeholders) |
+| macOS signing configured | `deferred` |
+| macOS notarization configured | `deferred` |
+| Windows signing configured | `deferred` |
+| Updater public key configured | `missing` (unless env set) |
+| Updater endpoint configured | `missing` (unless env set) |
+| Release notes prepared | `warn` |
+| Update manifest generated | `missing` |
+| Signed update artifact generated | `missing` |
+| Install-and-restart verified | `missing` |
 
-This is UI-only until CI/release infrastructure exists.
+Signing, notarization, updater, manifest, artifact, and install items are **never**
+`pass` until actually configured/produced. The panel also lists the display-only
+**validation commands** (`npm run check`/`test`/`build`/`smoke:visual`/`check:tauri`/
+`tauri:build`/`npm audit`) — the UI never runs them. See the
+[signed updater threat model](./signed-updater-threat-model.md).
+
+The bundle version stays **0.16.0** through 0.17 (a readiness milestone, not a
+shipped release); it is bumped only when an actual signed release is cut.
+
+## Icon & signing readiness (TODO before stable)
+
+The desktop bundle currently ships **generated placeholder icons**. Before a stable
+release:
+
+- [ ] Replace placeholder icons in `src-tauri/icons/` with final branding.
+- [ ] Provide a real macOS **`icon.icns`** (all required sizes).
+- [ ] Provide a real Windows **`icon.ico`** (multi-resolution).
+- [ ] Review **DMG appearance** (background, layout, volume name).
+- [ ] Confirm **app name** consistency ("RealForge Workbench") across
+      `tauri.conf.json`, bundle, and UI.
+- [ ] Set a stable **bundle identifier** (reverse-DNS) and keep it fixed.
+- [ ] Configure a macOS **Developer ID signing identity** + **notarization**.
+- [ ] Configure a Windows **Authenticode** certificate and installer signing.
+
+These are tracked as `deferred`/`warn` in the readiness checklist above. No final
+branding is generated in 0.17.
 
 ## Safety rules
 

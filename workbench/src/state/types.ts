@@ -1,4 +1,5 @@
 import type { CommandActionId } from "../composer/action-model";
+import type { ApprovalAuditEntry } from "../audit/approval-audit";
 
 export type WorkbenchScreen =
   | "home"
@@ -85,4 +86,5 @@ export interface WorkbenchState {
   desktopLoadStatus: DesktopLoadStatus;
   desktopLoadSourceId: string | null;
   desktopLoadError: string | null;
+  approvalAuditEntries: ApprovalAuditEntry[];
 }

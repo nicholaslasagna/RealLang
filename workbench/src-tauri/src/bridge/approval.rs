@@ -1,4 +1,10 @@
-//! One-action, approval-gated, no-write validation bridge for Workbench 0.12.
+//! Approval-gated, no-write validation bridge for Workbench 0.12-0.18.
+//!
+//! 0.18 adds a second action that accepts a CONTROLLED workspace-relative `.real`
+//! path (chosen from the read-only file list). The path is strictly validated:
+//! no control characters, length-capped, relative-only, traversal-free,
+//! canonicalized + contained in the workspace, symlink-escape rejected, and
+//! `.real` only. There is still no arbitrary argv, no shell, and no writes.
 
 use super::resolve_python::resolve_python;
 use super::types::{
@@ -14,25 +20,38 @@ use std::time::{Duration, Instant};
 
 pub const APPROVED_ACTION_TIMEOUT_MS: u64 = 10_000;
 pub const APPROVED_ACTION_MAX_STREAM_BYTES: usize = 64 * 1024;
+pub const MAX_RELATIVE_PATH_LEN: usize = 512;
 
 #[derive(Debug, Clone, Copy)]
 pub struct ApprovedDryRunAction {
     pub id: &'static str,
     pub title: &'static str,
-    pub display_command: &'static str,
     pub python_module: &'static str,
+    /// Fixed target for fixed-target actions; ignored when `accepts_relative_path`.
     pub target: &'static str,
     pub argv_suffix: &'static [&'static str],
+    /// When true, the target comes from the strictly validated input `relative_path`.
+    pub accepts_relative_path: bool,
 }
 
-pub const APPROVED_DRY_RUN_ACTIONS: &[ApprovedDryRunAction] = &[ApprovedDryRunAction {
-    id: "realc-check-hello-example",
-    title: "Check the fixed hello.real example",
-    display_command: "realc examples/hello.real --check",
-    python_module: "reallang.cli",
-    target: "examples/hello.real",
-    argv_suffix: &["--check"],
-}];
+pub const APPROVED_DRY_RUN_ACTIONS: &[ApprovedDryRunAction] = &[
+    ApprovedDryRunAction {
+        id: "realc-check-hello-example",
+        title: "Check the fixed hello.real example",
+        python_module: "reallang.cli",
+        target: "examples/hello.real",
+        argv_suffix: &["--check"],
+        accepts_relative_path: false,
+    },
+    ApprovedDryRunAction {
+        id: "realc-check-workspace-file",
+        title: "Check a workspace .real file",
+        python_module: "reallang.cli",
+        target: "",
+        argv_suffix: &["--check"],
+        accepts_relative_path: true,
+    },
+];
 
 const PASSTHROUGH_ENV: &[&str] = &[
     "PATH",
@@ -81,16 +100,26 @@ pub fn run_approved_dry_run_action(
         );
     };
     let repo_root = PathBuf::from(repo_root_text);
-    let target = match validate_workspace_target(&repo_root, Path::new(action.target)) {
-        Ok(path) => path,
-        Err(error) => return ApprovedDryRunResult::failure(&error.code, error.message),
+
+    // Resolve the target relative path: a fixed target, or the strictly validated
+    // input relative_path for the workspace-file action.
+    let target_relative = if action.accepts_relative_path {
+        let Some(raw) = input.relative_path.as_deref() else {
+            return ApprovedDryRunResult::failure(
+                "invalid_target",
+                "a workspace-relative .real path must be selected for this action",
+            );
+        };
+        match validate_relative_real_path(&repo_root, raw) {
+            Ok(relative) => relative,
+            Err(error) => return ApprovedDryRunResult::failure(&error.code, error.message),
+        }
+    } else {
+        match validate_relative_real_path(&repo_root, action.target) {
+            Ok(relative) => relative,
+            Err(error) => return ApprovedDryRunResult::failure(&error.code, error.message),
+        }
     };
-    if target.extension() != Some(OsStr::new("real")) {
-        return ApprovedDryRunResult::failure(
-            "invalid_target",
-            "approved target must be a .real file",
-        );
-    }
 
     let python = match resolve_python(&repo_root) {
         Ok(path) => path,
@@ -106,16 +135,58 @@ pub fn run_approved_dry_run_action(
         );
     }
 
-    match run_fixed_action(
+    match run_check(
         &python,
         &repo_root,
         action,
+        &target_relative,
         APPROVED_ACTION_TIMEOUT_MS,
         APPROVED_ACTION_MAX_STREAM_BYTES,
     ) {
         Ok(execution) => ApprovedDryRunResult::success(execution),
         Err(error) => ApprovedDryRunResult::failure(&error.code, error.message),
     }
+}
+
+/// Strictly validate a user/catalog-supplied workspace-relative `.real` path and
+/// return the cleaned relative string (used for argv) after confirming it resolves
+/// to a contained, non-symlink-escaping `.real` file.
+fn validate_relative_real_path(repo_root: &Path, raw: &str) -> Result<String, BridgeError> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Err(BridgeError {
+            code: "invalid_target".to_string(),
+            message: "relative path must not be empty".to_string(),
+        });
+    }
+    if trimmed.len() > MAX_RELATIVE_PATH_LEN {
+        return Err(BridgeError {
+            code: "invalid_target".to_string(),
+            message: format!("relative path exceeds {MAX_RELATIVE_PATH_LEN} character limit"),
+        });
+    }
+    if trimmed.chars().any(|ch| ch.is_control()) {
+        return Err(BridgeError {
+            code: "invalid_target".to_string(),
+            message: "relative path contains control characters".to_string(),
+        });
+    }
+    let relative = Path::new(trimmed);
+    if relative.extension() != Some(OsStr::new("real")) {
+        return Err(BridgeError {
+            code: "invalid_target".to_string(),
+            message: "selected path must end in .real".to_string(),
+        });
+    }
+    let canonical = validate_workspace_target(repo_root, relative)?;
+    // Defense in depth: the resolved file (after symlink resolution) must still be .real.
+    if canonical.extension() != Some(OsStr::new("real")) {
+        return Err(BridgeError {
+            code: "invalid_target".to_string(),
+            message: "selected file does not resolve to a .real file".to_string(),
+        });
+    }
+    Ok(trimmed.to_string())
 }
 
 fn validate_workspace_target(repo_root: &Path, relative: &Path) -> Result<PathBuf, BridgeError> {
@@ -157,10 +228,11 @@ fn validate_workspace_target(repo_root: &Path, relative: &Path) -> Result<PathBu
     Ok(canonical_target)
 }
 
-fn run_fixed_action(
+fn run_check(
     python: &Path,
     repo_root: &Path,
     action: &'static ApprovedDryRunAction,
+    target_relative: &str,
     timeout_ms: u64,
     max_stream_bytes: usize,
 ) -> Result<ApprovedDryRunExecution, BridgeError> {
@@ -169,7 +241,7 @@ fn run_fixed_action(
         .env_clear()
         .arg("-m")
         .arg(action.python_module)
-        .arg(action.target)
+        .arg(target_relative)
         .args(action.argv_suffix)
         .current_dir(repo_root)
         .stdout(Stdio::piped())
@@ -232,10 +304,12 @@ fn run_fixed_action(
     let stdout = join_capped_output(stdout_reader, "stdout")?;
     let stderr = join_capped_output(stderr_reader, "stderr")?;
     let duration_ms = start.elapsed().as_millis();
+    let command_summary = format!("realc {} {}", target_relative, action.argv_suffix.join(" "));
     Ok(ApprovedDryRunExecution {
         action_id: action.id,
         title: action.title,
-        command_summary: action.display_command,
+        command_summary,
+        relative_path: Some(target_relative.to_string()),
         workspace_path: repo_root.to_string_lossy().into_owned(),
         exit_code: status.code().unwrap_or(-1),
         passed: status.success(),
@@ -325,18 +399,22 @@ mod tests {
     }
 
     #[test]
-    fn allowlist_contains_exactly_one_no_write_action() {
-        assert_eq!(APPROVED_DRY_RUN_ACTIONS.len(), 1);
-        let action = APPROVED_DRY_RUN_ACTIONS[0];
-        assert_eq!(action.id, "realc-check-hello-example");
-        assert_eq!(action.argv_suffix, &["--check"]);
-        let all_tokens = format!(
-            "{} {} {:?}",
-            action.python_module, action.target, action.argv_suffix
-        );
-        for forbidden in ["repair", "apply", "scheduler", "commit", "merge", "update"] {
-            assert!(!all_tokens.contains(forbidden));
+    fn allowlist_contains_only_two_no_write_check_actions() {
+        assert_eq!(APPROVED_DRY_RUN_ACTIONS.len(), 2);
+        let ids: Vec<_> = APPROVED_DRY_RUN_ACTIONS.iter().map(|a| a.id).collect();
+        assert_eq!(ids, vec!["realc-check-hello-example", "realc-check-workspace-file"]);
+        for action in APPROVED_DRY_RUN_ACTIONS {
+            assert_eq!(action.argv_suffix, &["--check"]);
+            let all_tokens = format!(
+                "{} {} {:?}",
+                action.python_module, action.target, action.argv_suffix
+            );
+            for forbidden in ["repair", "apply", "scheduler", "commit", "merge", "update"] {
+                assert!(!all_tokens.contains(forbidden));
+            }
         }
+        assert!(!APPROVED_DRY_RUN_ACTIONS[0].accepts_relative_path);
+        assert!(APPROVED_DRY_RUN_ACTIONS[1].accepts_relative_path);
     }
 
     #[test]
@@ -345,6 +423,7 @@ mod tests {
             "apply-proposal",
             ApprovedDryRunInput {
                 approval_acknowledged: true,
+                relative_path: None,
             },
         );
         assert!(!result.ok);
@@ -357,6 +436,7 @@ mod tests {
             "realc-check-hello-example",
             ApprovedDryRunInput {
                 approval_acknowledged: false,
+                relative_path: None,
             },
         );
         assert!(!result.ok);
@@ -369,6 +449,77 @@ mod tests {
             r#"{"approvalAcknowledged":true,"args":["--emit-c"]}"#,
         );
         assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn relative_path_is_optional_in_schema() {
+        let parsed = serde_json::from_str::<ApprovedDryRunInput>(r#"{"approvalAcknowledged":true}"#);
+        assert!(parsed.is_ok());
+        assert!(parsed.unwrap().relative_path.is_none());
+        let with_path = serde_json::from_str::<ApprovedDryRunInput>(
+            r#"{"approvalAcknowledged":true,"relativePath":"examples/hello.real"}"#,
+        );
+        assert_eq!(with_path.unwrap().relative_path.as_deref(), Some("examples/hello.real"));
+    }
+
+    #[test]
+    fn relative_real_path_validation_rejects_unsafe_inputs() {
+        let root = temp_root("relval");
+        assert_eq!(
+            validate_relative_real_path(&root, "examples/hello.real").unwrap(),
+            "examples/hello.real"
+        );
+        // absolute
+        let absolute = root.join("examples/hello.real");
+        assert_eq!(
+            validate_relative_real_path(&root, &absolute.to_string_lossy())
+                .unwrap_err()
+                .code,
+            "invalid_target"
+        );
+        // traversal
+        assert_eq!(
+            validate_relative_real_path(&root, "../outside.real").unwrap_err().code,
+            "invalid_target"
+        );
+        // wrong extension
+        assert_eq!(
+            validate_relative_real_path(&root, "examples/notes.txt").unwrap_err().code,
+            "invalid_target"
+        );
+        // control character
+        assert_eq!(
+            validate_relative_real_path(&root, "examples/hello\n.real").unwrap_err().code,
+            "invalid_target"
+        );
+        // empty
+        assert_eq!(
+            validate_relative_real_path(&root, "   ").unwrap_err().code,
+            "invalid_target"
+        );
+        // over-long
+        let long = format!("{}.real", "a".repeat(MAX_RELATIVE_PATH_LEN));
+        assert_eq!(
+            validate_relative_real_path(&root, &long).unwrap_err().code,
+            "invalid_target"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn relative_real_path_rejects_symlink_escape() {
+        use std::os::unix::fs::symlink;
+        let root = temp_root("relsym");
+        let outside = root.parent().unwrap().join("rf-approval-rel-outside.real");
+        fs::write(&outside, "module main;").unwrap();
+        symlink(&outside, root.join("examples/escape.real")).unwrap();
+        assert_eq!(
+            validate_relative_real_path(&root, "examples/escape.real").unwrap_err().code,
+            "outside_workspace"
+        );
+        let _ = fs::remove_file(&outside);
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]
