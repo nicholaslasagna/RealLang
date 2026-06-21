@@ -26,6 +26,17 @@ Provider, research, patch, plan, and generated artifact output remains untrusted
 until validated. Commands default to read-only or dry-run behavior, and no feature
 may silently apply, merge, or commit changes.
 
+## Workbench UI prototype
+
+`workbench/` contains a static, offline-safe interface prototype for future
+RealForge CLI/report JSON integration. It includes the command-centered shell,
+domain screens, settings, capability cards, benchmark views, and staff-gated
+update preview from the approved design direction.
+
+All prototype data is mocked. It executes no command, changes no backend setting,
+and provides no apply, commit, merge, network, provider, engine, or asset side
+effect. See [Workbench UI prototype](realforge-workbench-ui.md).
+
 ## What RealForge 2.7 adds
 
 RealForge 2.7 adds a **general agent skill benchmark suite** — a broad, cross-domain
@@ -641,6 +652,7 @@ These are plans, not implemented capabilities or performance claims.
 - [Image workflows (2.4)](realforge-image-workflows.md)
 - [Asset pipelines (2.6)](realforge-asset-pipelines.md)
 - [Blender planning (2.6)](realforge-blender.md)
+- [Workbench UI prototype](realforge-workbench-ui.md)
 - [Creative planning (2.1)](realforge-creative.md)
 - [Unreal foundation (2.1)](realforge-unreal.md)
 - [Self-improvement (0.6)](realforge-self-improvement.md)

@@ -100,6 +100,9 @@ and Blender support is planning-only: no commands run, no assets are generated,
 and no projects are modified. See
 [asset pipelines](docs/realforge-asset-pipelines.md) and
 [Blender planning](docs/realforge-blender.md).
+The first static [RealForge Workbench UI prototype](docs/realforge-workbench-ui.md)
+provides an offline-safe cockpit for these mocked workflows. It does not execute
+CLI commands or modify the workspace.
 RealForge 2.7 adds broad cross-domain `skill-bench` benchmarks across code, docs,
 research, creative, image, vision, engine, asset, safety, and self-improve domains.
 They are internal and rule-based — not scientific proof of superiority — and help
@@ -237,6 +240,7 @@ See [docs/roadmap.md](docs/roadmap.md).
 - [RealForge image workflows](docs/realforge-image-workflows.md)
 - [RealForge asset pipelines](docs/realforge-asset-pipelines.md)
 - [RealForge Blender planning](docs/realforge-blender.md)
+- [RealForge Workbench UI prototype](docs/realforge-workbench-ui.md)
 - [RealForge creative planning](docs/realforge-creative.md)
 - [RealForge Unreal foundation](docs/realforge-unreal.md)
 - [RealForge staff mode](docs/realforge-staff-mode.md)

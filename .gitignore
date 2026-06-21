@@ -31,4 +31,5 @@ llm_study/results/**/*.json
 .realforge/engines/
 .realforge/multimodal/
 .realforge/pipelines/
+workbench/dist/
 .DS_Store
