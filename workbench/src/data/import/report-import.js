@@ -1,19 +1,25 @@
 (function registerReportImport(global) {
   "use strict";
 
-  // Read-only JSON report import for the Workbench (0.3).
+  // Read-only JSON report import for the Workbench (0.3 / hardened in 0.3.1).
   //
   // This module never executes commands, never writes files, never reaches a
   // backend, and never makes a network request. It only parses pasted JSON and
-  // runs it through the existing 0.2 report adapters, which already treat every
-  // provider/generated field as untrusted and warn instead of throwing.
+  // runs it through the existing report adapters.
+  //
+  // 0.3.1 trust hardening: imported JSON is ALWAYS treated as untrusted. Source
+  // fields cannot remove the UNTRUSTED label, claim RealForge verification, or
+  // unlock staff-gated report types. Staff gating is enforced by this preview
+  // layer (report type default + Workbench staff state), not by the payload.
 
   function getAdapters() {
     return global.RealForgeReportAdapters || null;
   }
 
-  // Type id -> { label, adapter, reviewOnly }. The adapter name resolves against
-  // RealForgeReportAdapters at preview time so adapter logic is never duplicated.
+  // Type id -> { label, adapter, reviewOnly, staffOnly }. The adapter name
+  // resolves against RealForgeReportAdapters at preview time so adapter logic is
+  // never duplicated. `staffOnly` marks report types whose advanced details stay
+  // gated regardless of any staff_only field inside the imported JSON.
   const IMPORT_TYPES = Object.freeze([
     { id: "auto", label: "Auto-detect", adapter: null },
     { id: "doctor_status", label: "Doctor / status summary", adapter: "adaptDoctorSummary" },
@@ -27,17 +33,29 @@
     { id: "patch_proposal", label: "Patch proposal", adapter: "adaptPatchProposal", reviewOnly: true },
     { id: "experiment_report", label: "Experiment report", adapter: "adaptExperimentReport", reviewOnly: true },
     { id: "merge_proposal", label: "Merge proposal", adapter: "adaptMergeProposal", reviewOnly: true },
-    { id: "update_bundle", label: "Update bundle", adapter: "adaptUpdateBundle", reviewOnly: true },
-    { id: "scheduler_run", label: "Scheduler run report", adapter: "adaptSchedulerRunReport" },
+    { id: "update_bundle", label: "Update bundle", adapter: "adaptUpdateBundle", reviewOnly: true, staffOnly: true },
+    { id: "scheduler_run", label: "Scheduler run report", adapter: "adaptSchedulerRunReport", staffOnly: true },
     { id: "creative_brief", label: "Creative brief", adapter: "adaptCreativeBrief" },
     { id: "image_job", label: "Image job", adapter: "adaptImageJob" },
     { id: "prompt_pack", label: "Prompt pack", adapter: "adaptPromptPack" },
-    { id: "vision_report", label: "Vision / image understanding report", adapter: "adaptVisionReport" },
+    { id: "vision_report", label: "Vision report", adapter: "adaptVisionReport" },
+    { id: "image_understanding_report", label: "Image understanding report", adapter: "adaptImageUnderstandingReport" },
     { id: "engine_pipeline_report", label: "Engine pipeline report", adapter: "adaptEnginePipelineReport" },
     { id: "asset_pipeline_plan", label: "Asset pipeline plan", adapter: "adaptAssetPipelinePlan" }
   ]);
 
   const TYPE_BY_ID = Object.freeze(Object.fromEntries(IMPORT_TYPES.map((entry) => [entry.id, entry])));
+
+  // Labels forced onto every imported preview. UNTRUSTED can never be removed by
+  // the payload; VALIDATED is never forwarded (it would imply RealForge
+  // verification of untrusted data).
+  const IMPORT_FORCED_LABELS = Object.freeze(["UNTRUSTED", "READONLY", "NO WRITES", "LOCAL ONLY", "NETWORK OFF"]);
+
+  // Bounds for preview rendering so pathological reports cannot blow up the DOM.
+  const MAX_LIST_ITEMS = 12;
+  const MAX_TEXT_CHARS = 600;
+  const MAX_FIELDS = 32;
+  const MAX_COMMANDS = 12;
 
   // Metadata fields surfaced separately from type-specific key fields.
   const META_KEYS = new Set([
@@ -57,6 +75,11 @@
 
   function isObjectArray(value) {
     return Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === "object" && !Array.isArray(value[0]);
+  }
+
+  function labelForType(id) {
+    const entry = id ? TYPE_BY_ID[id] : null;
+    return entry ? entry.label : (id || "unknown");
   }
 
   function detectReportType(value) {
@@ -83,6 +106,15 @@
     if (has(value, "entries") && Array.isArray(value.entries)) return "leaderboard";
     if (has(value, "commands") && isObjectArray(value.commands)) return "slash_command_registry";
 
+    // Richer image-understanding reports must route before the simpler vision report.
+    if (
+      has(value, "detected_subjects") || has(value, "asset_opportunities") ||
+      has(value, "map_design_opportunities") || has(value, "gameplay_relevance") ||
+      has(value, "semantic_analysis_performed") || has(value, "likely_use_cases") ||
+      has(value, "planning_notes")
+    ) {
+      return "image_understanding_report";
+    }
     if (has(value, "observed_elements") || has(value, "image_hashes") || (has(value, "confidence") && has(value, "limitations"))) {
       return "vision_report";
     }
@@ -109,7 +141,10 @@
   function fieldFromValue(label, value) {
     if (Array.isArray(value)) {
       const strings = value.filter((item) => typeof item === "string" && item.trim());
-      if (strings.length === value.length) return { label, type: "list", value: strings };
+      if (strings.length === value.length) {
+        const shown = strings.slice(0, MAX_LIST_ITEMS);
+        return { label, type: "list", value: shown, moreCount: strings.length - shown.length };
+      }
       return { label, type: "count", value: value.length };
     }
     if (value && typeof value === "object") {
@@ -117,8 +152,20 @@
     }
     if (typeof value === "boolean") return { label, type: "flag", value };
     if (typeof value === "number") return { label, type: "number", value };
-    if (typeof value === "string") return { label, type: "text", value };
+    if (typeof value === "string") {
+      if (value.length > MAX_TEXT_CHARS) {
+        return { label, type: "text", value: value.slice(0, MAX_TEXT_CHARS), truncatedChars: value.length - MAX_TEXT_CHARS };
+      }
+      return { label, type: "text", value };
+    }
     return { label, type: "text", value: String(value) };
+  }
+
+  function capFields(fields) {
+    if (fields.length <= MAX_FIELDS) return fields;
+    const shown = fields.slice(0, MAX_FIELDS);
+    shown.push({ label: "", type: "more", value: fields.length - MAX_FIELDS });
+    return shown;
   }
 
   function keyFieldsFromData(data) {
@@ -130,7 +177,7 @@
       if (Array.isArray(value) && value.length === 0) continue;
       fields.push(fieldFromValue(humanizeLabel(key), value));
     }
-    return fields;
+    return capFields(fields);
   }
 
   function genericFields(value) {
@@ -138,9 +185,10 @@
       return [{ label: "Value", type: "text", value: String(value) }];
     }
     if (Array.isArray(value)) return [{ label: "Items", type: "count", value: value.length }];
-    return Object.entries(value)
+    const fields = Object.entries(value)
       .filter(([, entry]) => entry !== undefined)
       .map(([key, entry]) => fieldFromValue(humanizeLabel(key), entry));
+    return capFields(fields);
   }
 
   function collectSuggestedCommands(value) {
@@ -161,8 +209,29 @@
     return [...new Set(found)];
   }
 
+  // Never let imported JSON upgrade trust: force the import-context labels, keep
+  // informative caution labels, and drop any claimed VALIDATED label.
+  function enforceImportSafetyLabels(labels) {
+    const out = [...IMPORT_FORCED_LABELS];
+    for (const label of labels || []) {
+      if (label === "VALIDATED") continue;
+      if (!out.includes(label)) out.push(label);
+    }
+    return out;
+  }
+
+  function buildMismatch(choice, detectedId, typeDef) {
+    if (!choice || !detectedId || !typeDef || detectedId === typeDef.id) return null;
+    return {
+      detectedId,
+      detectedLabel: labelForType(detectedId),
+      selectedLabel: typeDef.label
+    };
+  }
+
   function parseAndAdapt(rawText, typeChoice, options) {
     const opts = options || {};
+    const staffMode = opts.staffMode === true;
     const text = typeof rawText === "string" ? rawText : "";
     if (!text.trim()) {
       return { ok: false, empty: true, error: "Paste a RealForge report as JSON, or load a sample, to preview it." };
@@ -181,40 +250,64 @@
     const resolvedId = choice || detectedId;
     const typeDef = resolvedId ? TYPE_BY_ID[resolvedId] : null;
     const adapters = getAdapters();
-    const suggestedCommands = collectSuggestedCommands(value);
+    const allCommands = collectSuggestedCommands(value);
+    const suggestedCommands = allCommands.slice(0, MAX_COMMANDS);
+    const suggestedCommandsMore = Math.max(0, allCommands.length - suggestedCommands.length);
+    const sourceStaffOnly = isObject && value.staff_only === true;
 
     if (!typeDef || !typeDef.adapter || !adapters || typeof adapters[typeDef.adapter] !== "function") {
+      // Generic / unrecognized: still fully untrusted; gate only if the payload
+      // (or a manual choice) opts into staff-only — never auto-unlock.
+      const importStaffOnly = (typeDef && typeDef.staffOnly === true) || sourceStaffOnly;
       return Object.freeze({
         ok: true,
         generic: true,
         reviewOnly: false,
         typeId: resolvedId || "unknown",
         label: typeDef ? typeDef.label : "Unrecognized report",
+        selectionMode: choice ? "manual" : "unrecognized",
         autoDetected: false,
         detectedId,
+        detectedLabel: detectedId ? labelForType(detectedId) : undefined,
+        mismatch: buildMismatch(choice, detectedId, typeDef),
+        hasProvider: isObject && Boolean(value.provider),
+        claimedValidated: false,
         reason: choice
           ? "Selected type has no adapter; showing a raw JSON field preview."
           : "No known RealForge report type matched these fields. Showing a raw JSON field preview.",
         fields: genericFields(value),
         warnings: [],
         suggestedCommands,
+        suggestedCommandsMore,
         untrusted: true,
-        staffOnly: false,
-        gated: false,
-        safetyLabels: ["UNTRUSTED", "READONLY", "NO WRITES", "LOCAL ONLY", "NETWORK OFF"]
+        staffOnly: importStaffOnly,
+        gated: importStaffOnly && !staffMode,
+        approvalRequired: false,
+        dryRun: false,
+        safetyLabels: enforceImportSafetyLabels(importStaffOnly ? ["STAFF ONLY"] : [])
       });
     }
 
-    const adapterResult = adapters[typeDef.adapter](value, { staffMode: opts.staffMode === true });
+    const adapterResult = adapters[typeDef.adapter](value, { staffMode });
     const data = adapterResult.data;
+    const sourceSafetyLabels = data.safetyLabels || [];
+    const claimedValidated = sourceSafetyLabels.includes("VALIDATED") || data.status === "VALIDATED";
+    // Staff gating is enforced by report type + Workbench state. A staff_only
+    // type stays gated even if the payload claims staff_only:false; a payload may
+    // only opt INTO stricter gating, never out of it.
+    const importStaffOnly = typeDef.staffOnly === true || sourceStaffOnly;
+
     return Object.freeze({
       ok: true,
       generic: false,
       reviewOnly: typeDef.reviewOnly === true,
       typeId: typeDef.id,
       label: typeDef.label,
+      selectionMode: choice ? "manual" : "auto",
       autoDetected: !choice && Boolean(detectedId),
       detectedId,
+      detectedLabel: detectedId ? labelForType(detectedId) : undefined,
+      mismatch: buildMismatch(choice, detectedId, typeDef),
       meta: {
         id: data.id,
         kind: data.kind,
@@ -223,15 +316,19 @@
         createdAt: data.createdAt,
         status: data.status
       },
-      safetyLabels: data.safetyLabels || [],
-      untrusted: data.untrusted === true,
-      staffOnly: data.staffOnly === true,
-      gated: data.gated === true,
+      hasProvider: Boolean(data.provider),
+      claimedValidated,
+      // Enforced import trust invariants (payload cannot weaken these):
+      untrusted: true,
+      safetyLabels: enforceImportSafetyLabels(sourceSafetyLabels),
+      staffOnly: importStaffOnly,
+      gated: importStaffOnly && !staffMode,
       approvalRequired: data.approvalRequired === true,
       dryRun: data.dryRun === true,
       fields: keyFieldsFromData(data),
       warnings: adapterResult.warnings || [],
-      suggestedCommands
+      suggestedCommands,
+      suggestedCommandsMore
     });
   }
 
@@ -257,6 +354,7 @@
 
   global.RealForgeReportImport = Object.freeze({
     IMPORT_TYPES,
+    LIMITS: Object.freeze({ MAX_LIST_ITEMS, MAX_TEXT_CHARS, MAX_FIELDS, MAX_COMMANDS }),
     detectReportType,
     parseAndAdapt,
     getSamples,

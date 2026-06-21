@@ -283,14 +283,18 @@ export interface EnginePipelineReport extends ReportMeta {
   validationResults: string[];
 }
 
-// --- Read-only report import (0.3) ---
+// --- Read-only report import (0.3, trust-hardened in 0.3.1) ---
 
-export type ImportFieldType = "text" | "number" | "flag" | "list" | "count";
+export type ImportFieldType = "text" | "number" | "flag" | "list" | "count" | "more";
 
 export interface ImportPreviewField {
   label: string;
   type: ImportFieldType;
   value: string | number | boolean | string[];
+  /** For capped lists: how many items were omitted (+N more). */
+  moreCount?: number;
+  /** For capped text: how many characters were omitted. */
+  truncatedChars?: number;
 }
 
 export interface ImportTypeOption {
@@ -298,12 +302,27 @@ export interface ImportTypeOption {
   label: string;
   adapter: string | null;
   reviewOnly?: boolean;
+  /** Report types whose advanced details stay gated regardless of payload. */
+  staffOnly?: boolean;
+}
+
+export type ImportSelectionMode = "auto" | "manual" | "unrecognized";
+
+export interface ImportTypeMismatch {
+  detectedId: string;
+  detectedLabel: string;
+  selectedLabel: string;
 }
 
 /**
  * Result of parsing pasted JSON and running it through an existing adapter.
  * Never describes an executable action: imported reports are read-only and
  * untrusted, and any suggested commands are display-only.
+ *
+ * Trust invariants (0.3.1): `untrusted` is always true and the payload cannot
+ * remove the UNTRUSTED label, claim RealForge verification (a source-declared
+ * VALIDATED state surfaces only as `claimedValidated`), or lower `staffOnly`
+ * gating for a staff-only report type.
  */
 export interface ImportedReportPreview {
   ok: boolean;
@@ -314,11 +333,18 @@ export interface ImportedReportPreview {
   reviewOnly: boolean;
   typeId: string;
   label: string;
+  selectionMode: ImportSelectionMode;
   autoDetected: boolean;
   detectedId: string | null;
+  detectedLabel?: string;
+  mismatch?: ImportTypeMismatch | null;
   reason?: string;
   meta?: Pick<ReportMeta, "id" | "kind" | "provider" | "model" | "createdAt" | "status">;
+  hasProvider: boolean;
+  /** True when the imported JSON merely *claims* validation (not verified). */
+  claimedValidated: boolean;
   safetyLabels: SafetyLabel[];
+  /** Always true for imported reports; cannot be lowered by the payload. */
   untrusted: boolean;
   staffOnly: boolean;
   gated: boolean;
@@ -327,4 +353,5 @@ export interface ImportedReportPreview {
   fields: ImportPreviewField[];
   warnings: AdapterWarning[];
   suggestedCommands: string[];
+  suggestedCommandsMore?: number;
 }

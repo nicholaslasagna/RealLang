@@ -301,19 +301,31 @@
   function renderImportFields(fields) {
     if (!fields || !fields.length) return `<p class="import-note">No additional fields were present in this report.</p>`;
     return `<dl class="import-fields">${fields.map((field) => {
+      if (field.type === "more") {
+        return `<div class="import-fields__more"><dt></dt><dd class="import-more">+${escapeHtml(String(field.value))} more field(s) not shown</dd></div>`;
+      }
       let value;
-      if (field.type === "list") value = `<ul>${field.value.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-      else if (field.type === "flag") value = badge(field.value ? "YES" : "NO", field.value ? "green" : "neutral");
-      else if (field.type === "count") value = `<code>${escapeHtml(String(field.value))} item(s)</code>`;
-      else value = `<code>${escapeHtml(String(field.value))}</code>`;
+      if (field.type === "list") {
+        const items = field.value.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+        const more = field.moreCount > 0 ? `<li class="import-more">+${escapeHtml(String(field.moreCount))} more</li>` : "";
+        value = `<ul>${items}${more}</ul>`;
+      } else if (field.type === "flag") {
+        value = badge(field.value ? "YES" : "NO", field.value ? "green" : "neutral");
+      } else if (field.type === "count") {
+        value = `<code>${escapeHtml(String(field.value))} item(s)</code>`;
+      } else {
+        const more = field.truncatedChars > 0 ? `<span class="import-more"> … +${escapeHtml(String(field.truncatedChars))} more characters</span>` : "";
+        value = `<code>${escapeHtml(String(field.value))}${more}</code>`;
+      }
       return `<div><dt>${escapeHtml(field.label)}</dt><dd>${value}</dd></div>`;
     }).join("")}</dl>`;
   }
 
-  function renderImportCommands(commands) {
+  function renderImportCommands(commands, moreCount) {
     if (!commands || !commands.length) return "";
+    const more = moreCount > 0 ? `<code class="command-line import-more">+${escapeHtml(String(moreCount))} more command(s) not shown</code>` : "";
     return `<section class="import-commands"><header>${icon("terminal")}<b>SUGGESTED COMMANDS</b>${badge("NOT EXECUTED", "amber")}</header>
-      <div class="import-command-list">${commands.map((command) => `<code class="command-line">${escapeHtml(command)}</code>`).join("")}</div>
+      <div class="import-command-list">${commands.map((command) => `<code class="command-line">${escapeHtml(command)}</code>`).join("")}${more}</div>
       <p>${icon("shield-check")}Shown as suggestions only. RealForge never runs commands from an imported report.</p></section>`;
   }
 
@@ -334,9 +346,17 @@
       return `<div class="import-status import-status--idle">${icon("clipboard-list")}<div><b>Nothing to preview</b><p>${escapeHtml(preview.error || "Paste a RealForge report as JSON to preview it.")}</p></div></div>`;
     }
 
-    const detectBadge = preview.autoDetected ? badge("AUTO-DETECTED", "cyan") : badge("MANUAL TYPE", "neutral");
+    let detectBadge;
+    if (preview.selectionMode === "manual") detectBadge = badge("MANUAL TYPE", "neutral");
+    else if (preview.selectionMode === "unrecognized") detectBadge = badge("UNRECOGNIZED", "amber");
+    else detectBadge = badge("AUTO-DETECTED", "cyan");
+
     const meta = preview.meta || {};
     const status = meta.status || "UNKNOWN";
+    // Imported JSON cannot claim RealForge verification: a source-declared
+    // VALIDATED status is shown as CLAIMED (amber), never as a green verified state.
+    const statusClaimed = status === "VALIDATED";
+    const statusBadge = badge(statusClaimed ? "VALIDATED · CLAIMED" : status, statusClaimed ? "amber" : statusTone(status));
     const metaRows = [
       ["Kind", meta.kind || preview.typeId || "unknown"],
       ["Report id", meta.id || "—"],
@@ -344,30 +364,33 @@
       ["Model", meta.model || "(none declared)"]
     ];
     const safety = (preview.safetyLabels || []).map((label) => badge(label, safetyTone(label))).join("");
-    const trust = preview.untrusted
-      ? badge("PROVIDER OUTPUT UNTRUSTED", "amber")
-      : badge("NO PROVIDER OUTPUT", "neutral");
+    // Imported JSON is always untrusted; the payload cannot lower this.
+    const trust = badge(preview.hasProvider ? "PROVIDER OUTPUT UNTRUSTED" : "IMPORTED JSON · UNTRUSTED", "amber");
+    const claimedBadge = preview.claimedValidated ? badge("VALIDATION CLAIMED · UNVERIFIED", "amber") : "";
     const reviewNotice = preview.reviewOnly
       ? `<div class="workflow-notice workflow-notice--violet import-review">${icon("lock-keyhole")}<span><b>Review only.</b> Patch, proposal, and update data is never applied or merged from an import. <em>Backend bridge not connected.</em></span>
           <button class="button button--ghost" type="button" disabled aria-disabled="true">${icon("git-pull-request-arrow")}<span>Apply (disabled)</span></button></div>`
       : "";
     const body = preview.gated
-      ? `<div class="staff-settings-gate import-gate">${icon("lock-keyhole")}<span><b>Staff-only report · advanced details locked.</b><small>Enable the staff UI preview to inspect adapted fields. Previewing changes no backend state and grants no permissions.</small></span>${badge("LOCKED", "violet")}</div>`
+      ? `<div class="staff-settings-gate import-gate">${icon("lock-keyhole")}<span><b>Staff-only report · advanced details locked.</b><small>Advanced fields stay hidden while Staff Mode is off. Enabling the staff UI preview changes no backend state and grants no permissions.</small></span><div class="import-gate__actions">${badge("LOCKED", "violet")}${button("Enable staff UI preview", "eye", "toggle-staff-preview", "violet")}</div></div>`
       : renderImportFields(preview.fields);
     const genericNote = preview.generic
       ? `<div class="workflow-notice workflow-notice--amber">${icon("triangle-alert")}<span>${escapeHtml(preview.reason || "Unrecognized report type. Showing a raw field preview.")}</span></div>`
       : "";
+    const mismatchNote = preview.mismatch
+      ? `<div class="workflow-notice workflow-notice--amber">${icon("triangle-alert")}<span>This JSON looks like <b>${escapeHtml(preview.mismatch.detectedLabel)}</b>, but you selected <b>${escapeHtml(preview.mismatch.selectedLabel)}</b>.</span></div>`
+      : "";
 
     return `<article class="import-result">
-      <header class="import-result__head"><div><p class="eyebrow">PREVIEWED REPORT</p><h2>${escapeHtml(preview.label)}</h2></div><div class="import-result__badges">${detectBadge}${badge(status, statusTone(status))}</div></header>
-      ${genericNote}
+      <header class="import-result__head"><div><p class="eyebrow">PREVIEWED REPORT</p><h2>${escapeHtml(preview.label)}</h2></div><div class="import-result__badges">${detectBadge}${statusBadge}</div></header>
+      ${genericNote}${mismatchNote}
       <div class="import-meta-grid">${metaRows.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><code>${escapeHtml(String(value))}</code></div>`).join("")}</div>
-      <div class="import-trust-row">${trust}${preview.staffOnly ? badge("STAFF ONLY", "violet") : ""}${preview.approvalRequired ? badge("APPROVAL REQUIRED", "violet") : ""}${preview.dryRun ? badge("DRY RUN", "blue") : ""}</div>
+      <div class="import-trust-row">${trust}${claimedBadge}${preview.staffOnly ? badge("STAFF ONLY", "violet") : ""}${preview.approvalRequired ? badge("APPROVAL REQUIRED", "violet") : ""}${preview.dryRun ? badge("DRY RUN", "blue") : ""}</div>
       ${safety ? `<div class="import-safety">${safety}</div>` : ""}
       ${reviewNotice}
       <div class="import-section-label">KEY FIELDS</div>
       ${body}
-      ${renderImportCommands(preview.suggestedCommands)}
+      ${renderImportCommands(preview.suggestedCommands, preview.suggestedCommandsMore)}
       ${renderImportWarnings(preview.warnings)}
     </article>`;
   }

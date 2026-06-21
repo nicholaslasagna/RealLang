@@ -2304,12 +2304,17 @@ textarea:focus-visible,
 .import-fields dd ul { display: flex; flex-direction: column; gap: 3px; padding-left: 14px; }
 .import-fields dd code { word-break: break-word; }
 .import-note { color: var(--text-3); font-size: 11px; }
+.import-more { color: var(--text-3); font-style: italic; }
+.import-fields li.import-more { list-style: none; margin-left: -14px; }
+.import-fields__more dd { color: var(--text-3); font-style: italic; }
+.import-gate__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 
 .import-commands { display: flex; flex-direction: column; gap: 8px; padding: 13px; border: 1px solid rgba(240, 181, 68, 0.25); border-radius: 6px; background: rgba(240, 181, 68, 0.04); }
 .import-commands header { display: flex; align-items: center; gap: 8px; color: var(--amber); font-size: 11px; letter-spacing: 0.04em; }
 .import-commands header b { flex: 1; }
 .import-command-list { display: flex; flex-direction: column; gap: 5px; }
-.import-commands .command-line { display: block; }
+.import-commands .command-line { display: block; overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.import-commands .command-line.import-more { color: var(--text-3); font-style: italic; white-space: normal; }
 .import-commands p { display: flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 10px; }
 .import-commands p .icon { color: var(--green); }
 

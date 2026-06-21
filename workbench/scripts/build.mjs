@@ -36,6 +36,6 @@ await Promise.all([
   cp(join(root, "src"), join(dist, "src"), { recursive: true }),
   cp(join(root, "assets"), join(dist, "assets"), { recursive: true })
 ]);
-await writeFile(join(dist, "prototype-manifest.json"), `${JSON.stringify({ prototype: "RealForge Workbench", version: "0.3.0", backendIntegration: false, dataContracts: true, reportAdapters: true, reportImport: true }, null, 2)}\n`, "utf8");
+await writeFile(join(dist, "prototype-manifest.json"), `${JSON.stringify({ prototype: "RealForge Workbench", version: "0.3.1", backendIntegration: false, dataContracts: true, reportAdapters: true, reportImport: true }, null, 2)}\n`, "utf8");
 
 console.log("Built offline static prototype in workbench/dist/");

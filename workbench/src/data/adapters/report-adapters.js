@@ -150,7 +150,26 @@
   function adaptEvalReport(raw) {
     const warnings = [];
     const { source, meta } = adaptMeta(raw, "eval_report", warnings, { defaultUntrusted: true });
-    return result({ ...meta, suite: readString(source, "suite", warnings, "unknown", true), score: boundedScore(readNumber(source, "score", warnings, 0)), passed: readNumber(source, "passed", warnings, 0), failed: readNumber(source, "failed", warnings, 0), notes: stringList(source, "notes", warnings) }, warnings);
+    // Real RealForge eval reports use `passed` as a boolean and `failures` as a
+    // list; older/simplified shapes use numeric passed/failed counts. Support both.
+    const passed = typeof source.passed === "boolean"
+      ? source.passed
+      : (source.passed === undefined ? undefined : readNumber(source, "passed", warnings, 0));
+    const taskCount = Array.isArray(source.tasks)
+      ? source.tasks.length
+      : (source.task_count === undefined ? undefined : readNumber(source, "task_count", warnings, 0));
+    return result({
+      ...meta,
+      suite: readString(source, "suite", warnings, "unknown", true),
+      score: source.score === undefined ? undefined : boundedScore(readNumber(source, "score", warnings, 0)),
+      totalScore: source.total_score === undefined ? undefined : readNumber(source, "total_score", warnings, 0),
+      taskCount,
+      passed,
+      failed: source.failed === undefined ? undefined : readNumber(source, "failed", warnings, 0),
+      failures: stringList(source, "failures", warnings),
+      notes: stringList(source, "notes", warnings),
+      safetyNotes: stringList(source, "safety_notes", warnings)
+    }, warnings);
   }
 
   function adaptTaskBenchmarkReport(raw) {
@@ -162,12 +181,37 @@
   function adaptSkillBenchmarkReport(raw) {
     const warnings = [];
     const { source, meta } = adaptMeta(raw, "skill_benchmark", warnings, { status: STATUS.PENDING });
-    const domains = objectList(source, "domains", warnings).map((entry, index) => ({
+    let domains = objectList(source, "domains", warnings).map((entry, index) => ({
       domain: readString(entry, "domain", warnings, `domain-${index + 1}`, true),
       score: boundedScore(readNumber(entry, "score", warnings, 0)),
       taskCount: entry.task_count === undefined ? undefined : readNumber(entry, "task_count", warnings, 0)
     }));
-    return result({ ...meta, suite: readString(source, "suite", warnings, "unknown", true), overall: boundedScore(readNumber(source, "overall", warnings, 0)), gate: boundedScore(readNumber(source, "gate", warnings, 0)), taskCount: readNumber(source, "task_count", warnings, 0), domains }, warnings);
+    // Real RealForge 2.7 skill-bench reports carry `domain_scores` as a
+    // { domain: score } map and `normalized_score`/`task_results` instead of
+    // `overall`/`task_count`. Fall back to those when the simplified fields are absent.
+    if (!domains.length && source.domain_scores && typeof source.domain_scores === "object" && !Array.isArray(source.domain_scores)) {
+      domains = Object.entries(source.domain_scores)
+        .filter(([, score]) => typeof score === "number" && Number.isFinite(score))
+        .map(([domain, score]) => ({ domain, score: boundedScore(score), taskCount: undefined }));
+    }
+    const overall = source.overall !== undefined
+      ? boundedScore(readNumber(source, "overall", warnings, 0))
+      : (source.normalized_score !== undefined ? boundedScore(readNumber(source, "normalized_score", warnings, 0)) : 0);
+    const taskCount = source.task_count !== undefined
+      ? readNumber(source, "task_count", warnings, 0)
+      : (Array.isArray(source.task_results) ? source.task_results.length : 0);
+    return result({
+      ...meta,
+      suite: readString(source, "suite", warnings, "unknown", true),
+      overall,
+      gate: source.gate === undefined ? undefined : boundedScore(readNumber(source, "gate", warnings, 0)),
+      normalizedScore: source.normalized_score === undefined ? undefined : boundedScore(readNumber(source, "normalized_score", warnings, 0)),
+      totalScore: source.total_score === undefined ? undefined : readNumber(source, "total_score", warnings, 0),
+      passed: typeof source.passed === "boolean" ? source.passed : undefined,
+      safetyFailures: stringList(source, "safety_failures", warnings),
+      taskCount,
+      domains
+    }, warnings);
   }
 
   function adaptLeaderboardSummary(raw) {
@@ -180,7 +224,14 @@
   function adaptPatchProposal(raw, options = {}) {
     const warnings = [];
     const { source, meta } = adaptMeta(raw, "patch_proposal", warnings, { defaultUntrusted: true, dryRun: true, approvalRequired: true, ...options });
-    return result({ ...meta, title: readString(source, "title", warnings, "Untitled patch proposal"), summary: readString(source, "summary", warnings, "No proposal summary supplied."), targetFiles: stringList(source, "target_files", warnings), patchHash: readString(source, "patch_hash", warnings) || undefined, validationCommands: stringList(source, "validation_commands", warnings), risks: stringList(source, "risks", warnings) }, warnings);
+    // Real RealForge patch proposals use patch_targets/files_to_modify and
+    // patch_sha256; the simplified shape uses target_files/patch_hash.
+    let targetFiles;
+    if (source.target_files !== undefined) targetFiles = stringList(source, "target_files", warnings);
+    else if (source.patch_targets !== undefined) targetFiles = stringList(source, "patch_targets", warnings);
+    else targetFiles = stringList(source, "files_to_modify", warnings);
+    const patchHash = readString(source, "patch_hash", warnings) || readString(source, "patch_sha256", warnings) || undefined;
+    return result({ ...meta, title: readString(source, "title", warnings, "Untitled patch proposal"), summary: readString(source, "summary", warnings, "No proposal summary supplied."), targetFiles, patchHash, validationCommands: stringList(source, "validation_commands", warnings), risks: stringList(source, "risks", warnings), unifiedDiff: readString(source, "unified_diff", warnings) || undefined }, warnings);
   }
 
   function adaptExperimentReport(raw, options = {}) {
@@ -249,14 +300,31 @@
   function adaptVisionReport(raw) {
     const warnings = [];
     const { source, meta } = adaptMeta(raw, "vision_report", warnings, { defaultUntrusted: true, readonly: true });
-    return result({ ...meta, task: readString(source, "task", warnings, "No vision task supplied."), imageHashes: stringList(source, "image_hashes", warnings), observedElements: stringList(source, "observed_elements", warnings), limitations: stringList(source, "limitations", warnings), confidence: boundedScore(readNumber(source, "confidence", warnings, 0)) }, warnings);
+    // Real RealForge vision/understanding reports use `image_sha256_values`.
+    const imageHashes = source.image_hashes !== undefined
+      ? stringList(source, "image_hashes", warnings)
+      : stringList(source, "image_sha256_values", warnings);
+    return result({ ...meta, task: readString(source, "task", warnings, "No vision task supplied."), imageHashes, observedElements: stringList(source, "observed_elements", warnings), limitations: stringList(source, "limitations", warnings), confidence: boundedScore(readNumber(source, "confidence", warnings, 0)) }, warnings);
   }
 
   function adaptImageUnderstandingReport(raw) {
     const base = adaptVisionReport(raw);
     const warnings = [...base.warnings];
     const source = asObject(raw, warnings);
-    return result({ ...base.data, kind: "image_understanding_report", likelyUseCases: stringList(source, "likely_use_cases", warnings), risks: stringList(source, "risks", warnings), planningNotes: stringList(source, "planning_notes", warnings) }, warnings);
+    // Support both the simplified shape (likely_use_cases/planning_notes) and the
+    // real RealForge 2.7 ImageUnderstandingReport fields.
+    return result({
+      ...base.data,
+      kind: "image_understanding_report",
+      detectedSubjects: stringList(source, "detected_subjects", warnings),
+      likelyUseCases: stringList(source, "likely_use_cases", warnings),
+      assetOpportunities: stringList(source, "asset_opportunities", warnings),
+      mapDesignOpportunities: stringList(source, "map_design_opportunities", warnings),
+      gameplayRelevance: stringList(source, "gameplay_relevance", warnings),
+      planningNotes: stringList(source, "planning_notes", warnings),
+      risks: stringList(source, "risks", warnings),
+      semanticAnalysisPerformed: typeof source.semantic_analysis_performed === "boolean" ? source.semantic_analysis_performed : undefined
+    }, warnings);
   }
 
   function adaptEngineProjectProfile(raw) {

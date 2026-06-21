@@ -1,6 +1,6 @@
 {
   "name": "realforge-workbench-prototype",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Offline-safe static RealForge Workbench UI prototype",
   "scripts": {
