@@ -29,6 +29,16 @@ test("slash palette includes the approved command grammar", async () => {
   for (const command of ["/ask", "/plan", "/check", "/repair", "/context", "/research", "/creative brief", "/creative map", "/image prompt", "/image job", "/vision analyze", "/vision understand", "/engine scan", "/unreal plan", "/asset pipeline", "/bench", "/skill-bench", "/leaderboard", "/doctor", "/settings", "/staff-status", "/update-check", "/scheduler"]) {
     assert.ok(source.includes(`["${command}"`), `missing command: ${command}`);
   }
+  for (const domain of ["core", "code", "research", "creative", "image", "vision", "engine", "assets", "eval", "system", "staff"]) {
+    assert.match(source, new RegExp(`\\["/[^"]+", "${domain}"`), `missing command domain metadata: ${domain}`);
+  }
+});
+
+test("studio screens expose concrete safe-start examples", async () => {
+  const source = await read("js/mock-data.js");
+  for (const example of ["Create a horror map brief", "Generate an image prompt pack", "Analyze a concept image", "Scan an Unreal project", "Plan a Blender asset pipeline"]) {
+    assert.ok(source.includes(example), `missing studio example: ${example}`);
+  }
 });
 
 test("prototype has no browser network or backend execution primitive", async () => {
@@ -47,6 +57,19 @@ test("staff UI is a preview and defaults off", async () => {
   assert.match(components, /STAFF OFF/);
   assert.match(components, /STAFF UI PREVIEW/);
   assert.match(components, /backend remains off/i);
+  assert.match(components, /Locked by policy/);
+  assert.match(components, /Staff-only update channel/i);
+});
+
+test("settings and command palette retain visible safety metadata", async () => {
+  const components = await read("js/components.js");
+  const app = await read("js/app.js");
+  for (const label of ["READONLY", "LOCAL ONLY", "NETWORK OFF", "STAFF OFF", "NO WRITES", "Provider output remains untrusted until validated"]) {
+    assert.ok(components.includes(label), `missing visible safety label: ${label}`);
+  }
+  assert.match(components, /command\.domain/);
+  assert.match(components, /renderCommandPaletteParts/);
+  assert.match(app, /querySelector\("\.command-results"\)\.innerHTML/);
 });
 
 test("local Lucide subset and license are present", async () => {

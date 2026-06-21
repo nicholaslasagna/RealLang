@@ -13,4 +13,9 @@ This is not a backend integration. All values are mocked, no RealForge command
 is executed, and no source, proposal, Git, provider, network, engine, or asset
 operation is available. No auto-apply, auto-commit, or auto-merge path exists.
 
+The current polish pass strengthens the primary-action hierarchy, adds
+domain-aware command search, clarifies read-only settings, presents Staff Off as
+an intentional policy state, and gives each creative engineering domain a
+concrete safe-start example. These remain presentation-only interactions.
+
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

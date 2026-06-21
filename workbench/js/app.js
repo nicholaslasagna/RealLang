@@ -157,7 +157,9 @@
   dialog.addEventListener("input", (event) => {
     if (event.target.id !== "command-search") return;
     state.commandQuery = event.target.value;
-    renderPalette();
+    const parts = components.renderCommandPaletteParts(state);
+    dialog.querySelector(".palette-meta").innerHTML = parts.meta;
+    dialog.querySelector(".command-results").innerHTML = parts.results;
   });
 
   dialog.addEventListener("click", (event) => {

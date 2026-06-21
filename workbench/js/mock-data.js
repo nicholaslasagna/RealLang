@@ -2,7 +2,7 @@
   "use strict";
 
   /** @typedef {{id:string,label:string,icon:string,group:string}} NavigationItem */
-  /** @typedef {{command:string,description:string,safety:string,writes:string,staff:boolean,network:boolean}} SlashCommand */
+  /** @typedef {{command:string,domain:string,description:string,safety:string,writes:string,staff:boolean,network:boolean}} SlashCommand */
   /** @typedef {{domain:string,icon:string,status:string,safety:string,writes:string,staff:boolean,network:boolean,description:string,next:string}} Capability */
 
   /** @type {readonly NavigationItem[]} */
@@ -39,30 +39,30 @@
 
   /** @type {readonly SlashCommand[]} */
   const commands = Object.freeze([
-    ["/ask", "Request a concise local-provider plan", "UNTRUSTED", "no", false, false],
-    ["/plan", "Build a structured task plan", "UNTRUSTED", "no", false, false],
-    ["/check", "Run compiler-guided checks", "READ ONLY", "no", false, false],
-    ["/repair", "Preview conservative repairs", "DRY RUN", "no", false, false],
-    ["/context", "Build bounded workspace context", "READ ONLY", "no", false, false],
-    ["/research", "Fetch one allowlisted HTTPS source", "NETWORK GATED", "optional", false, true],
-    ["/creative brief", "Create a game design brief", "UNTRUSTED", "optional", false, false],
-    ["/creative map", "Create a map or world plan", "UNTRUSTED", "optional", false, false],
-    ["/image prompt", "Create a prompt specification", "PLANNING", "optional", false, false],
-    ["/image job", "Create an image workflow job", "PLANNING", "optional", false, false],
-    ["/vision analyze", "Create a simple image report", "UNTRUSTED", "optional", false, false],
-    ["/vision understand", "Create a rich image report", "UNTRUSTED", "optional", false, false],
-    ["/engine scan", "Scan an engine project", "READ ONLY", "no", false, false],
-    ["/unreal plan", "Create a dry-run Unreal plan", "DRY RUN", "optional", false, false],
-    ["/asset pipeline", "Create an asset production plan", "DRY RUN", "optional", false, false],
-    ["/bench", "Run task benchmark summaries", "BENCHMARK", "yes", false, false],
-    ["/skill-bench", "Run capability-domain skill tasks", "BENCHMARK", "yes", false, false],
-    ["/leaderboard", "Show local provider rankings", "READ ONLY", "no", false, false],
-    ["/doctor", "Check environment safety", "READ ONLY", "no", false, false],
-    ["/settings", "Review effective settings", "READ ONLY", "no", false, false],
-    ["/staff-status", "Inspect staff-mode state", "STAFF ONLY", "no", true, false],
-    ["/update-check", "Review update candidates", "STAFF ONLY", "optional", true, false],
-    ["/scheduler", "Inspect bounded scheduler state", "STAFF ONLY", "optional", true, false]
-  ].map(([command, description, safety, writes, staff, network]) => Object.freeze({ command, description, safety, writes, staff, network })));
+    ["/ask", "core", "Request a concise local-provider plan", "UNTRUSTED", "no", false, false],
+    ["/plan", "core", "Build a structured task plan", "UNTRUSTED", "no", false, false],
+    ["/check", "code", "Run compiler-guided checks", "READ ONLY", "no", false, false],
+    ["/repair", "code", "Preview conservative repairs", "DRY RUN", "no", false, false],
+    ["/context", "code", "Build bounded workspace context", "READ ONLY", "no", false, false],
+    ["/research", "research", "Fetch one allowlisted HTTPS source", "NETWORK GATED", "optional", false, true],
+    ["/creative brief", "creative", "Create a game design brief", "UNTRUSTED", "optional", false, false],
+    ["/creative map", "creative", "Create a map or world plan", "UNTRUSTED", "optional", false, false],
+    ["/image prompt", "image", "Create a prompt specification", "PLANNING", "optional", false, false],
+    ["/image job", "image", "Create an image workflow job", "PLANNING", "optional", false, false],
+    ["/vision analyze", "vision", "Create a simple image report", "UNTRUSTED", "optional", false, false],
+    ["/vision understand", "vision", "Create a rich image report", "UNTRUSTED", "optional", false, false],
+    ["/engine scan", "engine", "Scan an engine project", "READ ONLY", "no", false, false],
+    ["/unreal plan", "engine", "Create a dry-run Unreal plan", "DRY RUN", "optional", false, false],
+    ["/asset pipeline", "assets", "Create an asset production plan", "DRY RUN", "optional", false, false],
+    ["/bench", "eval", "Run task benchmark summaries", "BENCHMARK", "yes", false, false],
+    ["/skill-bench", "eval", "Run capability-domain skill tasks", "BENCHMARK", "yes", false, false],
+    ["/leaderboard", "eval", "Show local provider rankings", "READ ONLY", "no", false, false],
+    ["/doctor", "system", "Check environment safety", "READ ONLY", "no", false, false],
+    ["/settings", "system", "Review effective settings", "READ ONLY", "no", false, false],
+    ["/staff-status", "staff", "Inspect staff-mode state", "STAFF ONLY", "no", true, false],
+    ["/update-check", "staff", "Review update candidates", "STAFF ONLY", "optional", true, false],
+    ["/scheduler", "staff", "Inspect bounded scheduler state", "STAFF ONLY", "optional", true, false]
+  ].map(([command, domain, description, safety, writes, staff, network]) => Object.freeze({ command, domain, description, safety, writes, staff, network })));
 
   const studio = Object.freeze({
     creative: {
@@ -70,6 +70,7 @@
       title: "Turn direction into structured briefs.",
       description: "Game, map, and asset planning stays explicit, reviewable, and untrusted.",
       accent: "violet",
+      example: ["Create a horror map brief", "map", "Define traversal, encounter pacing, landmark language, lighting, and performance constraints before production.", "/creative map", "Preview dry-run brief"],
       items: [
         ["Creative brief", "drama", "Genre, roles, mechanics, tone, constraints, and validation questions.", "realforge creative brief --task \"…\"", "UNTRUSTED"],
         ["Map design", "map", "Traversal, landmarks, encounter zones, lighting, and performance notes.", "realforge creative map --task \"…\"", "UNTRUSTED"],
@@ -81,6 +82,7 @@
       title: "Plan images before generation exists.",
       description: "Prompt jobs, prompt packs, reference hashes, iteration plans, and provenance metadata.",
       accent: "amber",
+      example: ["Generate an image prompt pack", "wand-sparkles", "Shape a cinematic horror concept into reusable prompts, negative guidance, variants, and provenance notes.", "/image prompt", "Preview prompt pack"],
       items: [
         ["Image job", "image", "A complete prompt and iteration specification with provenance.", "realforge image job --task \"…\"", "PLANNING"],
         ["Prompt pack", "wand-sparkles", "Base prompt, negative prompt, variants, and production notes.", "realforge image prompt-pack --task \"…\"", "PLANNING"],
@@ -92,6 +94,7 @@
       title: "Inspect images through explicit trust boundaries.",
       description: "Mock output is deterministic scaffolding with confidence 0.0, not semantic recognition.",
       accent: "cyan",
+      example: ["Analyze a concept image", "scan-eye", "Prepare an untrusted observation report with limitations, risks, and explicit confidence metadata.", "/vision analyze", "Preview analysis"],
       items: [
         ["Understand", "scan-eye", "Creative, gameplay, asset, and map-planning report fields.", "realforge vision understand --image … --task \"…\"", "UNTRUSTED"],
         ["Compare", "images", "Hash-aware multi-image comparison report with explicit limitations.", "realforge vision compare --image … --image …", "UNTRUSTED"],
@@ -103,6 +106,7 @@
       title: "Prepare engine work without touching projects.",
       description: "Read-only scans and approval-gated Unreal and Blender planning. No process launches.",
       accent: "blue",
+      example: ["Scan an Unreal project", "search", "Build a read-only project profile for modules, plugins, content roots, and validation risks.", "/engine scan", "Preview project scan"],
       items: [
         ["Project scan", "search", "Detect .uproject, Config, Content, Source, and plugin descriptors.", "realforge engine scan --path …", "READ ONLY"],
         ["Unreal plan", "box", "Dry-run implementation and validation steps with inert command suggestions.", "realforge unreal plan --path … --task \"…\"", "DRY RUN"],
@@ -114,6 +118,7 @@
       title: "Connect briefs to reviewable production plans.",
       description: "Bounded references become untrusted pipeline context, never automatic production actions.",
       accent: "green",
+      example: ["Plan a Blender asset pipeline", "workflow", "Draft modeling, UV, bake, collision, LOD, export, import, and review gates without launching tools.", "/asset pipeline", "Preview pipeline plan"],
       items: [
         ["Asset pipeline", "workflow", "Modeling, materials, collision, LOD, import, budgets, and risks.", "realforge asset pipeline --task \"…\"", "DRY RUN"],
         ["Unreal import", "package", "A safe /Game path and proposed import settings. Nothing is imported.", "realforge unreal import-plan --path …", "DRY RUN"],
