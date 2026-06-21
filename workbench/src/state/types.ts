@@ -39,6 +39,7 @@ export interface ImportPreview {
   safetyLabels?: string[];
   hasProvider?: boolean;
   claimedValidated?: boolean;
+  untrusted?: boolean;
   reviewOnly?: boolean;
   gated?: boolean;
   staffOnly?: boolean;
@@ -61,6 +62,8 @@ export interface ImportField {
   truncatedChars?: number;
 }
 
+export type DesktopLoadStatus = "idle" | "loading" | "error";
+
 export interface WorkbenchState {
   screen: WorkbenchScreen;
   settingsSection: string;
@@ -75,4 +78,7 @@ export interface WorkbenchState {
   importPreview: ImportPreview | null;
   paletteOpen: boolean;
   toast: { message: string; tone: "safe" | "warn" } | null;
+  desktopLoadStatus: DesktopLoadStatus;
+  desktopLoadSourceId: string | null;
+  desktopLoadError: string | null;
 }

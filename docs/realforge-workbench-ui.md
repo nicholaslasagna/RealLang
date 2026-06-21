@@ -22,9 +22,53 @@ become a **flawless cross-platform desktop application** (macOS and Windows): a
 Codex/Cursor/Claude-Code-like local AI engineering workbench — not a long-term raw
 HTML dashboard or quick web UI.
 
-Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell,
-**local-first** runtime, **strict allowlisted bridge** (fixed `argv`, no shell
-strings), with future installer packaging and code signing/notarization.
+Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
+(0.6 skeleton landed), **local-first** runtime, **strict allowlisted bridge**
+(fixed `argv`, no shell strings), with future installer packaging and code
+signing/notarization.
+
+## Workbench 0.10 — signed update pipeline readiness
+
+- Typed `UpdateConfiguration` model on `get_update_status` IPC
+- Optional env-based readiness: `REALFORGE_UPDATE_ENDPOINT`, `REALFORGE_UPDATER_PUBKEY`, `REALFORGE_UPDATE_CHANNEL`
+- Misconfiguration states: `missing_public_key`, `missing_endpoint`
+- `ready_to_check` when fully configured — honest “ready for integration”, no fake success
+- Release readiness checklist UI (informational)
+- Install button disabled until verified signed update
+- Saved workspace invalidation: `saved_path_missing` with choose/clear actions
+- No `tauri-plugin-updater` until signing infrastructure exists
+
+See [update pipeline](../workbench/docs/update-pipeline.md) and [desktop shell](../workbench/docs/desktop-shell.md).
+
+## Workbench 0.9 — persisted workspace and update center scaffold
+
+- Workspace selection persisted to Tauri app config (`workspace.json`)
+- Discovery priority: saved → session → env → walk-up
+- Settings → Updates update center with honest `not_configured` state
+- No unsigned downloads, no fake updater, no `tauri-plugin-updater` until signing exists
+- Bridge remains read-only
+
+See [desktop shell](../workbench/docs/desktop-shell.md).
+
+## Workbench 0.8 — workspace onboarding and bridge health
+
+- Typed workspace resolution: env (`REALFORGE_REPO_ROOT`), walk-up, folder picker (session-only)
+- `get_workspace_resolution` and `check_bridge_health` Tauri IPC — metadata + optional allowlisted probe
+- Home onboarding card, Settings → Workspace panel, Reports bridge health strip
+- Web mode returns preview metadata only — no execution, no network
+- Bridge remains **read-only** — no write/apply/scheduler operations
+
+See [desktop shell](../workbench/docs/desktop-shell.md).
+
+## Workbench 0.7 — allowlisted read-only CLI IPC
+
+- Desktop shell can load **3 fixed read-only JSON sources** by source ID only
+- `load_readonly_report_source` Tauri IPC — no shell, no user args, 15s timeout, 2MB cap
+- Output flows through the same **untrusted** import preview pipeline
+- Web mode returns `unsupported_web` — no browser execution
+- Windows/macOS `.venv` Python resolution in Rust (`PathBuf`, no shell strings)
+
+See [desktop shell](../workbench/docs/desktop-shell.md).
 
 **Do not keep expanding the monolithic `js/components.js` shell for major
 features.** After Workbench 0.4, follow the migration plan for desktop-ready
@@ -65,7 +109,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 2. Paste/sample report import with trust hardening (0.3)
 3. Manual CLI bridge catalog + Node helper (0.4)
 4. **React/TS desktop app migration** (0.5) — **Phase 1 complete**: Vite + React shell, all 14 screens
-5. **Tauri shell + packaging** (0.6–0.7) — installers, signing, read-only IPC bridge
-6. Future: approval-gated local bridge (write paths, safe command composer)
+5. **Tauri shell + packaging** (0.6–0.10) — read-only IPC, workspace persistence, update readiness
+6. Future: `tauri-plugin-updater` wiring, approval-gated local bridge (write paths, safe command composer)
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

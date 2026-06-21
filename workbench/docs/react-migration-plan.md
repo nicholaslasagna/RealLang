@@ -379,29 +379,27 @@ becomes `legacy/` or is removed in a single cutover release.
 - Removed deprecated `ensure-mock-data.ts` shim (use `workbench-data.ts`)
 - **Deliverable:** 61 tests green; visual smoke at 1024/1440 unchanged
 
-### Phase 4 — Tauri shell (0.6)
+### Phase 4 — Tauri shell skeleton ✅ (0.6)
 
-Replace `app.js` state:
+**Goal:** Desktop shell hosting the React app; explicit IPC; no write bridge.
 
-```typescript
-interface WorkbenchState {
-  screen: WorkbenchScreen;
-  settingsSection: string;
-  staffPreview: boolean;
-  commandQuery: string;
-  sidebarOpen: boolean;
-  importRaw: string;
-  importType: string;
-  importPreview: ImportPreview | null;
-  operationStatus: string;
-  lastCommand: string;
-  stagedTask: string;
-}
-```
+- `src-tauri/` Tauri 2 project (window, CSP, placeholder icons)
+- Metadata-only IPC: runtime info, bridge capabilities, read-only source catalog, app paths
+- `src/bridge/` typed frontend client with web fallback
+- Settings runtime indicator (web vs desktop)
+- **Deliverable:** 68+ tests green; `npm run tauri:dev` when Rust/WebView installed
 
-Hooks: `useNavigation`, `useCommandPalette`, `useReportImport`, `useStaffPreview`.
+### Phase 5 — Read-only CLI IPC ✅ (0.7)
 
-### Phase 5 — Visual parity & cutover (0.5e)
+**Goal:** Allowlisted read-only CLI spawn from Rust (mirror Node dev bridge).
+
+- `load_readonly_report_source` IPC — source ID only, fixed argv
+- Cross-platform Python resolution in Rust
+- Timeout / max buffer; structured errors; untrusted output flag
+- Reports screen desktop **Load report** action
+- **No** write/apply/scheduler commands
+
+### Phase 6 — Approval-gated bridge (future)
 
 - Per-screen visual regression (manual or screenshot diff)
 - Switch default `npm run dev` to Vite app

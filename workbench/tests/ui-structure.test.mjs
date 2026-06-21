@@ -62,6 +62,8 @@ test("prototype has no browser network or backend execution primitive", async ()
     await read("src/data/adapters/report-adapters.ts"),
     await read("src/data/view-models/workbench-view-models.ts"),
     await read("src/data/import/report-import.ts"),
+    await read("src/bridge/workbench-bridge.ts"),
+    await read("src/bridge/web-fallback.ts"),
     await readReactSources()
   ].join("\n");
   for (const forbidden of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /navigator\.sendBeacon/, /child_process/]) {
@@ -103,13 +105,22 @@ test("local Lucide subset and license are present", async () => {
 });
 
 test("reports screen exposes read-only CLI bridge catalog without execution hooks", async () => {
-  const reports = await read("src/features/reports/ReportsScreen.tsx");
+  const reports = [
+    await read("src/features/reports/ReportsScreen.tsx"),
+    await read("src/features/reports/CliBridgePanel.tsx")
+  ].join("\n");
   const store = await read("src/state/workbench-store.ts");
+  const bridge = [
+    await read("src/bridge/workbench-bridge.ts"),
+    await read("src/bridge/web-fallback.ts")
+  ].join("\n");
   assert.match(reports, /cli-bridge-panel/);
   assert.match(reports, /NO SHELL/);
   assert.match(reports, /realforge-report-bridge\.mjs/);
   assert.match(store, /copyCliCommand/);
+  assert.match(store, /loadDesktopReport/);
   assert.match(store, /no backend command executed/i);
+  assert.match(bridge, /unsupported_web/);
   assert.doesNotMatch(store, /loadSource\s*\(/);
 });
 

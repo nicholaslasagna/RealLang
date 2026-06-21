@@ -1,6 +1,6 @@
 {
   "name": "realforge-workbench-prototype",
-  "version": "0.5.0",
+  "version": "0.10.0",
   "private": true,
   "description": "RealForge Workbench — React + TypeScript local-first UI",
   "type": "module",
@@ -8,7 +8,7 @@
     "fixtures": "node scripts/generate-fixtures.mjs",
     "build:data": "node scripts/build-data-artifacts.mjs",
     "sync:assets": "node scripts/sync-public-assets.mjs",
-    "check": "node scripts/generate-fixtures.mjs --check && node scripts/build-data-artifacts.mjs && node --check js/mock-data.js && node --check js/components.js && node --check js/app.js && node --check scripts/build.mjs && node --check tools/resolve-python.mjs && node --check tools/realforge-report-bridge.mjs && tsc -p tsconfig.json --noEmit",
+    "check": "node scripts/generate-fixtures.mjs --check && node scripts/build-data-artifacts.mjs && node scripts/generate-tauri-icons.mjs && node --check js/mock-data.js && node --check js/components.js && node --check js/app.js && node --check scripts/build.mjs && node --check tools/resolve-python.mjs && node --check tools/realforge-report-bridge.mjs && node scripts/check-tauri.mjs && tsc -p tsconfig.json --noEmit",
     "test": "node --test tests/*.test.mjs && vitest run",
     "test:node": "node --test tests/*.test.mjs",
     "test:react": "vitest run",
@@ -18,14 +18,20 @@
     "build:app": "npm run sync:assets && vite build",
     "build": "node scripts/generate-fixtures.mjs --check && npm run build:data && node scripts/build.mjs",
     "preview": "vite preview",
-    "smoke:visual": "node scripts/visual-smoke.mjs"
+    "smoke:visual": "node scripts/visual-smoke.mjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "check:tauri": "node scripts/check-tauri.mjs"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.10.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.17",

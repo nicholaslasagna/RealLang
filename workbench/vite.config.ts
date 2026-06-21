@@ -15,13 +15,22 @@ if (!existsSync(publicAssets)) {
 export default defineConfig({
   plugins: [react()],
   publicDir: join(root, "public"),
+  clearScreen: false,
   server: {
     port: 5173,
     strictPort: true
   },
+  envPrefix: ["VITE_", "TAURI_"],
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    sourcemap: true
+    sourcemap: true,
+    ...(process.env.TAURI_ENV_PLATFORM
+      ? {
+          // Tauri WebView targets; chrome105 works on WebView2 (Win) and modern WKWebView (macOS).
+          target: "chrome105",
+          minify: process.env.TAURI_ENV_DEBUG ? false : "esbuild"
+        }
+      : {})
   }
 });

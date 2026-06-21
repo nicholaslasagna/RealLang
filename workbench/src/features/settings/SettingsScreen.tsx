@@ -1,10 +1,14 @@
 import { getWorkbenchData } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { RuntimeIndicator } from "../../components/RuntimeIndicator";
+import { UpdateCenterPanel } from "../../components/UpdateCenterPanel";
+import { WorkspacePanel } from "../../components/WorkspacePanel";
 import { Badge, Icon } from "../../components/primitives";
 
 const DESCRIPTIONS: Record<string, string> = {
   general: "Appearance and local prototype behavior.",
   workspace: "Bounded paths and artifact locations for the active repository.",
+  updates: "Signed desktop application updates and release channel settings.",
   provider: "Deterministic local provider state and multimodal readiness.",
   permissions: "Effective write, command, and destructive-action boundaries.",
   research: "Network access remains off until an explicit allowlist is supplied.",
@@ -103,6 +107,9 @@ export function SettingsScreen() {
             <b>STAFF OFF</b>
           </span>
         </div>
+        {current.id === "general" ? <RuntimeIndicator /> : null}
+        {current.id === "workspace" ? <WorkspacePanel /> : null}
+        {current.id === "updates" ? <UpdateCenterPanel /> : null}
         {staffSection ? (
           <div className="staff-settings-gate">
             <Icon name="lock-keyhole" />
@@ -115,7 +122,7 @@ export function SettingsScreen() {
         ) : null}
         {current.id === "doctor" ? (
           <DoctorPanel />
-        ) : (
+        ) : current.id === "workspace" || current.id === "updates" ? null : (
           <div className={`settings-fields ${staffSection ? "settings-fields--gated" : ""}`}>
             {fields.map(([label, value, note]) => (
               <div key={label}>

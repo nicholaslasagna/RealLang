@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { loadReadOnlyReportSource } from "../bridge";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
 import type { ImportPreview, WorkbenchScreen, WorkbenchState } from "./types";
 
@@ -17,6 +18,7 @@ type WorkbenchActions = {
   previewImport: () => void;
   clearImport: () => void;
   loadSample: (sampleId: string) => void;
+  loadDesktopReport: (sourceId: string) => Promise<void>;
   copyCliCommand: (sourceId: string) => void;
   stageTask: (task: string) => void;
   showToast: (message: string, tone?: "safe" | "warn") => void;
@@ -37,7 +39,10 @@ const initialState: WorkbenchState = {
   importType: "auto",
   importPreview: null,
   paletteOpen: false,
-  toast: null
+  toast: null,
+  desktopLoadStatus: "idle",
+  desktopLoadSourceId: null,
+  desktopLoadError: null
 };
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -146,9 +151,36 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
       importType: "auto",
       importPreview,
       operationStatus: "Sample report loaded · no backend action",
-      lastCommand: `sample · ${sample.label}`
+      lastCommand: `sample · ${sample.label}`,
+      desktopLoadStatus: "idle",
+      desktopLoadError: null
     });
     get().showToast(`Loaded sample: ${sample.label} · untrusted preview`);
+  },
+
+  loadDesktopReport: async (sourceId) => {
+    set({ desktopLoadStatus: "loading", desktopLoadSourceId: sourceId, desktopLoadError: null });
+    const result = await loadReadOnlyReportSource(sourceId);
+    if (!result.ok) {
+      set({
+        desktopLoadStatus: "error",
+        desktopLoadError: result.error.message
+      });
+      get().showToast(result.error.message, "warn");
+      return;
+    }
+    const { data } = result;
+    const importPreview = computePreview(data.stdoutJson, "auto", get().staffPreview);
+    set({
+      desktopLoadStatus: "idle",
+      desktopLoadError: null,
+      importRaw: data.stdoutJson,
+      importType: "auto",
+      importPreview,
+      operationStatus: `Desktop bridge loaded · ${data.source.label} · untrusted`,
+      lastCommand: `desktop load · ${data.source.displayCommand}`
+    });
+    get().showToast(`Loaded ${data.source.label} via desktop bridge · untrusted preview`);
   },
 
   copyCliCommand: (sourceId) => {

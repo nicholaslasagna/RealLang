@@ -3,9 +3,12 @@
 This directory contains the RealForge Workbench — a local-first AI engineering
 interface prototype evolving toward a cross-platform desktop app (macOS +
 Windows). **0.5 Phase 1** migrated the UI to **React + TypeScript + Vite**;
-**0.5b** migrated the data layer to typed TypeScript modules; **0.5c** tightened
-TypeScript strictness on import/CLI/view-models, split design tokens, and improved
-cross-platform Node bridge Python resolution — still no backend execution.
+**0.6** added a Tauri desktop shell; **0.7** adds allowlisted read-only CLI IPC
+in desktop mode; **0.8** adds workspace onboarding, resolution, and bridge health;
+**0.9** adds persisted workspace selection and a signed-update center scaffold
+(web workflow unchanged, output still untrusted). **0.10** adds signed-update
+pipeline readiness (env-based config detection), release checklist UI, and saved
+workspace invalidation polish.
 
 Historical milestones:
 
@@ -17,6 +20,11 @@ Historical milestones:
 - **0.5** React + TypeScript + Vite app shell (all 14 screens)
 - **0.5b** TypeScript data layer migration (adapters, import, CLI catalog, fixtures)
 - **0.5c** TypeScript strictness, CSS token split, cross-platform bridge prep
+- **0.6** Tauri desktop shell skeleton (metadata-only IPC)
+- **0.7** Allowlisted read-only CLI IPC (desktop only)
+- **0.8** Workspace onboarding, resolution, and bridge health (desktop only)
+- **0.9** Persisted workspace + update center scaffold (signed updater deferred)
+- **0.10** Update pipeline readiness + workspace invalidation polish (updater plugin still deferred)
 
 ## Run (React app — default)
 
@@ -47,36 +55,45 @@ npm test           # node tests + vitest React tests
 npm run build      # production dist/ (offline bundle)
 npm run build:data # legacy bundle + Node CLI allowlist artifacts
 npm run smoke:visual  # Playwright layout smoke at 1024px and 1440px (after build)
+npm run check:tauri   # Rust IPC bridge unit tests (requires cargo)
 ```
 
-`npm run build` writes `workbench/dist/` (Vite output). `npm run build:data`
-builds the legacy data bundle and Node CLI allowlist. Fixture JSON lives under
-`src/data/fixtures/` and is imported directly by the TypeScript modules.
+## Desktop shell (Tauri — 0.6)
 
-## Architecture (0.5c)
+```bash
+npm run tauri:dev    # desktop window + Vite dev server
+npm run tauri:build  # production desktop bundle (requires Rust + WebView)
+```
+
+See [docs/desktop-shell.md](docs/desktop-shell.md) for macOS/Windows setup, IPC
+commands, and safety boundaries. **0.7** adds read-only CLI load for three
+fixed sources in desktop mode only. **0.8** adds workspace discovery, folder picker
+(session-only), and bridge health checks. Signing/installers are future work.
+
+## Validate (web)
+
+```bash
+npm run check      # fixtures + syntax + tsc + tauri icon gen
+npm test           # node tests + vitest React tests
+npm run build      # production dist/ (offline bundle)
+npm run build:data # legacy bundle + Node CLI allowlist artifacts
+
+## Architecture (0.10)
 
 ```text
-src/data/
-  contracts/report-contracts.ts   → import/adapter/shared types
-  status/status.ts                → fully typed normalization
-  cli/cli-report-sources.ts       → typed allowlist (no @ts-nocheck)
-  import/report-import.ts         → typed import engine (no @ts-nocheck)
-  view-models/workbench-view-models.ts
-  adapters/report-adapters.ts     → still @ts-nocheck (large legacy module)
-  workbench-data.ts               → app-facing data API
-src/styles/
-  tokens-colors.css / tokens-layout.css / tokens-status-badges.css
-tools/
-  resolve-python.mjs              → cross-platform venv Python resolution
-  realforge-report-bridge.mjs     → dev-only read-only CLI bridge
-legacy/js/data-bundle.js          → esbuild IIFE for legacy shell
+src/bridge/                       → typed frontend bridge (web fallback + Tauri IPC)
+src-tauri/src/bridge/
+  workspace_store.rs              → persisted workspace.json in app config dir
+  update.rs                       → update readiness (env config, no network)
+  workspace.rs                    → repo discovery, validation, saved priority
+  health.rs                       → bridge health + optional capabilities probe
+  allowlist.rs / spawn.rs         → read-only CLI IPC (unchanged from 0.7)
+docs/update-pipeline.md           → signed updater future setup
 ```
 
-**Safety unchanged:** no fetch/network, no browser command execution, no apply/
-run, imported JSON always untrusted, staff preview off by default. Tauri desktop
-shell remains a future phase — see [docs/react-migration-plan.md](docs/react-migration-plan.md).
-
-## Report import (0.3 / hardened in 0.3.1)
+**Safety unchanged:** web mode never executes CLI. Workspace writes only go to app
+config. Updater does not network until `tauri-plugin-updater` and release signing
+are wired. See [docs/update-pipeline.md](docs/update-pipeline.md).
 
 The **Reports** screen previews RealForge-style JSON reports without a backend:
 
@@ -187,8 +204,9 @@ read-only CLI catalog (0.4), React/TypeScript app shell (0.5), Tauri desktop
 shell (0.6+), then a separately reviewed safe command composer and
 approval-gated local bridge.
 
-## Next milestone (0.6)
+## Next milestone (1.0+)
 
-Phase 2 (0.5b) and 0.5c hardened the TypeScript data layer, CSS tokens, and
-cross-platform bridge prep. Next: **Tauri desktop shell** — see
-[docs/react-migration-plan.md](docs/react-migration-plan.md).
+0.10 added update pipeline readiness and workspace invalidation polish. Next:
+**wire `tauri-plugin-updater` with CI signing**, **approval-gated write bridge**,
+safe command composer UI, and additional JSON-verified read-only sources.
+See [docs/update-pipeline.md](docs/update-pipeline.md) and [docs/desktop-shell.md](docs/desktop-shell.md).

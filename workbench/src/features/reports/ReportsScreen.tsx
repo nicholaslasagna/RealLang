@@ -1,55 +1,8 @@
-import { cliReportSources, reportImport } from "../../data/workbench-data";
+import { reportImport } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
 import { Badge, Button, Icon, SectionHeading } from "../../components/primitives";
+import { CliBridgePanel } from "./CliBridgePanel";
 import { ImportPreviewPanel } from "./ImportPreview";
-
-function CliBridgePanel() {
-  const copyCliCommand = useWorkbenchStore((s) => s.copyCliCommand);
-  const cli = cliReportSources;
-  const sources = cli?.SOURCES ?? [];
-  if (!sources.length) return null;
-
-  return (
-    <section className="cli-bridge-panel">
-      <header>
-        <Icon name="terminal" />
-        <div>
-          <p className="eyebrow">LOAD FROM REALFORGE CLI</p>
-          <h2>Read-only report sources</h2>
-        </div>
-        <Badge label="READ ONLY" tone="green" />
-      </header>
-      <div className="cli-bridge-safety">
-        <Badge label="NO WRITES" tone="green" />
-        <Badge label="NO APPLY" tone="cyan" />
-        <Badge label="NO SHELL" tone="cyan" />
-        <Badge label="OUTPUT UNTRUSTED" tone="amber" />
-      </div>
-      <p className="cli-bridge-note">
-        <Icon name="shield-check" />A local Node bridge runs only these allowlisted, read-only commands — no shell, no writes, no apply. Run one in a terminal at the repo root, then paste its JSON into the import box below. The Workbench never executes commands.
-      </p>
-      <div className="cli-source-list">
-        {sources.map((source: { id: string; label: string; description: string; displayCommand: string }) => {
-          const id = String(source.id);
-          return (
-            <article key={id} className="cli-source">
-              <header>
-                <b>{String(source.label)}</b>
-                <Badge label="READ ONLY" tone="green" />
-              </header>
-              <p>{String(source.description)}</p>
-              <code className="cli-source__cmd">{String(source.displayCommand)}</code>
-              <footer>
-                <code className="cli-source__bridge">node tools/realforge-report-bridge.mjs load {id}</code>
-                <Button label="Copy command" iconName="clipboard-list" variant="secondary" onClick={() => copyCliCommand(id)} />
-              </footer>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
 
 export function ReportsScreen() {
   const importRaw = useWorkbenchStore((s) => s.importRaw);

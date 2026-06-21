@@ -21,7 +21,10 @@ function resetStore() {
     importType: "auto",
     importPreview: null,
     paletteOpen: false,
-    toast: null
+    toast: null,
+    desktopLoadStatus: "idle",
+    desktopLoadSourceId: null,
+    desktopLoadError: null
   });
 }
 
@@ -70,11 +73,12 @@ describe("Workbench React app", () => {
     const { join, dirname } = await import("node:path");
     const { fileURLToPath } = await import("node:url");
     const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-    const reports = await readFile(join(root, "src/features/reports/ReportsScreen.tsx"), "utf8");
+    const reports = await readFile(join(root, "src/features/reports/CliBridgePanel.tsx"), "utf8");
     const store = await readFile(join(root, "src/state/workbench-store.ts"), "utf8");
     expect(reports).toMatch(/cli-bridge-panel/);
     expect(reports).toMatch(/NO SHELL/);
     expect(store).toMatch(/copyCliCommand/);
+    expect(store).toMatch(/loadDesktopReport/);
     expect(store).not.toMatch(/loadSource\s*\(/);
   });
 });

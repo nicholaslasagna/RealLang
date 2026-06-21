@@ -41,7 +41,7 @@ test("adapters parse valid capability, settings, benchmark, and update fixtures"
   const update = adapters.adaptUpdateBundle(await readJson("src/data/fixtures/update-bundle.json"), { staffMode: false });
 
   assert.equal(capability.data.capabilities.length, 11);
-  assert.equal(settings.data.sections.length, 11);
+  assert.equal(settings.data.sections.length, 12);
   assert.equal(benchmark.data.overall, 0.86);
   assert.equal(benchmark.data.domains.length, 10);
   assert.equal(update.data.stages.length, 7);

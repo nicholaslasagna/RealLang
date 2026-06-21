@@ -14,6 +14,11 @@
       { "label": "Artifact root", "value": ".realforge/", "note": "Gitignored metadata and reports" },
       { "label": "Boundary", "value": "PASS", "note": "All writes remain workspace-bounded" }
     ] },
+    { "id": "updates", "label": "Updates", "icon": "package", "values": [
+      { "label": "Update channel", "value": "stable", "note": "Desktop shell manages signed updates" },
+      { "label": "Auto install", "value": "OFF", "note": "Unsigned packages are never installed" },
+      { "label": "Release notes", "value": "Not configured", "note": "Shown after signed updater is enabled" }
+    ] },
     { "id": "provider", "label": "Provider / Local Model", "icon": "cpu", "values": [
       { "label": "Provider", "value": "mock", "note": "Deterministic offline adapter" },
       { "label": "Model", "value": "deterministic", "note": "No live local model required" },

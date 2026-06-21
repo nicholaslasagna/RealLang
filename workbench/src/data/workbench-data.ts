@@ -85,7 +85,7 @@ export function ensureMockData(): WorkbenchMockData {
   cachedMockData = Object.freeze({
     ...reports,
     version: "2.7",
-    workbenchVersion: "0.5c",
+    workbenchVersion: "0.10",
     navigation
   }) as WorkbenchMockData;
   return cachedMockData;

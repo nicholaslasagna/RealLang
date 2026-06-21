@@ -2,6 +2,7 @@ import type { WorkbenchScreen } from "../../state/types";
 import { getWorkbenchData } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
 import { Badge, Button, Icon, MetricCard } from "../../components/primitives";
+import { WorkspaceOnboardingCard } from "../../components/WorkspaceOnboardingCard";
 
 export function HomeScreen() {
   const data = getWorkbenchData();
@@ -40,6 +41,8 @@ export function HomeScreen() {
           </div>
         </div>
       </section>
+
+      <WorkspaceOnboardingCard />
 
       <section className="dashboard-section">
         <div className="section-label">
