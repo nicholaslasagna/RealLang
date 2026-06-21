@@ -1,0 +1,20 @@
+{
+  "id": "capabilities-2.7",
+  "status": "PASS",
+  "readonly": true,
+  "no_writes": true,
+  "safety_labels": ["LOCAL ONLY", "NETWORK OFF"],
+  "capabilities": [
+    { "domain": "code", "icon": "code-xml", "status": "available", "safety": "compiler-guided", "writes": "optional", "staff_required": false, "network_required": false, "description": "Repository context, realc diagnostics, dry-run repairs, and validated patch proposals.", "suggested_command": "realforge check examples/hello.real" },
+    { "domain": "docs", "icon": "file-text", "status": "available", "safety": "review-required", "writes": "optional", "staff_required": false, "network_required": false, "description": "Documentation planning and generation with explicit review before writes.", "suggested_command": "realforge plan --task \"update docs\"" },
+    { "domain": "research", "icon": "globe", "status": "experimental", "safety": "network-gated", "writes": "optional", "staff_required": false, "network_required": true, "description": "Permissioned HTTPS research with explicit domain allowlists and untrusted snapshots.", "suggested_command": "realforge research --url … --allow-domain …" },
+    { "domain": "creative", "icon": "drama", "status": "experimental", "safety": "planning-only", "writes": "optional", "staff_required": false, "network_required": false, "description": "Game, map, and asset briefs as structured planning artifacts.", "suggested_command": "realforge creative brief --task \"…\"" },
+    { "domain": "image", "icon": "image", "status": "experimental", "safety": "planning-only", "writes": "optional", "staff_required": false, "network_required": false, "description": "Prompt jobs, packs, provenance, and reference boards. No binary generation.", "suggested_command": "realforge image job --task \"…\"" },
+    { "domain": "vision", "icon": "eye", "status": "experimental", "safety": "untrusted-output", "writes": "optional", "staff_required": false, "network_required": false, "description": "Bounded image reports. Mock mode performs no semantic recognition.", "suggested_command": "realforge vision understand --image … --task \"…\"" },
+    { "domain": "engine", "icon": "box", "status": "experimental", "safety": "dry-run-only", "writes": "optional", "staff_required": false, "network_required": false, "description": "Read-only project scans and approval-gated Unreal/engine plans.", "suggested_command": "realforge engine scan --path …" },
+    { "domain": "assets", "icon": "package", "status": "experimental", "safety": "planning-only", "writes": "optional", "staff_required": false, "network_required": false, "description": "Asset and Blender pipeline plans without DCC execution or binary output.", "suggested_command": "realforge asset pipeline --task \"…\"" },
+    { "domain": "eval", "icon": "gauge", "status": "available", "safety": "benchmark-aware", "writes": "yes", "staff_required": false, "network_required": false, "description": "Repeatable provider evaluations, task benchmarks, skill benches, and local leaderboards.", "suggested_command": "realforge skill-bench --provider mock --suite smoke" },
+    { "domain": "self-improvement", "icon": "flask-conical", "status": "experimental", "safety": "isolated", "writes": "optional", "staff_required": false, "network_required": false, "description": "Bounded proposals and isolated experiments. Apply remains manual and approval-gated.", "suggested_command": "realforge improve --dry-run" },
+    { "domain": "scheduler", "icon": "calendar-clock", "status": "staff-only", "safety": "staff-gated", "writes": "optional", "staff_required": true, "network_required": false, "description": "Bounded staff improvement jobs with benchmark gates and no automatic apply or commit.", "suggested_command": "realforge scheduler-status" }
+  ]
+}

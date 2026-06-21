@@ -1812,6 +1812,22 @@ textarea:focus-visible,
 
 .preview-banner > span { flex: 1; color: var(--text-2); }
 
+.update-report-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 15px;
+  padding: 18px;
+  border: 1px solid rgba(240, 181, 68, 0.2);
+  border-radius: 6px;
+  background: rgba(240, 181, 68, 0.025);
+}
+
+.update-report-summary h2 { margin: 5px 0 0; color: var(--text); font-size: 16px; }
+.update-report-summary p:not(.eyebrow) { margin: 6px 0 0; color: var(--text-2); font-size: 11px; }
+.update-report-summary > span { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+
 .update-flow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2228,6 +2244,7 @@ textarea:focus-visible,
   .staff-lock { grid-template-columns: 54px minmax(0, 1fr); padding: 22px; }
   .staff-lock > span { width: 54px; height: 54px; }
   .staff-lock .button { grid-column: 1 / -1; }
+  .update-report-summary { align-items: flex-start; flex-direction: column; }
   .studio-launch { grid-template-columns: 1fr; padding: 22px; }
   .studio-launch > .button { grid-column: 1; }
   .workflow-section-heading { align-items: flex-start; flex-direction: column; }

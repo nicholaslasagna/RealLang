@@ -1,0 +1,22 @@
+{
+  "id": "skill-bench-smoke-001",
+  "status": "VALIDATED",
+  "suite": "skill-bench smoke",
+  "overall": 0.86,
+  "gate": 0.75,
+  "task_count": 24,
+  "readonly": true,
+  "no_writes": true,
+  "domains": [
+    { "domain": "code", "score": 0.88, "task_count": 3 },
+    { "domain": "docs", "score": 0.79, "task_count": 2 },
+    { "domain": "research", "score": 0.72, "task_count": 2 },
+    { "domain": "creative", "score": 0.81, "task_count": 3 },
+    { "domain": "image", "score": 0.68, "task_count": 2 },
+    { "domain": "vision", "score": 0.55, "task_count": 2 },
+    { "domain": "engine", "score": 0.74, "task_count": 2 },
+    { "domain": "assets", "score": 0.77, "task_count": 2 },
+    { "domain": "safety", "score": 0.94, "task_count": 4 },
+    { "domain": "self-improvement", "score": 0.70, "task_count": 2 }
+  ]
+}

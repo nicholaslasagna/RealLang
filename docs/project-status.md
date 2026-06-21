@@ -104,7 +104,7 @@ single-purpose coding or game-design tool. As of RealForge 2.7:
 - `unreal import-plan` uses read-only Unreal detection and produces no imports or project changes (2.6)
 - `engine pipeline` records validated project-relative operations and inert command suggestions (2.6)
 - `skill-bench`, `skill-bench-list`, and `skill-bench-show` run broad cross-domain skill benchmarks across code, docs, research, creative, image, vision, engine, asset, safety, and self-improve domains (2.7); rule-based, not a superiority benchmark, with no main workspace mutation
-- `workbench/` provides a static, offline-safe UI prototype with mocked data and no backend side effects
+- `workbench/` provides a static, offline-safe UI prototype with mocked data and no backend side effects; Workbench 0.2 adds typed report contracts, defensive adapters, checked JSON fixtures, and fixture-backed view models
 - `staff-status`, `update-check`, `improve-channel`, and `update-history` provide staff-only improvement/update channel foundation (1.4); disabled by default
 - `update-bundle create/list/show/mark/export` package validated proposals as versioned update candidates (1.5); metadata only, no auto-apply
 - `update-bundle verify`, status transition rules, export hardening, and update-history bundle integration (1.6)

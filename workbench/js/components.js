@@ -215,8 +215,10 @@
   }
 
   function renderCapabilities() {
+    const available = data.capabilities.filter((capability) => capability.status === "available").length;
+    const staffOnly = data.capabilities.filter((capability) => capability.staff).length;
     return `<div class="screen">${sectionHeading("CAPABILITY REGISTRY", "Capabilities", "One trust-oriented loop across every domain. Provider, research, and generated output stays untrusted until validated.")}
-      <div class="page-action-row"><span>${icon("shield-check")}11 registered domains · 3 available · 1 staff-only</span>${button("Open Workbench", "square-terminal", "open-workbench", "primary")}</div>
+      <div class="page-action-row"><span>${icon("shield-check")}${data.capabilities.length} registered domains · ${available} available · ${staffOnly} staff-only</span>${button("Open Workbench", "square-terminal", "open-workbench", "primary")}</div>
       <div class="capability-grid">${data.capabilities.map((cap) => `<article class="capability-card">
         <header><span class="capability-icon">${icon(cap.icon)}</span><h2>${escapeHtml(cap.domain)}</h2>${badge(cap.status.toUpperCase(), capabilityTone(cap.status))}</header>
         <p>${escapeHtml(cap.description)}</p>
@@ -291,6 +293,7 @@
     }
     return `<div class="screen updates-screen">${sectionHeading("UPDATES · PREVIEW MODE", "Staff-approved improvement cycle.", "Visual preview only. The backend remains off and STAFF OFF remains the actual state.")}
       <div class="preview-banner">${icon("eye")}<span><b>STAFF UI PREVIEW</b> · no backend setting changed · no action can apply or commit</span>${button("Exit preview", "x", "toggle-staff-preview", "ghost")}</div>
+      <section class="update-report-summary"><div><p class="eyebrow">FIXTURE-BACKED UPDATE BUNDLE · ${escapeHtml(data.updateBundle.version)}</p><h2>${escapeHtml(data.updateBundle.proposal.title)}</h2><p>${escapeHtml(data.updateBundle.validationSummary)}</p></div><span>${badge("UNTRUSTED", "amber")}${badge("DRY RUN", "blue")}${badge("APPROVAL REQUIRED", "violet")}</span></section>
       <section class="update-flow">${data.updateStages.map(([title, description], index) => `<article><span>${String(index + 1).padStart(2, "0")}</span><div>${icon(["shield-check", "search", "git-pull-request-arrow", "flask-conical", "package", "eye", "user-round-check"][index])}<h2>${escapeHtml(title)}</h2><p>${escapeHtml(description)}</p></div>${index < data.updateStages.length - 1 ? `<i>${icon("chevron-right")}</i>` : ""}</article>`).join("")}</section>
       <section class="manual-gate"><div>${icon("shield-alert")}<span><b>Manual apply remains outside this prototype.</b><small>No auto-apply · no auto-commit · no auto-merge.</small></span></div>${button("Preview next gate", "play", "safe-placeholder", "violet")}</section>
     </div>`;
@@ -325,16 +328,8 @@
   }
 
   function renderDoctor() {
-    const checks = [
-      ["Workspace boundary", "PASS", "Writes confined to workspace root."],
-      ["Staff and scheduler gates", "PASS", "Disabled by default."],
-      ["auto_apply / auto_commit", "PASS", "Unsupported and refused."],
-      ["Local provider", "WARN", "Deterministic mock fallback active."],
-      ["Research network", "PASS", "Network off; allowlist required."],
-      ["Artifact gitignore", "PASS", ".realforge outputs covered."],
-      ["Provider output trust", "WARN", "Untrusted until validated by design."]
-    ];
-    return `<div class="doctor-summary"><div><strong>5</strong><span>PASS</span></div><div><strong>2</strong><span>WARN</span></div><div><strong>0</strong><span>BLOCKED</span></div></div><div class="doctor-list">${checks.map(([label, status, note]) => `<div>${icon(status === "PASS" ? "circle-check" : "triangle-alert")}<span><b>${label}</b><small>${note}</small></span>${badge(status, status === "PASS" ? "green" : "amber")}</div>`).join("")}</div>`;
+    const doctor = data.doctor;
+    return `<div class="doctor-summary"><div><strong>${doctor.totals.pass}</strong><span>PASS</span></div><div><strong>${doctor.totals.warn}</strong><span>WARN</span></div><div><strong>${doctor.totals.blocked}</strong><span>BLOCKED</span></div></div><div class="doctor-list">${doctor.checks.map((check) => `<div>${icon(check.status === "PASS" ? "circle-check" : "triangle-alert")}<span><b>${escapeHtml(check.name)}</b><small>${escapeHtml(check.detail)}</small></span>${badge(check.status, check.status === "PASS" ? "green" : check.status === "BLOCKED" ? "violet" : "amber")}</div>`).join("")}</div>`;
   }
 
   function renderMain(state) {

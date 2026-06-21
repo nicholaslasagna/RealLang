@@ -4,7 +4,19 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
-const required = ["index.html", "styles.css", "js/mock-data.js", "js/components.js", "js/app.js", "assets/icons/LICENSE"];
+const required = [
+  "index.html",
+  "styles.css",
+  "js/mock-data.js",
+  "js/components.js",
+  "js/app.js",
+  "src/data/contracts/report-contracts.d.ts",
+  "src/data/fixtures/fixture-bundle.generated.js",
+  "src/data/status.js",
+  "src/data/adapters/report-adapters.js",
+  "src/data/viewModels/workbench-view-models.js",
+  "assets/icons/LICENSE"
+];
 
 for (const relativePath of required) {
   const content = await readFile(join(root, relativePath));
@@ -20,8 +32,9 @@ await Promise.all([
   cp(join(root, "index.html"), join(dist, "index.html")),
   cp(join(root, "styles.css"), join(dist, "styles.css")),
   cp(join(root, "js"), join(dist, "js"), { recursive: true }),
+  cp(join(root, "src"), join(dist, "src"), { recursive: true }),
   cp(join(root, "assets"), join(dist, "assets"), { recursive: true })
 ]);
-await writeFile(join(dist, "prototype-manifest.json"), `${JSON.stringify({ prototype: "RealForge Workbench", version: "0.1.0", backendIntegration: false }, null, 2)}\n`, "utf8");
+await writeFile(join(dist, "prototype-manifest.json"), `${JSON.stringify({ prototype: "RealForge Workbench", version: "0.2.0", backendIntegration: false, dataContracts: true, reportAdapters: true }, null, 2)}\n`, "utf8");
 
 console.log("Built offline static prototype in workbench/dist/");

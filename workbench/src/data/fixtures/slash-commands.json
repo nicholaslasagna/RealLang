@@ -1,0 +1,31 @@
+{
+  "id": "slash-commands-2.7",
+  "status": "PASS",
+  "readonly": true,
+  "no_writes": true,
+  "commands": [
+    { "command": "/ask", "domain": "core", "description": "Request a concise local-provider plan", "safety": "UNTRUSTED", "writes": "no" },
+    { "command": "/plan", "domain": "core", "description": "Build a structured task plan", "safety": "UNTRUSTED", "writes": "no" },
+    { "command": "/check", "domain": "code", "description": "Run compiler-guided checks", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/repair", "domain": "code", "description": "Preview conservative repairs", "safety": "DRY RUN", "writes": "no" },
+    { "command": "/context", "domain": "code", "description": "Build bounded workspace context", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/research", "domain": "research", "description": "Fetch one allowlisted HTTPS source", "safety": "NETWORK GATED", "writes": "optional", "network_required": true },
+    { "command": "/creative brief", "domain": "creative", "description": "Create a game design brief", "safety": "UNTRUSTED", "writes": "optional" },
+    { "command": "/creative map", "domain": "creative", "description": "Create a map or world plan", "safety": "UNTRUSTED", "writes": "optional" },
+    { "command": "/image prompt", "domain": "image", "description": "Create a prompt specification", "safety": "PLANNING", "writes": "optional" },
+    { "command": "/image job", "domain": "image", "description": "Create an image workflow job", "safety": "PLANNING", "writes": "optional" },
+    { "command": "/vision analyze", "domain": "vision", "description": "Create a simple image report", "safety": "UNTRUSTED", "writes": "optional" },
+    { "command": "/vision understand", "domain": "vision", "description": "Create a rich image report", "safety": "UNTRUSTED", "writes": "optional" },
+    { "command": "/engine scan", "domain": "engine", "description": "Scan an engine project", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/unreal plan", "domain": "engine", "description": "Create a dry-run Unreal plan", "safety": "DRY RUN", "writes": "optional" },
+    { "command": "/asset pipeline", "domain": "assets", "description": "Create an asset production plan", "safety": "DRY RUN", "writes": "optional" },
+    { "command": "/bench", "domain": "eval", "description": "Run task benchmark summaries", "safety": "BENCHMARK", "writes": "yes" },
+    { "command": "/skill-bench", "domain": "eval", "description": "Run capability-domain skill tasks", "safety": "BENCHMARK", "writes": "yes" },
+    { "command": "/leaderboard", "domain": "eval", "description": "Show local provider rankings", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/doctor", "domain": "system", "description": "Check environment safety", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/settings", "domain": "system", "description": "Review effective settings", "safety": "READ ONLY", "writes": "no" },
+    { "command": "/staff-status", "domain": "staff", "description": "Inspect staff-mode state", "safety": "STAFF ONLY", "writes": "no", "staff_only": true },
+    { "command": "/update-check", "domain": "staff", "description": "Review update candidates", "safety": "STAFF ONLY", "writes": "optional", "staff_only": true },
+    { "command": "/scheduler", "domain": "staff", "description": "Inspect bounded scheduler state", "safety": "STAFF ONLY", "writes": "optional", "staff_only": true }
+  ]
+}

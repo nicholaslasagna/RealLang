@@ -1,0 +1,19 @@
+{
+  "id": "doctor-2.7",
+  "status": "WARN",
+  "workspace": "RealLang",
+  "provider": "mock",
+  "network": "OFF",
+  "staff_mode": "OFF",
+  "readonly": true,
+  "no_writes": true,
+  "checks": [
+    { "name": "Workspace boundary", "status": "PASS", "detail": "Writes confined to workspace root." },
+    { "name": "Staff and scheduler gates", "status": "PASS", "detail": "Disabled by default." },
+    { "name": "auto_apply / auto_commit", "status": "PASS", "detail": "Unsupported and refused." },
+    { "name": "Local provider", "status": "WARN", "detail": "Deterministic mock fallback active." },
+    { "name": "Research network", "status": "PASS", "detail": "Network off; allowlist required." },
+    { "name": "Artifact gitignore", "status": "PASS", "detail": ".realforge outputs covered." },
+    { "name": "Provider output trust", "status": "WARN", "detail": "Untrusted until validated by design." }
+  ]
+}

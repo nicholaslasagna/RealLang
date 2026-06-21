@@ -1,0 +1,59 @@
+{
+  "id": "settings-2.7",
+  "status": "PASS",
+  "readonly": true,
+  "no_writes": true,
+  "sections": [
+    { "id": "general", "label": "General", "icon": "sliders-horizontal", "values": [
+      { "label": "Theme", "value": "Forge Dark", "note": "Near-black with restrained status accents" },
+      { "label": "Motion", "value": "Reduced-safe", "note": "Respects system reduced-motion preference" },
+      { "label": "Telemetry", "value": "OFF", "note": "No prototype data leaves this browser" }
+    ] },
+    { "id": "workspace", "label": "Workspace", "icon": "folder", "values": [
+      { "label": "Workspace root", "value": "~/dev/RealLang", "note": "Display-only mock value" },
+      { "label": "Artifact root", "value": ".realforge/", "note": "Gitignored metadata and reports" },
+      { "label": "Boundary", "value": "PASS", "note": "All writes remain workspace-bounded" }
+    ] },
+    { "id": "provider", "label": "Provider / Local Model", "icon": "cpu", "values": [
+      { "label": "Provider", "value": "mock", "note": "Deterministic offline adapter" },
+      { "label": "Model", "value": "deterministic", "note": "No live local model required" },
+      { "label": "Multimodal", "value": "MOCK ONLY", "note": "No semantic recognition" }
+    ] },
+    { "id": "permissions", "label": "Permissions", "icon": "lock-keyhole", "values": [
+      { "label": "Permission mode", "value": "READONLY", "note": "Prototype controls cannot change backend permissions" },
+      { "label": "Validation allowlist", "value": "realc · pytest · git diff", "note": "Arbitrary shell remains blocked" },
+      { "label": "Destructive actions", "value": "REFUSED", "note": "No auto-apply, auto-commit, or auto-merge" }
+    ] },
+    { "id": "research", "label": "Research / Network", "icon": "globe", "values": [
+      { "label": "Network", "value": "OFF", "note": "Explicit HTTPS and domain allowlist required" },
+      { "label": "Allowed domains", "value": "none", "note": "Configured per request" },
+      { "label": "Research output", "value": "UNTRUSTED", "note": "Snapshots require review" }
+    ] },
+    { "id": "staff", "label": "Staff Mode", "icon": "shield", "values": [
+      { "label": "staff.enabled", "value": "OFF", "note": "Advanced controls hidden by default", "staff_only": true },
+      { "label": "Apply mode", "value": "MANUAL", "note": "Confirmation and revalidation required", "staff_only": true },
+      { "label": "Auto-commit", "value": "REFUSED", "note": "Unsupported by design", "staff_only": true }
+    ] },
+    { "id": "scheduler", "label": "Scheduler", "icon": "calendar-clock", "values": [
+      { "label": "scheduler.enabled", "value": "OFF", "note": "Staff-gated bounded jobs", "staff_only": true },
+      { "label": "Runs per invocation", "value": "1", "note": "Hard cap remains enforced", "staff_only": true },
+      { "label": "Autonomy", "value": "BOUNDED", "note": "Never applies or commits", "staff_only": true }
+    ] },
+    { "id": "benchmarks", "label": "Benchmarks / Gates", "icon": "chart-no-axes-column", "values": [
+      { "label": "Minimum score", "value": "0.75", "note": "Blocks improvement below gate" },
+      { "label": "Latest gate", "value": "0.86 · PASS", "note": "Fixture-backed prototype state" },
+      { "label": "Suites", "value": "smoke · planning · safety · generation", "note": "Capability-domain scoring" }
+    ] },
+    { "id": "creative", "label": "Creative / Multimodal", "icon": "drama", "values": [
+      { "label": "Binary image generation", "value": "NOT IMPLEMENTED", "note": "Prompt/spec planning only" },
+      { "label": "Vision recognition", "value": "MOCK · 0.0", "note": "Provider output remains untrusted" },
+      { "label": "Provenance", "value": "ENABLED", "note": "Prompt and reference hashes" }
+    ] },
+    { "id": "engine", "label": "Engine Integrations", "icon": "box", "values": [
+      { "label": "Unreal detection", "value": "READ ONLY", "note": "Filesystem profile only" },
+      { "label": "Blender", "value": "PLANNING", "note": "No process execution" },
+      { "label": "Project mutation", "value": "REFUSED", "note": "Approval-gated future work" }
+    ] },
+    { "id": "doctor", "label": "Safety / Doctor", "icon": "stethoscope", "values": [] }
+  ]
+}

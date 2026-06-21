@@ -1,0 +1,35 @@
+{
+  "id": "update-bundle-preview-001",
+  "version": "0.0.0-preview",
+  "status": "PENDING",
+  "staff_only": true,
+  "dry_run": true,
+  "approval_required": true,
+  "readonly": true,
+  "no_writes": true,
+  "validation_summary": "Benchmark gate passed; manual review has not started.",
+  "proposal": {
+    "id": "patch-preview-001",
+    "provider": "mock",
+    "status": "PENDING",
+    "title": "Harden one i32 diagnostic path",
+    "summary": "Illustrative proposal metadata for the Workbench preview.",
+    "target_files": ["examples/looptest.real"],
+    "patch_hash": "a3f7…91c",
+    "validation_commands": ["realc --check", "pytest -q tests/test_i32_wrapping_runtime.py"],
+    "risks": ["Generated patch details are illustrative and not valid RealLang syntax."],
+    "untrusted": true,
+    "dry_run": true,
+    "approval_required": true,
+    "no_writes": true
+  },
+  "stages": [
+    { "title": "Benchmark gate", "description": "Minimum score must pass before a candidate exists.", "status": "PASS" },
+    { "title": "Improvement candidate", "description": "Read-only scan identifies one bounded candidate.", "status": "PENDING" },
+    { "title": "Patch proposal", "description": "Untrusted unified diff remains review-only.", "status": "PENDING" },
+    { "title": "Isolated experiment", "description": "Patch is validated outside the main workspace.", "status": "PENDING" },
+    { "title": "Update bundle", "description": "Validated proposal becomes versioned metadata.", "status": "PENDING" },
+    { "title": "Review", "description": "Staff reviews hashes, targets, validation mode, and risks.", "status": "PENDING" },
+    { "title": "Manual apply", "description": "Explicit confirmation and revalidation are required.", "status": "BLOCKED" }
+  ]
+}

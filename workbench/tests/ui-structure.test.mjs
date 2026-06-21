@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFile(join(root, path), "utf8");
+const readJson = async (path) => JSON.parse(await read(path));
 
 test("entrypoint is offline and uses repository-owned assets", async () => {
   const html = await read("index.html");
@@ -16,33 +17,34 @@ test("entrypoint is offline and uses repository-owned assets", async () => {
 
 test("all requested navigation and settings screens are registered", async () => {
   const source = await read("js/mock-data.js");
+  const settings = await readJson("src/data/fixtures/settings.json");
   for (const label of ["Home", "Workbench", "Capabilities", "Code", "Research", "Creative", "Image", "Vision", "Engine", "Assets", "Benchmarks", "Updates", "Settings"]) {
     assert.match(source, new RegExp(`label: "${label}"`));
   }
   for (const section of ["General", "Workspace", "Provider / Local Model", "Permissions", "Research / Network", "Staff Mode", "Scheduler", "Benchmarks / Gates", "Creative / Multimodal", "Engine Integrations", "Safety / Doctor"]) {
-    assert.ok(source.includes(section), `missing settings section: ${section}`);
+    assert.ok(settings.sections.some((entry) => entry.label === section), `missing settings section: ${section}`);
   }
 });
 
 test("slash palette includes the approved command grammar", async () => {
-  const source = await read("js/mock-data.js");
+  const registry = await readJson("src/data/fixtures/slash-commands.json");
   for (const command of ["/ask", "/plan", "/check", "/repair", "/context", "/research", "/creative brief", "/creative map", "/image prompt", "/image job", "/vision analyze", "/vision understand", "/engine scan", "/unreal plan", "/asset pipeline", "/bench", "/skill-bench", "/leaderboard", "/doctor", "/settings", "/staff-status", "/update-check", "/scheduler"]) {
-    assert.ok(source.includes(`["${command}"`), `missing command: ${command}`);
+    assert.ok(registry.commands.some((entry) => entry.command === command), `missing command: ${command}`);
   }
   for (const domain of ["core", "code", "research", "creative", "image", "vision", "engine", "assets", "eval", "system", "staff"]) {
-    assert.match(source, new RegExp(`\\["/[^"]+", "${domain}"`), `missing command domain metadata: ${domain}`);
+    assert.ok(registry.commands.some((entry) => entry.domain === domain), `missing command domain metadata: ${domain}`);
   }
 });
 
 test("studio screens expose concrete safe-start examples", async () => {
-  const source = await read("js/mock-data.js");
+  const source = await read("src/data/fixtures/studio-reports.json");
   for (const example of ["Create a horror map brief", "Generate an image prompt pack", "Analyze a concept image", "Scan an Unreal project", "Plan a Blender asset pipeline"]) {
     assert.ok(source.includes(example), `missing studio example: ${example}`);
   }
 });
 
 test("prototype has no browser network or backend execution primitive", async () => {
-  const source = [await read("js/mock-data.js"), await read("js/components.js"), await read("js/app.js")].join("\n");
+  const source = [await read("src/data/status.js"), await read("src/data/adapters/report-adapters.js"), await read("src/data/viewModels/workbench-view-models.js"), await read("js/mock-data.js"), await read("js/components.js"), await read("js/app.js")].join("\n");
   for (const forbidden of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /navigator\.sendBeacon/, /child_process/]) assert.doesNotMatch(source, forbidden);
   assert.match(source, /NO AUTO-APPLY/);
   assert.match(source, /NO AUTO-COMMIT/);
@@ -80,6 +82,6 @@ test("local Lucide subset and license are present", async () => {
 });
 
 test("public copy avoids unsupported superiority claims", async () => {
-  const source = [await read("index.html"), await read("js/mock-data.js"), await read("js/components.js")].join("\n").toLowerCase();
+  const source = [await read("index.html"), await read("src/data/fixtures/studio-reports.json"), await read("js/mock-data.js"), await read("js/components.js")].join("\n").toLowerCase();
   for (const phrase of ["better than claude", "better than codex", "best ai ever", "fully autonomous", "infinite self-improvement", "aaa asset generation achieved"]) assert.ok(!source.includes(phrase), `unsupported claim found: ${phrase}`);
 });
