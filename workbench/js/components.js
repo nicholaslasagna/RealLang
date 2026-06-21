@@ -395,23 +395,43 @@
     </article>`;
   }
 
+  function renderCliBridgePanel() {
+    const cli = global.RealForgeCliSources;
+    const sources = cli && Array.isArray(cli.SOURCES) ? cli.SOURCES : [];
+    if (!sources.length) return "";
+    return `<section class="cli-bridge-panel">
+      <header>${icon("terminal")}<div><p class="eyebrow">LOAD FROM REALFORGE CLI</p><h2>Read-only report sources</h2></div>${badge("READ ONLY", "green")}</header>
+      <div class="cli-bridge-safety">${badge("NO WRITES", "green")}${badge("NO APPLY", "cyan")}${badge("NO SHELL", "cyan")}${badge("OUTPUT UNTRUSTED", "amber")}</div>
+      <p class="cli-bridge-note">${icon("shield-check")}A local Node bridge runs only these allowlisted, read-only commands — no shell, no writes, no apply. Run one in a terminal at the repo root, then paste its JSON into the import box below. The Workbench never executes commands.</p>
+      <div class="cli-source-list">${sources.map((source) => `<article class="cli-source">
+        <header><b>${escapeHtml(source.label)}</b>${badge("READ ONLY", "green")}</header>
+        <p>${escapeHtml(source.description)}</p>
+        <code class="cli-source__cmd">${escapeHtml(source.displayCommand)}</code>
+        <footer><code class="cli-source__bridge">node tools/realforge-report-bridge.mjs load ${escapeHtml(source.id)}</code>${button("Copy command", "clipboard-list", "copy-cli-command", "secondary", `data-source="${escapeHtml(source.id)}"`)}</footer>
+      </article>`).join("")}</div>
+    </section>`;
+  }
+
   function renderReports(state) {
     const reportImport = global.RealForgeReportImport;
     const types = reportImport ? reportImport.IMPORT_TYPES : [{ id: "auto", label: "Auto-detect" }];
     const samples = reportImport ? reportImport.getSamples() : [];
     const selectedType = state.importType || "auto";
-    return `<div class="screen reports-screen">${sectionHeading("REPORTS · READ-ONLY IMPORT", "Preview RealForge JSON reports.", "Paste or load a RealForge-style report. It is parsed locally through the 0.2 adapters and shown as an untrusted preview. No backend, no commands, no writes.")}
+    return `<div class="screen reports-screen">${sectionHeading("REPORTS · READ-ONLY IMPORT", "Preview RealForge JSON reports.", "Paste, load a sample, or pull a read-only CLI report through the local bridge. Everything is parsed locally and shown as an untrusted preview. No backend, no commands, no writes.")}
       <div class="import-banner">${icon("shield-alert")}<span><b>Imported JSON is untrusted.</b> RealForge will not execute commands or apply changes from this report.</span>${badge("NO BACKEND", "cyan")}${badge("NO WRITES", "green")}</div>
       <div class="reports-layout">
-        <section class="import-panel">
-          <div class="import-samples"><span>${icon("database")}Load a sample</span><div>${samples.map((sample) => `<button type="button" class="import-sample" data-action="load-sample" data-sample="${escapeHtml(sample.id)}">${icon("file-text")}<span>${escapeHtml(sample.label)}</span></button>`).join("") || `<small>No fixtures available.</small>`}</div></div>
-          <label class="import-type"><span>Report type</span>
-            <select id="import-type" name="import-type">${types.map((type) => `<option value="${escapeHtml(type.id)}" ${selectedType === type.id ? "selected" : ""}>${escapeHtml(type.label)}</option>`).join("")}</select>
-          </label>
-          <label class="sr-only" for="import-input">Report JSON</label>
-          <textarea id="import-input" class="import-input" spellcheck="false" autocomplete="off" placeholder="Paste a RealForge report as JSON…">${escapeHtml(state.importRaw || "")}</textarea>
-          <div class="import-actions">${button("Preview report", "scan-eye", "preview-import", "primary")}${button("Clear", "x", "clear-import", "ghost")}<span class="import-hint">${icon("file-x")}Parsed in-browser only</span></div>
-        </section>
+        <div class="reports-left">
+          ${renderCliBridgePanel()}
+          <section class="import-panel">
+            <div class="import-samples"><span>${icon("database")}Load a sample</span><div>${samples.map((sample) => `<button type="button" class="import-sample" data-action="load-sample" data-sample="${escapeHtml(sample.id)}">${icon("file-text")}<span>${escapeHtml(sample.label)}</span></button>`).join("") || `<small>No fixtures available.</small>`}</div></div>
+            <label class="import-type"><span>Report type</span>
+              <select id="import-type" name="import-type">${types.map((type) => `<option value="${escapeHtml(type.id)}" ${selectedType === type.id ? "selected" : ""}>${escapeHtml(type.label)}</option>`).join("")}</select>
+            </label>
+            <label class="sr-only" for="import-input">Report JSON</label>
+            <textarea id="import-input" class="import-input" spellcheck="false" autocomplete="off" placeholder="Paste a RealForge report as JSON…">${escapeHtml(state.importRaw || "")}</textarea>
+            <div class="import-actions">${button("Preview report", "scan-eye", "preview-import", "primary")}${button("Clear", "x", "clear-import", "ghost")}<span class="import-hint">${icon("file-x")}Parsed in-browser only</span></div>
+          </section>
+        </div>
         <section class="import-preview" aria-live="polite">${renderImportPreview(state.importPreview)}</section>
       </div>
     </div>`;

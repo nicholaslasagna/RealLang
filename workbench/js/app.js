@@ -166,6 +166,30 @@
         showToast(`Loaded sample: ${sample.label} · untrusted preview`);
         break;
       }
+      case "copy-cli-command": {
+        const cli = global.RealForgeCliSources;
+        const source = cli && typeof cli.getSource === "function" ? cli.getSource(target.dataset.source || "") : null;
+        if (!source) {
+          showToast("Unknown report source", "warn");
+          break;
+        }
+        // Copy the read-only bridge invocation only; the Workbench never runs it.
+        const command = `node tools/realforge-report-bridge.mjs load ${source.id}`;
+        const announce = () => {
+          state.operationStatus = "Bridge command copied · run it, then paste the JSON below";
+          state.lastCommand = `copy · ${source.displayCommand}`;
+          render();
+          showToast(`Copied: ${command} · read-only · no backend command executed`);
+        };
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(command).then(announce).catch(() => {
+            showToast("Copy unavailable · the command is shown on screen to copy manually", "warn");
+          });
+        } else {
+          announce();
+        }
+        break;
+      }
       default: break;
     }
   }

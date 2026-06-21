@@ -113,17 +113,40 @@
       const statusValue = readString(entry, "status", warnings, "unavailable").toLowerCase();
       const allowedStatus = ["available", "experimental", "staff-only", "unavailable"].includes(statusValue) ? statusValue : "unavailable";
       if (allowedStatus !== statusValue) warnings.push(warning(`capabilities[${index}].status`, "invalid", "Unknown capability status; using unavailable."));
-      const writes = readString(entry, "writes", warnings, "no").toLowerCase();
+      // Real `realforge capabilities --json` uses safety_level / writes_files /
+      // requires_staff / requires_network / next_suggested_command. Fall back to
+      // those when the simplified fixture field names are absent.
+      const safety = (typeof entry.safety === "string" && entry.safety.trim())
+        ? entry.safety.trim()
+        : readString(entry, "safety_level", warnings, "read-only");
+      let writes;
+      if (entry.writes !== undefined) {
+        const value = readString(entry, "writes", warnings, "no").toLowerCase();
+        writes = ["yes", "no", "optional"].includes(value) ? value : "no";
+      } else if (typeof entry.writes_files === "boolean") {
+        writes = entry.writes_files ? "yes" : "no";
+      } else {
+        writes = "no";
+      }
+      const staffRequired = entry.staff_required !== undefined
+        ? readBoolean(entry, "staff_required", warnings, allowedStatus === "staff-only")
+        : readBoolean(entry, "requires_staff", warnings, allowedStatus === "staff-only");
+      const networkRequired = entry.network_required !== undefined
+        ? readBoolean(entry, "network_required", warnings, false)
+        : readBoolean(entry, "requires_network", warnings, false);
+      const suggestedCommand = (typeof entry.suggested_command === "string" && entry.suggested_command.trim())
+        ? entry.suggested_command.trim()
+        : readString(entry, "next_suggested_command", warnings, "realforge capabilities");
       return {
         domain: readString(entry, "domain", warnings, `capability-${index + 1}`, true),
         icon: readString(entry, "icon", warnings, "blocks"),
         status: allowedStatus,
-        safety: readString(entry, "safety", warnings, "read-only"),
-        writes: ["yes", "no", "optional"].includes(writes) ? writes : "no",
-        staffRequired: readBoolean(entry, "staff_required", warnings, allowedStatus === "staff-only"),
-        networkRequired: readBoolean(entry, "network_required", warnings, false),
+        safety,
+        writes,
+        staffRequired,
+        networkRequired,
         description: readString(entry, "description", warnings, "No capability description supplied."),
-        suggestedCommand: readString(entry, "suggested_command", warnings, "realforge capabilities")
+        suggestedCommand
       };
     });
     return result({ ...meta, capabilities }, warnings);
@@ -134,14 +157,28 @@
     const { source, meta } = adaptMeta(raw, "slash_command_registry", warnings, { status: STATUS.PASS });
     const commands = objectList(source, "commands", warnings).map((entry, index) => {
       const writes = readString(entry, "writes", warnings, "no").toLowerCase();
+      // Real `realforge slash --json` uses shortcut / safety_label / requires_staff
+      // / maps_to. Fall back to those when the simplified field names are absent.
+      const command = (typeof entry.command === "string" && entry.command.trim())
+        ? entry.command.trim()
+        : (typeof entry.shortcut === "string" && entry.shortcut.trim())
+          ? entry.shortcut.trim()
+          : readString(entry, "command", warnings, `/unknown-${index + 1}`, true);
+      const safety = (typeof entry.safety === "string" && entry.safety.trim())
+        ? entry.safety.trim().toUpperCase()
+        : readString(entry, "safety_label", warnings, SAFETY.UNTRUSTED).toUpperCase();
+      const staffOnly = entry.staff_only !== undefined
+        ? readBoolean(entry, "staff_only", warnings, false)
+        : readBoolean(entry, "requires_staff", warnings, false);
       return {
-        command: readString(entry, "command", warnings, `/unknown-${index + 1}`, true),
+        command,
         domain: readString(entry, "domain", warnings, "core"),
         description: readString(entry, "description", warnings, "No command description supplied."),
-        safety: readString(entry, "safety", warnings, SAFETY.UNTRUSTED).toUpperCase(),
+        safety,
         writes: ["yes", "no", "optional"].includes(writes) ? writes : "no",
-        staffOnly: readBoolean(entry, "staff_only", warnings, false),
-        networkRequired: readBoolean(entry, "network_required", warnings, false)
+        staffOnly,
+        networkRequired: readBoolean(entry, "network_required", warnings, false),
+        mapsTo: readString(entry, "maps_to", warnings) || undefined
       };
     });
     return result({ ...meta, commands }, warnings);
