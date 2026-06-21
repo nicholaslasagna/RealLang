@@ -1,29 +1,6 @@
 :root {
   color-scheme: dark;
-  --bg: #07080b;
-  --surface-0: #0b0d12;
-  --surface-1: #11141b;
-  --surface-2: #171b24;
-  --surface-3: #202630;
-  --line: rgba(255, 255, 255, 0.075);
-  --line-strong: rgba(255, 255, 255, 0.14);
-  --text: #f4f1f2;
-  --text-2: #bbb7bc;
-  --text-3: #86838b;
-  --red: #e32636;
-  --red-dark: #9f101b;
-  --cyan: #31d8d0;
-  --blue: #5a9cff;
-  --violet: #ad7aff;
-  --green: #42d39a;
-  --amber: #f0b544;
-  --danger: #ff5c65;
-  --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Avenir Next", var(--font-ui);
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --sidebar: 224px;
-  --topbar: 58px;
-  --rail: 34px;
+  /* Design tokens live in src/styles/tokens.css (imported before this file). */
 }
 
 * {
@@ -305,16 +282,16 @@ textarea:focus-visible,
 }
 
 .status-pill--amber,
-.badge--amber { color: var(--amber); border-color: rgba(240, 181, 68, 0.28); background: rgba(240, 181, 68, 0.07); }
+.badge--amber { color: var(--badge-amber-fg); border-color: var(--badge-amber-border); background: var(--badge-amber-bg); }
 .status-pill--cyan,
-.badge--cyan { color: var(--cyan); border-color: rgba(49, 216, 208, 0.28); background: rgba(49, 216, 208, 0.07); }
+.badge--cyan { color: var(--badge-cyan-fg); border-color: var(--badge-cyan-border); background: var(--badge-cyan-bg); }
 .status-pill--green,
-.badge--green { color: var(--green); border-color: rgba(66, 211, 154, 0.28); background: rgba(66, 211, 154, 0.07); }
+.badge--green { color: var(--badge-green-fg); border-color: var(--badge-green-border); background: var(--badge-green-bg); }
 .status-pill--violet,
-.badge--violet { color: var(--violet); border-color: rgba(173, 122, 255, 0.3); background: rgba(173, 122, 255, 0.08); }
+.badge--violet { color: var(--badge-violet-fg); border-color: var(--badge-violet-border); background: var(--badge-violet-bg); }
 .status-pill--neutral,
-.badge--neutral { color: var(--text-2); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.025); }
-.badge--blue { color: var(--blue); border-color: rgba(90, 156, 255, 0.3); background: rgba(90, 156, 255, 0.08); }
+.badge--neutral { color: var(--badge-neutral-fg); border-color: var(--badge-neutral-border); background: var(--badge-neutral-bg); }
+.badge--blue { color: var(--badge-blue-fg); border-color: var(--badge-blue-border); background: var(--badge-blue-bg); }
 
 .mobile-menu {
   display: none;
@@ -2267,7 +2244,7 @@ textarea:focus-visible,
 .import-status .icon { width: 26px; height: 26px; color: var(--text-3); }
 .import-status b { color: var(--text); }
 .import-status p { margin-top: 4px; color: var(--text-3); font-size: 11px; }
-.import-status--error { border-color: rgba(255, 92, 101, 0.4); border-style: solid; background: rgba(255, 92, 101, 0.05); }
+.import-status--error { border-color: var(--import-error-border); border-style: solid; background: var(--import-error-bg); }
 .import-status--error .icon { color: var(--danger); }
 
 .import-result {

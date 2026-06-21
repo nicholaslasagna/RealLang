@@ -101,6 +101,9 @@ and no projects are modified. See
 [asset pipelines](docs/realforge-asset-pipelines.md) and
 [Blender planning](docs/realforge-blender.md).
 The first static [RealForge Workbench UI prototype](docs/realforge-workbench-ui.md)
+documents the offline-safe cockpit UI (0.4: manual CLI bridge catalog). The
+[0.5 migration plan](docs/realforge-workbench-0.5-migration.md) describes the
+move to a TypeScript/React app architecture for desktop readiness.
 provides an offline-safe cockpit for these mocked workflows. It does not execute
 CLI commands or modify the workspace.
 RealForge 2.7 adds broad cross-domain `skill-bench` benchmarks across code, docs,

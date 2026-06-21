@@ -1,47 +1,80 @@
-# RealForge Workbench UI prototype
+# RealForge Workbench UI
 
-This directory contains the first static interactive RealForge Workbench
-prototype. It follows the approved near-black cockpit direction while remaining
-offline-safe and disconnected from destructive backend actions.
+This directory contains the RealForge Workbench — a local-first AI engineering
+interface prototype evolving toward a cross-platform desktop app (macOS +
+Windows). **0.5 Phase 1** migrated the UI to **React + TypeScript + Vite**;
+**0.5b** migrated the data layer to typed TypeScript modules; **0.5c** tightened
+TypeScript strictness on import/CLI/view-models, split design tokens, and improved
+cross-platform Node bridge Python resolution — still no backend execution.
 
-Workbench 0.2 adds typed report contracts and defensive adapters under
-`src/data/`. Checked JSON fixtures are compiled into a repository-owned browser
-bundle so the static prototype can exercise future report ingestion without
-fetching data or executing a command.
+Historical milestones:
 
-Workbench 0.3 adds a **read-only JSON report import mode** (the **Reports**
-screen). A user can paste or load a RealForge-style report and preview it safely
-through the same 0.2 adapters. No backend command is executed, no file is
-written, no network request is made, and imported JSON is treated as untrusted.
+- **0.1** static offline UI prototype
+- **0.2** typed report contracts and defensive adapters (`src/data/`)
+- **0.3** read-only JSON report import (Reports screen)
+- **0.3.1** import trust hardening
+- **0.4** manual read-only CLI bridge catalog
+- **0.5** React + TypeScript + Vite app shell (all 14 screens)
+- **0.5b** TypeScript data layer migration (adapters, import, CLI catalog, fixtures)
+- **0.5c** TypeScript strictness, CSS token split, cross-platform bridge prep
 
-Workbench 0.3.1 hardens that import path. Imported JSON is **always** treated as
-untrusted regardless of its own fields, source-declared validation is shown as a
-*claim* rather than RealForge verification, staff gating is enforced by the
-preview layer (not by the payload), preview rendering is bounded, and the
-adapters now align better with real RealForge 2.7 backend report shapes.
-
-## Run
+## Run (React app — default)
 
 ```bash
 cd workbench
+npm install   # first time only
 npm run dev
 ```
 
-Then open `http://localhost:4173`. No package installation is required. The
-prototype uses browser-native HTML, CSS, and JavaScript plus a repository-owned
-Lucide icon subset.
+Open `http://localhost:5173`. Vite serves the React app with repository-owned
+assets and the existing cockpit CSS.
+
+## Legacy static shell (reference)
+
+The pre-React HTML/JS prototype is preserved under `legacy/`:
+
+```bash
+npm run dev:legacy
+```
+
+Then open `http://localhost:4173` (serves `legacy/index.html`).
 
 ## Validate
 
 ```bash
-npm run check
-npm test
-npm run build
+npm run check      # fixtures + syntax + tsc
+npm test           # node tests + vitest React tests
+npm run build      # production dist/ (offline bundle)
+npm run build:data # legacy bundle + Node CLI allowlist artifacts
+npm run smoke:visual  # Playwright layout smoke at 1024px and 1440px (after build)
 ```
 
-`npm run build` creates an ignored static copy under `workbench/dist/`.
-`npm run fixtures` regenerates the checked browser fixture bundle after a source
-JSON fixture changes; `npm run check` fails when that bundle is stale.
+`npm run build` writes `workbench/dist/` (Vite output). `npm run build:data`
+builds the legacy data bundle and Node CLI allowlist. Fixture JSON lives under
+`src/data/fixtures/` and is imported directly by the TypeScript modules.
+
+## Architecture (0.5c)
+
+```text
+src/data/
+  contracts/report-contracts.ts   → import/adapter/shared types
+  status/status.ts                → fully typed normalization
+  cli/cli-report-sources.ts       → typed allowlist (no @ts-nocheck)
+  import/report-import.ts         → typed import engine (no @ts-nocheck)
+  view-models/workbench-view-models.ts
+  adapters/report-adapters.ts     → still @ts-nocheck (large legacy module)
+  workbench-data.ts               → app-facing data API
+src/styles/
+  tokens-colors.css / tokens-layout.css / tokens-status-badges.css
+tools/
+  resolve-python.mjs              → cross-platform venv Python resolution
+  realforge-report-bridge.mjs     → dev-only read-only CLI bridge
+legacy/js/data-bundle.js          → esbuild IIFE for legacy shell
+```
+
+**Safety unchanged:** no fetch/network, no browser command execution, no apply/
+run, imported JSON always untrusted, staff preview off by default. Tauri desktop
+shell remains a future phase — see [docs/react-migration-plan.md](docs/react-migration-plan.md).
 
 ## Report import (0.3 / hardened in 0.3.1)
 
@@ -92,7 +125,30 @@ not let the imported payload describe itself as safe:
   warns: "This JSON looks like X, but you selected Y."
 
 Imported JSON is parsed in the browser only. There is no file read, no CLI
-invocation, and no network access.
+invocation from the browser, and no network access.
+
+## CLI report bridge (0.4)
+
+Workbench 0.4 adds a **manual, read-only CLI bridge catalog** on the Reports
+screen. It does **not** execute commands from the browser.
+
+- `workbench/src/data/import/cli-report-sources.js` is the shared allowlist of
+  fixed `argv` arrays (no shell strings, no user args).
+- `workbench/tools/realforge-report-bridge.mjs` is a local Node helper for
+  developers: `node tools/realforge-report-bridge.mjs load <source-id>`.
+- The UI shows each allowlisted source, copies the bridge command to the
+  clipboard, and instructs you to paste the JSON output into the import box.
+- Denied subcommands include write/apply/scheduler/staff flows (`repair`,
+  `propose-patch`, `scheduler-run`, `apply-proposal`, etc.).
+
+```bash
+cd workbench
+npm run bridge:list
+node tools/realforge-report-bridge.mjs load capabilities
+```
+
+Output remains **untrusted** until adapted by the import pipeline. No localhost
+backend, no browser-to-shell bridge, and no live UI execution.
 
 ## Data flow
 
@@ -126,7 +182,13 @@ image, vision, Unreal, Blender, asset, and engine-pipeline report families.
 - Future CLI/report JSON integration must preserve the same explicit trust and
   approval boundaries.
 
-The planned integration order is pasted/local JSON report preview (0.3), then
-read-only CLI report loading, then a separately reviewed safe command composer,
-and finally an approval-gated backend bridge. Read-only CLI loading and any
-live backend connection are not implemented in 0.3.
+The planned integration order is pasted/local JSON report preview (0.3), manual
+read-only CLI catalog (0.4), React/TypeScript app shell (0.5), Tauri desktop
+shell (0.6+), then a separately reviewed safe command composer and
+approval-gated local bridge.
+
+## Next milestone (0.6)
+
+Phase 2 (0.5b) and 0.5c hardened the TypeScript data layer, CSS tokens, and
+cross-platform bridge prep. Next: **Tauri desktop shell** — see
+[docs/react-migration-plan.md](docs/react-migration-plan.md).

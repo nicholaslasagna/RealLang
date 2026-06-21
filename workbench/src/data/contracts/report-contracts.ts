@@ -287,6 +287,29 @@ export interface EnginePipelineReport extends ReportMeta {
 
 export type ImportFieldType = "text" | "number" | "flag" | "list" | "count" | "more";
 
+/** Names of adapter functions referenced by the import type registry. */
+export type ReportAdapterName =
+  | "adaptDoctorSummary"
+  | "adaptSettingsSummary"
+  | "adaptCapabilityRegistry"
+  | "adaptSlashCommandRegistry"
+  | "adaptEvalReport"
+  | "adaptTaskBenchmarkReport"
+  | "adaptSkillBenchmarkReport"
+  | "adaptLeaderboardSummary"
+  | "adaptPatchProposal"
+  | "adaptExperimentReport"
+  | "adaptMergeProposal"
+  | "adaptUpdateBundle"
+  | "adaptSchedulerRunReport"
+  | "adaptCreativeBrief"
+  | "adaptImageJob"
+  | "adaptPromptPack"
+  | "adaptVisionReport"
+  | "adaptImageUnderstandingReport"
+  | "adaptEnginePipelineReport"
+  | "adaptAssetPipelinePlan";
+
 export interface ImportPreviewField {
   label: string;
   type: ImportFieldType;
@@ -300,7 +323,7 @@ export interface ImportPreviewField {
 export interface ImportTypeOption {
   id: string;
   label: string;
-  adapter: string | null;
+  adapter: ReportAdapterName | null;
   reviewOnly?: boolean;
   /** Report types whose advanced details stay gated regardless of payload. */
   staffOnly?: boolean;
@@ -354,4 +377,24 @@ export interface ImportedReportPreview {
   warnings: AdapterWarning[];
   suggestedCommands: string[];
   suggestedCommandsMore?: number;
+}
+
+export interface ImportEmptyResult {
+  ok: false;
+  empty: true;
+  error: string;
+}
+
+export interface ImportParseErrorResult {
+  ok: false;
+  parseError: true;
+  error: string;
+}
+
+export type ImportParseResult = ImportedReportPreview | ImportEmptyResult | ImportParseErrorResult;
+
+export interface ImportSample {
+  id: string;
+  label: string;
+  json: string;
 }

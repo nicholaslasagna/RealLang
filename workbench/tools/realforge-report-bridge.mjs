@@ -6,7 +6,7 @@
 //
 // This is NOT a command runner, shell, apply bridge, or backend server:
 //   * It executes only fixed argument arrays from the shared allowlist
-//     (workbench/src/data/import/cli-report-sources.js) — never a shell string,
+//     (workbench/src/data/cli/cli-report-sources.ts) — never a shell string,
 //     never user-supplied args, never command composition.
 //   * It uses execFileSync (argument-array execution), not a shell.
 //   * It never writes files, never reaches the network, and never runs a
@@ -18,10 +18,10 @@
 //   node tools/realforge-report-bridge.mjs load <source-id>
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { resolvePython } from "./resolve-python.mjs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import vm from "node:vm";
+import * as cliReportSourcesModule from "../dist-node/cli-report-sources.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const WORKBENCH_DIR = resolve(__dirname, "..");
@@ -33,16 +33,7 @@ const DEFAULT_MAX_BUFFER = 2 * 1024 * 1024;
 // Load the browser-shared allowlist in an isolated context so the bridge and the
 // UI can never disagree about which commands are permitted.
 export function loadSourcesApi() {
-  const sourcesPath = join(WORKBENCH_DIR, "src", "data", "import", "cli-report-sources.js");
-  const sandbox = {};
-  sandbox.window = sandbox;
-  sandbox.globalThis = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(readFileSync(sourcesPath, "utf8"), sandbox, { filename: "cli-report-sources.js" });
-  if (!sandbox.RealForgeCliSources) {
-    throw new Error("failed to load CLI report sources allowlist");
-  }
-  return sandbox.RealForgeCliSources;
+  return cliReportSourcesModule.cliReportSources;
 }
 
 export function publicSource(source) {
@@ -62,13 +53,9 @@ export function listSources(api) {
   return sources.map(publicSource);
 }
 
-// Prefer the repo virtualenv interpreter; fall back to a PATH-resolved python3.
+// Prefer the repo virtualenv interpreter; fall back to PATH-resolved python3/python.
 // The command name is fixed (never user-supplied).
-export function resolvePython(repoRoot = REPO_ROOT) {
-  const venvPython = join(repoRoot, ".venv", "bin", "python");
-  if (existsSync(venvPython)) return venvPython;
-  return "python3";
-}
+export { resolvePython } from "./resolve-python.mjs";
 
 function sanitizedEnv(repoRoot) {
   // Minimal, fixed environment. No inherited secrets beyond PATH/HOME/locale.

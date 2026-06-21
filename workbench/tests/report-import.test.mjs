@@ -13,15 +13,7 @@ async function loadWorkbench() {
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  for (const path of [
-    "src/data/fixtures/fixture-bundle.generated.js",
-    "src/data/status.js",
-    "src/data/adapters/report-adapters.js",
-    "src/data/viewModels/workbench-view-models.js",
-    "src/data/import/report-import.js",
-    "js/mock-data.js",
-    "js/components.js"
-  ]) {
+  for (const path of ["legacy/js/data-bundle.js", "js/mock-data.js", "js/components.js"]) {
     vm.runInContext(await read(path), sandbox, { filename: path });
   }
   return sandbox;
@@ -179,7 +171,7 @@ test("slash palette still filters fixture-backed commands", async () => {
 });
 
 test("report import module has no network or execution primitive", async () => {
-  const source = await read("src/data/import/report-import.js");
+  const source = await read("src/data/import/report-import.ts");
   for (const forbidden of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /navigator\.sendBeacon/, /child_process/, /\beval\s*\(/, /new Function/]) {
     assert.doesNotMatch(source, forbidden);
   }

@@ -29,7 +29,7 @@
 
   global.RealForgeMockData = Object.freeze({
     version: "2.7",
-    workbenchVersion: "0.2",
+    workbenchVersion: "0.4",
     navigation,
     ...reports
   });

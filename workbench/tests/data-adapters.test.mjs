@@ -9,26 +9,19 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFile(join(root, path), "utf8");
 const readJson = async (path) => JSON.parse(await read(path));
 
-async function loadWorkbenchData() {
+async function loadLegacyWorkbenchData() {
   const sandbox = { console };
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
-  for (const path of [
-    "src/data/fixtures/fixture-bundle.generated.js",
-    "src/data/status.js",
-    "src/data/adapters/report-adapters.js",
-    "src/data/viewModels/workbench-view-models.js",
-    "js/mock-data.js",
-    "js/components.js"
-  ]) {
+  for (const path of ["legacy/js/data-bundle.js", "js/mock-data.js", "js/components.js"]) {
     vm.runInContext(await read(path), sandbox, { filename: path });
   }
   return sandbox;
 }
 
 test("contracts cover the Workbench 0.2 report families", async () => {
-  const contracts = await read("src/data/contracts/report-contracts.d.ts");
+  const contracts = await read("src/data/contracts/report-contracts.ts");
   for (const name of [
     "DoctorStatusSummary", "SettingsSummary", "CapabilityRegistry", "SlashCommandRegistry",
     "EvalReport", "TaskBenchmarkReport", "SkillBenchmarkReport", "LeaderboardSummary",
@@ -40,7 +33,7 @@ test("contracts cover the Workbench 0.2 report families", async () => {
 });
 
 test("adapters parse valid capability, settings, benchmark, and update fixtures", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   const adapters = sandbox.RealForgeReportAdapters;
   const capability = adapters.adaptCapabilityRegistry(await readJson("src/data/fixtures/capabilities.json"));
   const settings = adapters.adaptSettingsSummary(await readJson("src/data/fixtures/settings.json"));
@@ -57,7 +50,7 @@ test("adapters parse valid capability, settings, benchmark, and update fixtures"
 });
 
 test("adapters tolerate optional fields and warn instead of throwing on malformed reports", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   const adapters = sandbox.RealForgeReportAdapters;
   const promptPack = adapters.adaptPromptPack({ id: "prompt-minimal", provider: "mock", base_prompt: "A bounded prompt" });
   const malformed = adapters.adaptCapabilityRegistry("not-an-object");
@@ -72,7 +65,7 @@ test("adapters tolerate optional fields and warn instead of throwing on malforme
 });
 
 test("provider output defaults to untrusted and staff-only reports remain gated", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   const adapters = sandbox.RealForgeReportAdapters;
   const vision = adapters.adaptVisionReport({ id: "vision-minimal", provider: "mock", task: "Inspect fixture" });
   const rawUpdate = await readJson("src/data/fixtures/update-bundle.json");
@@ -87,7 +80,7 @@ test("provider output defaults to untrusted and staff-only reports remain gated"
 });
 
 test("all declared report adapters are callable", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   for (const name of [
     "adaptDoctorSummary", "adaptSettingsSummary", "adaptCapabilityRegistry", "adaptSlashCommandRegistry",
     "adaptEvalReport", "adaptTaskBenchmarkReport", "adaptSkillBenchmarkReport", "adaptLeaderboardSummary",
@@ -99,7 +92,7 @@ test("all declared report adapters are callable", async () => {
 });
 
 test("fixture-backed view models render capabilities, benchmarks, updates, and all screens", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   const data = sandbox.RealForgeMockData;
   const components = sandbox.RealForgeComponents;
   const baseState = { screen: "home", settingsSection: "general", staffPreview: false, commandQuery: "", stagedTask: "" };
@@ -119,7 +112,7 @@ test("fixture-backed view models render capabilities, benchmarks, updates, and a
 });
 
 test("slash palette filters fixture-backed commands by domain", async () => {
-  const sandbox = await loadWorkbenchData();
+  const sandbox = await loadLegacyWorkbenchData();
   const html = sandbox.RealForgeComponents.renderCommandPalette({ commandQuery: "vision" });
   assert.ok(html.includes("/vision analyze"));
   assert.ok(html.includes("/vision understand"));

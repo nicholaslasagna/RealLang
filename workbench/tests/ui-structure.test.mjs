@@ -8,17 +8,30 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFile(join(root, path), "utf8");
 const readJson = async (path) => JSON.parse(await read(path));
 
+async function readReactSources() {
+  const paths = [
+    "src/App.tsx",
+    "src/state/workbench-store.ts",
+    "src/features/home/HomeScreen.tsx",
+    "src/features/reports/ReportsScreen.tsx",
+    "src/features/settings/SettingsScreen.tsx",
+    "src/features/updates/UpdatesScreen.tsx",
+    "src/components/layout/CommandPalette.tsx"
+  ];
+  return (await Promise.all(paths.map((path) => read(path)))).join("\n");
+}
+
 test("entrypoint is offline and uses repository-owned assets", async () => {
   const html = await read("index.html");
-  for (const id of ["topbar", "sidebar", "main", "status-rail", "command-palette"]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(html, /id="root"/);
+  assert.match(html, /src\/main\.tsx/);
   assert.doesNotMatch(html, /https?:\/\//i);
-  assert.doesNotMatch(html, /<script[^>]+src="(?!\.\/)/i);
 });
 
 test("all requested navigation and settings screens are registered", async () => {
-  const source = await read("js/mock-data.js");
+  const source = await read("src/data/workbench-data.ts");
   const settings = await readJson("src/data/fixtures/settings.json");
-  for (const label of ["Home", "Workbench", "Capabilities", "Code", "Research", "Creative", "Image", "Vision", "Engine", "Assets", "Benchmarks", "Updates", "Settings"]) {
+  for (const label of ["Home", "Workbench", "Capabilities", "Code", "Research", "Creative", "Image", "Vision", "Engine", "Assets", "Benchmarks", "Reports", "Updates", "Settings"]) {
     assert.match(source, new RegExp(`label: "${label}"`));
   }
   for (const section of ["General", "Workspace", "Provider / Local Model", "Permissions", "Research / Network", "Staff Mode", "Scheduler", "Benchmarks / Gates", "Creative / Multimodal", "Engine Integrations", "Safety / Doctor"]) {
@@ -44,8 +57,16 @@ test("studio screens expose concrete safe-start examples", async () => {
 });
 
 test("prototype has no browser network or backend execution primitive", async () => {
-  const source = [await read("src/data/status.js"), await read("src/data/adapters/report-adapters.js"), await read("src/data/viewModels/workbench-view-models.js"), await read("js/mock-data.js"), await read("js/components.js"), await read("js/app.js")].join("\n");
-  for (const forbidden of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /navigator\.sendBeacon/, /child_process/]) assert.doesNotMatch(source, forbidden);
+  const source = [
+    await read("src/data/status/status.ts"),
+    await read("src/data/adapters/report-adapters.ts"),
+    await read("src/data/view-models/workbench-view-models.ts"),
+    await read("src/data/import/report-import.ts"),
+    await readReactSources()
+  ].join("\n");
+  for (const forbidden of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /EventSource/, /navigator\.sendBeacon/, /child_process/]) {
+    assert.doesNotMatch(source, forbidden);
+  }
   assert.match(source, /NO AUTO-APPLY/);
   assert.match(source, /NO AUTO-COMMIT/);
   assert.match(source, /no auto-merge/i);
@@ -53,35 +74,54 @@ test("prototype has no browser network or backend execution primitive", async ()
 });
 
 test("staff UI is a preview and defaults off", async () => {
-  const app = await read("js/app.js");
-  const components = await read("js/components.js");
-  assert.match(app, /staffPreview: false/);
-  assert.match(components, /STAFF OFF/);
-  assert.match(components, /STAFF UI PREVIEW/);
-  assert.match(components, /backend remains off/i);
-  assert.match(components, /Locked by policy/);
-  assert.match(components, /Staff-only update channel/i);
+  const store = await read("src/state/workbench-store.ts");
+  const updates = await read("src/features/updates/UpdatesScreen.tsx");
+  assert.match(store, /staffPreview: false/);
+  assert.match(updates, /STAFF OFF/);
+  assert.match(updates, /STAFF UI PREVIEW/);
+  assert.match(updates, /backend remains off/i);
+  assert.match(updates, /Locked by policy/);
+  assert.match(updates, /Staff-only update channel/i);
 });
 
 test("settings and command palette retain visible safety metadata", async () => {
-  const components = await read("js/components.js");
-  const app = await read("js/app.js");
+  const source = await readReactSources();
   for (const label of ["READONLY", "LOCAL ONLY", "NETWORK OFF", "STAFF OFF", "NO WRITES", "Provider output remains untrusted until validated"]) {
-    assert.ok(components.includes(label), `missing visible safety label: ${label}`);
+    assert.ok(source.includes(label), `missing visible safety label: ${label}`);
   }
-  assert.match(components, /command\.domain/);
-  assert.match(components, /renderCommandPaletteParts/);
-  assert.match(app, /querySelector\("\.command-results"\)\.innerHTML/);
+  assert.match(source, /command\.domain/);
+  assert.match(source, /filterCommands/);
 });
 
 test("local Lucide subset and license are present", async () => {
   const files = await readdir(join(root, "assets/icons"));
   assert.ok(files.includes("LICENSE"));
   assert.ok(files.filter((file) => file.endsWith(".svg")).length >= 50);
-  for (const icon of ["house.svg", "square-terminal.svg", "command.svg", "shield-check.svg", "workflow.svg"]) assert.ok(files.includes(icon), `missing icon asset: ${icon}`);
+  for (const icon of ["house.svg", "square-terminal.svg", "command.svg", "shield-check.svg", "workflow.svg"]) {
+    assert.ok(files.includes(icon), `missing icon asset: ${icon}`);
+  }
+});
+
+test("reports screen exposes read-only CLI bridge catalog without execution hooks", async () => {
+  const reports = await read("src/features/reports/ReportsScreen.tsx");
+  const store = await read("src/state/workbench-store.ts");
+  assert.match(reports, /cli-bridge-panel/);
+  assert.match(reports, /NO SHELL/);
+  assert.match(reports, /realforge-report-bridge\.mjs/);
+  assert.match(store, /copyCliCommand/);
+  assert.match(store, /no backend command executed/i);
+  assert.doesNotMatch(store, /loadSource\s*\(/);
 });
 
 test("public copy avoids unsupported superiority claims", async () => {
-  const source = [await read("index.html"), await read("src/data/fixtures/studio-reports.json"), await read("js/mock-data.js"), await read("js/components.js")].join("\n").toLowerCase();
-  for (const phrase of ["better than claude", "better than codex", "best ai ever", "fully autonomous", "infinite self-improvement", "aaa asset generation achieved"]) assert.ok(!source.includes(phrase), `unsupported claim found: ${phrase}`);
+  const source = [await read("index.html"), await read("src/data/fixtures/studio-reports.json"), await read("src/data/workbench-data.ts"), await readReactSources()].join("\n").toLowerCase();
+  for (const phrase of ["better than claude", "better than codex", "best ai ever", "fully autonomous", "infinite self-improvement", "aaa asset generation achieved"]) {
+    assert.ok(!source.includes(phrase), `unsupported claim found: ${phrase}`);
+  }
+});
+
+test("legacy static shell remains available for reference", async () => {
+  const legacy = await read("legacy/index.html");
+  assert.match(legacy, /js\/app\.js/);
+  assert.doesNotMatch(legacy, /https?:\/\//i);
 });

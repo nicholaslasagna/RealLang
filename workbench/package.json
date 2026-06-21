@@ -1,13 +1,41 @@
 {
   "name": "realforge-workbench-prototype",
-  "version": "0.3.1",
+  "version": "0.5.0",
   "private": true,
-  "description": "Offline-safe static RealForge Workbench UI prototype",
+  "description": "RealForge Workbench — React + TypeScript local-first UI",
+  "type": "module",
   "scripts": {
     "fixtures": "node scripts/generate-fixtures.mjs",
-    "check": "node scripts/generate-fixtures.mjs --check && node --check src/data/status.js && node --check src/data/adapters/report-adapters.js && node --check src/data/viewModels/workbench-view-models.js && node --check src/data/import/report-import.js && node --check js/mock-data.js && node --check js/components.js && node --check js/app.js && node --check scripts/build.mjs",
-    "test": "node --test tests/*.test.mjs",
-    "build": "node scripts/generate-fixtures.mjs --check && node scripts/build.mjs",
-    "dev": "python3 -m http.server 4173 --directory ."
+    "build:data": "node scripts/build-data-artifacts.mjs",
+    "sync:assets": "node scripts/sync-public-assets.mjs",
+    "check": "node scripts/generate-fixtures.mjs --check && node scripts/build-data-artifacts.mjs && node --check js/mock-data.js && node --check js/components.js && node --check js/app.js && node --check scripts/build.mjs && node --check tools/resolve-python.mjs && node --check tools/realforge-report-bridge.mjs && tsc -p tsconfig.json --noEmit",
+    "test": "node --test tests/*.test.mjs && vitest run",
+    "test:node": "node --test tests/*.test.mjs",
+    "test:react": "vitest run",
+    "bridge:list": "node tools/realforge-report-bridge.mjs list",
+    "dev": "npm run sync:assets && vite",
+    "dev:legacy": "npm run build:data && python3 -m http.server 4173 --directory legacy",
+    "build:app": "npm run sync:assets && vite build",
+    "build": "node scripts/generate-fixtures.mjs --check && npm run build:data && node scripts/build.mjs",
+    "preview": "vite preview",
+    "smoke:visual": "node scripts/visual-smoke.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "esbuild": "^0.27.3",
+    "happy-dom": "^20.10.6",
+    "playwright": "^1.58.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.9"
   }
 }

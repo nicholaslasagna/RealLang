@@ -1,0 +1,23 @@
+/* Status pill and badge tone tokens (0.5c) */
+:root {
+  --badge-amber-fg: var(--amber);
+  --badge-amber-border: rgba(240, 181, 68, 0.28);
+  --badge-amber-bg: rgba(240, 181, 68, 0.07);
+  --badge-cyan-fg: var(--cyan);
+  --badge-cyan-border: rgba(49, 216, 208, 0.28);
+  --badge-cyan-bg: rgba(49, 216, 208, 0.07);
+  --badge-green-fg: var(--green);
+  --badge-green-border: rgba(66, 211, 154, 0.28);
+  --badge-green-bg: rgba(66, 211, 154, 0.07);
+  --badge-violet-fg: var(--violet);
+  --badge-violet-border: rgba(173, 122, 255, 0.3);
+  --badge-violet-bg: rgba(173, 122, 255, 0.08);
+  --badge-blue-fg: var(--blue);
+  --badge-blue-border: rgba(90, 156, 255, 0.3);
+  --badge-blue-bg: rgba(90, 156, 255, 0.08);
+  --badge-neutral-fg: var(--text-2);
+  --badge-neutral-border: var(--line-strong);
+  --badge-neutral-bg: rgba(255, 255, 255, 0.025);
+  --import-error-border: rgba(255, 92, 101, 0.4);
+  --import-error-bg: rgba(255, 92, 101, 0.05);
+}

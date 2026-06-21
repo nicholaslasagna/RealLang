@@ -1,10 +1,22 @@
-(function registerReportAdapters(global) {
-  "use strict";
+// Migrated from legacy IIFE module — internal helpers stay loosely typed; public contracts live in report-contracts.ts.
+// @ts-nocheck
+import {
+  STATUS,
+  SAFETY,
+  asObject,
+  normalizeSafetyLabels,
+  normalizeStatus,
+  readArray,
+  readBoolean,
+  readNumber,
+  readString,
+  warning
+} from '../status/status';
+import type { AdapterResult, AdapterWarning } from '../contracts/report-contracts';
 
-  const status = global.RealForgeDataStatus;
-  if (!status) throw new Error("RealForgeDataStatus must load before report adapters");
 
-  const { STATUS, SAFETY, normalizeStatus, normalizeSafetyLabels, warning, asObject, readString, readBoolean, readNumber, readArray } = status;
+
+  
 
   function stringList(source, key, warnings) {
     return readArray(source, key, warnings).flatMap((value, index) => {
@@ -395,7 +407,7 @@
     return result({ ...meta, engine: readString(source, "engine", warnings, "unknown"), operations: stringList(source, "operations", warnings), inertCommands: stringList(source, "inert_commands", warnings), validationResults: stringList(source, "validation_results", warnings) }, warnings);
   }
 
-  global.RealForgeReportAdapters = Object.freeze({
+  export const reportAdapters = Object.freeze({
     adaptDoctorSummary,
     adaptSettingsSummary,
     adaptCapabilityRegistry,
@@ -423,4 +435,3 @@
     adaptBlenderAssetPlan,
     adaptEnginePipelineReport
   });
-})(window);
