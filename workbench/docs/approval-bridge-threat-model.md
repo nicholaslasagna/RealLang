@@ -1,4 +1,4 @@
-# Workbench approval bridge threat model (0.12-0.19)
+# Workbench approval bridge threat model (0.12-0.20)
 
 ## Decision
 
@@ -132,6 +132,26 @@ Requests blocked before approval, including web-mode and no-file-selected states
 not become approved-run entries. Persistent audit storage is deferred; any future
 implementation must use app-config-only storage, define retention and redaction, and
 receive a separate threat review.
+
+## App-config persistence boundary (0.20)
+
+Desktop mode persists sanitized audit metadata through three fixed-file IPC
+operations. The store accepts entries but no path, command, argv, workspace,
+environment, or provider input. It resolves `approval-audit-log.json` only beneath
+Tauri app config, caps the newest history at 50 entries and 128 KiB, and loads
+missing/corrupt/oversized files as an empty log with structured status.
+
+Session stdout/stderr previews remain capped at 2,048 characters, but preview
+bodies are stripped before IPC and independently ignored by Rust. Persisted entries
+contain no full output, secrets, environment variables, provider keys, or absolute
+workspace paths. Rust reconstructs canonical action titles, relative targets,
+command summaries, trust booleans, and labels instead of trusting those fields.
+
+Clear history requires frontend confirmation and deletes only the fixed app-config
+file. Web preview remains session-only with no browser-storage fallback. Persistence
+does not alter either approved action or add execution authority. The file is not
+encrypted or tamper-evident; see the dedicated
+[persistence threat model](./approval-audit-persistence-threat-model.md).
 
 ## Approval and runtime behavior
 

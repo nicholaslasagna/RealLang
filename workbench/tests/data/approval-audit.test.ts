@@ -4,7 +4,10 @@ import {
   AUDIT_SESSION_LIMIT,
   appendApprovalAuditEntry,
   createApprovalAuditEntry,
-  formatSafeAuditSummary
+  formatSafeAuditSummary,
+  mergeApprovalAuditEntries,
+  prepareApprovalAuditEntriesForPersistence,
+  sanitizePersistedApprovalAuditEntries
 } from "../../src/audit/approval-audit";
 import type { ApprovedDryRunResult } from "../../src/bridge/types";
 
@@ -124,5 +127,47 @@ describe("approval audit model", () => {
     expect(updated).toHaveLength(AUDIT_SESSION_LIMIT);
     expect(updated[0].id).toBe("newest");
     expect(updated.some((item) => item.id === `old-${AUDIT_SESSION_LIMIT - 1}`)).toBe(false);
+  });
+
+  it("strips all output bodies before persistence and keeps canonical metadata", () => {
+    const audit = entry(successResult({
+      stdout: "PROVIDER_KEY=never-persist",
+      stderr: "/Users/private/RealLang/internal"
+    }));
+    const persisted = prepareApprovalAuditEntriesForPersistence([audit])[0];
+    expect(persisted.commandSummary).toBe("realc src/main.real --check");
+    expect(persisted.stdoutTruncated).toBe(true);
+    expect(persisted.stderrTruncated).toBe(true);
+    expect("stdoutPreview" in persisted).toBe(false);
+    expect("stderrPreview" in persisted).toBe(false);
+    expect(JSON.stringify(persisted)).not.toContain("never-persist");
+    expect(JSON.stringify(persisted)).not.toContain("/Users/private");
+  });
+
+  it("defensively sanitizes persisted entries and drops unsafe records", () => {
+    const safe = prepareApprovalAuditEntriesForPersistence([entry()])[0];
+    const loaded = sanitizePersistedApprovalAuditEntries([
+      safe,
+      { ...safe, id: "unsafe-write", writesFiles: true },
+      { ...safe, id: "unsafe-path", targetRelativePath: "../../outside.real" }
+    ]);
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0]).toMatchObject({
+      id: "audit-1",
+      commandSummary: "realc src/main.real --check",
+      untrustedOutput: true,
+      writesFiles: false,
+      networkRequired: false
+    });
+    expect(loaded[0].stdoutPreview).toBeUndefined();
+  });
+
+  it("merges current-session entries ahead of persisted history and deduplicates IDs", () => {
+    const current = { ...entry(), id: "current" };
+    const duplicate = { ...entry(), id: "current", status: "failed" as const };
+    const older = { ...entry(), id: "older" };
+    const merged = mergeApprovalAuditEntries([current], [duplicate, older]);
+    expect(merged.map((item) => item.id)).toEqual(["current", "older"]);
+    expect(merged[0].status).toBe("success");
   });
 });

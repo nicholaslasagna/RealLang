@@ -62,7 +62,7 @@ async function run() {
           supportedSources: sources
         };
         window.__TAURI_INTERNALS__ = {
-          invoke: async (command) => {
+          invoke: async (command, args = {}) => {
             if (command === "check_bridge_health") {
               return { resolution, healthy: true, probeAttempted: true, probeOk: true, probeSourceId: "capabilities", nextActions: [] };
             }
@@ -103,6 +103,17 @@ async function run() {
                 }
               };
             }
+            if (command === "load_approval_audit_log") {
+              return { ok: true, data: { version: 1, savedAt: "1750521600", entries: [] } };
+            }
+            if (command === "save_approval_audit_log") {
+              return {
+                ok: true,
+                data: { version: 1, savedAt: "1750521601", entries: args.entries ?? [] },
+                droppedEntries: 0
+              };
+            }
+            if (command === "clear_approval_audit_log") return { ok: true };
             throw new Error(`visual mock does not implement ${command}`);
           }
         };

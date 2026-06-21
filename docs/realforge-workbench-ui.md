@@ -27,6 +27,17 @@ Long-term stack: **React + TypeScript + Vite** frontend, **Tauri** desktop shell
 (fixed `argv`, no shell strings), with future installer packaging and code
 signing/notarization.
 
+## Workbench — private local model provider (provider-agnostic)
+
+- Settings → **Provider / Local Model** generic **Private Local Model** profile
+- OpenAI-compatible local provider type; endpoint scaffold in session only
+- **LOCAL UNTRUSTED** trust label; output remains untrusted until validated
+- Public template: `.realforge.toml.example` → copy to gitignored `.realforge.local.toml`
+- No model weights, private names, API keys, or paths in the public repo
+- No browser fetch/network; RealForge CLI uses local ignored config when wired
+
+See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
+
 ## Workbench 0.18 - controlled workspace-relative .real file check
 
 Workbench 0.18 extends the approved dry-run model to **select** a workspace-relative
@@ -72,6 +83,24 @@ dry-run checks. It does not expand the bridge allowlist or add an IPC command.
 Persistent audit history is deferred. It would require app-config-only storage plus
 a separate retention, redaction, and tamper-evidence threat model. The bundle version
 remains `0.16.0` until the signed-release requirements documented in 0.17 are met.
+
+## Workbench 0.20 - app-config-only approval history
+
+Workbench 0.20 implements the separately threat-modeled persistence step for desktop
+approval history:
+
+- fixed `approval-audit-log.json` under Tauri app config; no frontend path input
+- strict version-1 schema, newest-50 retention, and 128 KiB read/write cap
+- canonical Rust validation with invalid-entry dropping and safe corrupt-file fallback
+- no stdout/stderr preview bodies, full output, secrets, environment variables,
+  provider keys, or absolute workspace paths persisted
+- Reports status, entry count, confirmed clear action, and app-config-only policy copy
+- web preview remains session-only with no browser-storage fallback
+
+The store is not a write bridge: it cannot target the repository or workspace and
+does not add shell, network, arbitrary argv, patch/proposal apply, scheduler, update
+install, commit, or merge. Version 1 is not encrypted or tamper-evident. See the
+[persistence threat model](../workbench/docs/approval-audit-persistence-threat-model.md).
 
 ## Workbench 0.17 - release readiness & signed-updater threat model
 
@@ -297,6 +326,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 10. **UI declutter + navigation hierarchy + Security UX polish** (0.15) - no behavior or safety changes
 11. **Controlled workspace `.real` path input** (0.18) - validated relative picker, no arbitrary argv
 12. **Session-only approval audit log** (0.19) - sanitized transparency, no persistence or new authority
-13. Future: app-config audit persistence, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+13. **App-config approval history** (0.20) - fixed sanitized metadata file, confirmed clear, web session-only
+14. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

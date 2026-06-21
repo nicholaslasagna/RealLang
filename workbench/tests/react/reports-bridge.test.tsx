@@ -49,6 +49,10 @@ describe("Reports CLI bridge panel", () => {
       desktopLoadStatus: "idle",
       desktopLoadSourceId: null,
       desktopLoadError: null,
+      approvalAuditEntries: [],
+      approvalAuditHydrated: false,
+      approvalAuditStorageStatus: "idle",
+      approvalAuditStorageWarning: null,
       staffPreview: false,
       importRaw: "",
       importPreview: null

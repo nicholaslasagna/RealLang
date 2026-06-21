@@ -1,6 +1,18 @@
 import { create } from "zustand";
-import { appendApprovalAuditEntry, type ApprovalAuditEntry } from "../audit/approval-audit";
-import { loadReadOnlyReportSource } from "../bridge";
+import {
+  appendApprovalAuditEntry,
+  mergeApprovalAuditEntries,
+  prepareApprovalAuditEntriesForPersistence,
+  sanitizePersistedApprovalAuditEntries,
+  type ApprovalAuditEntry
+} from "../audit/approval-audit";
+import {
+  clearApprovalAuditLog,
+  isDesktopRuntime,
+  loadApprovalAuditLog,
+  loadReadOnlyReportSource,
+  saveApprovalAuditLog
+} from "../bridge";
 import { getActionDefinition, getActionForSlashCommand, type CommandActionId } from "../composer/action-model";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
 import type { ImportPreview, WorkbenchScreen, WorkbenchState } from "./types";
@@ -27,7 +39,13 @@ type WorkbenchActions = {
   showToast: (message: string, tone?: "safe" | "warn") => void;
   clearToast: () => void;
   computeImportPreview: () => void;
+  initializeApprovalAuditHistory: () => Promise<void>;
+  clearApprovalAuditHistory: () => Promise<boolean>;
   recordApprovalAuditEntry: (entry: ApprovalAuditEntry) => void;
+  setPrivateLocalEndpoint: (endpoint: string) => void;
+  setPrivateLocalModelLabel: (modelLabel: string) => void;
+  markPrivateLocalConfigured: () => void;
+  clearPrivateLocalModelSession: () => void;
 };
 
 const initialState: WorkbenchState = {
@@ -48,10 +66,25 @@ const initialState: WorkbenchState = {
   desktopLoadStatus: "idle",
   desktopLoadSourceId: null,
   desktopLoadError: null,
-  approvalAuditEntries: []
+  approvalAuditEntries: [],
+  approvalAuditHydrated: false,
+  approvalAuditStorageStatus: "idle",
+  approvalAuditStorageWarning: null,
+  privateLocalModel: {
+    endpoint: "http://localhost:8000/v1",
+    modelLabel: "",
+    configured: false
+  }
 };
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let auditPersistenceQueue: Promise<void> = Promise.resolve();
+
+function enqueueAuditPersistence(task: () => Promise<void>): Promise<void> {
+  const pending = auditPersistenceQueue.then(task, task);
+  auditPersistenceQueue = pending.catch(() => undefined);
+  return pending;
+}
 
 function computePreview(importRaw: string, importType: string, staffPreview: boolean): ImportPreview | null {
   const reportImportApi = reportImport as {
@@ -257,12 +290,144 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
 
   clearToast: () => set({ toast: null }),
 
-  recordApprovalAuditEntry: (entry) =>
+  initializeApprovalAuditHistory: async () => {
+    const state = get();
+    if (state.approvalAuditHydrated || state.approvalAuditStorageStatus === "loading") return;
+    if (!isDesktopRuntime()) {
+      set({
+        approvalAuditHydrated: true,
+        approvalAuditStorageStatus: "session_only",
+        approvalAuditStorageWarning: null
+      });
+      return;
+    }
+
+    set({ approvalAuditStorageStatus: "loading", approvalAuditStorageWarning: null });
+    const result = await loadApprovalAuditLog();
+    if (!result.ok) {
+      set({
+        approvalAuditHydrated: true,
+        approvalAuditStorageStatus: "error",
+        approvalAuditStorageWarning: result.error.message
+      });
+      get().showToast("Persisted approval history is unavailable · session log remains active", "warn");
+      return;
+    }
+
+    const sessionEntries = get().approvalAuditEntries;
+    const persisted = sanitizePersistedApprovalAuditEntries(result.data.entries);
+    const merged = mergeApprovalAuditEntries(sessionEntries, persisted);
+    set({
+      approvalAuditEntries: merged,
+      approvalAuditHydrated: true,
+      approvalAuditStorageStatus: "persisted",
+      approvalAuditStorageWarning: result.warning?.message ?? null
+    });
+    if (result.warning) {
+      get().showToast("Persisted approval history was sanitized · review the warning in Reports", "warn");
+    }
+    if (sessionEntries.some((entry) => !persisted.some((saved) => saved.id === entry.id))) {
+      await enqueueAuditPersistence(async () => {
+        const saved = await saveApprovalAuditLog(prepareApprovalAuditEntriesForPersistence(merged));
+        if (!saved.ok) {
+          set({
+            approvalAuditStorageStatus: "error",
+            approvalAuditStorageWarning: saved.error.message
+          });
+        }
+      });
+    }
+  },
+
+  clearApprovalAuditHistory: async () => {
+    if (!isDesktopRuntime()) {
+      set({
+        approvalAuditEntries: [],
+        approvalAuditStorageStatus: "session_only",
+        approvalAuditStorageWarning: null
+      });
+      return true;
+    }
+
+    let cleared = false;
+    await enqueueAuditPersistence(async () => {
+      const result = await clearApprovalAuditLog();
+      if (!result.ok) {
+        set({
+          approvalAuditStorageStatus: "error",
+          approvalAuditStorageWarning: result.error.message
+        });
+        get().showToast("Could not clear persisted approval history", "warn");
+        return;
+      }
+      cleared = true;
+      set({
+        approvalAuditEntries: [],
+        approvalAuditStorageStatus: "persisted",
+        approvalAuditStorageWarning: null,
+        operationStatus: "Approval history cleared · app config only"
+      });
+      get().showToast("Approval history cleared from local app config");
+    });
+    return cleared;
+  },
+
+  recordApprovalAuditEntry: (entry) => {
+    let nextEntries: ApprovalAuditEntry[] = [];
+    set((state) => {
+      nextEntries = appendApprovalAuditEntry(state.approvalAuditEntries, entry);
+      return {
+        approvalAuditEntries: nextEntries,
+        operationStatus: `Approved dry-run · ${entry.status.replace("_", " ")}`,
+        lastCommand: `${entry.actionTitle} · ${entry.status.replace("_", " ")}`
+      };
+    });
+    if (!isDesktopRuntime() || !get().approvalAuditHydrated) return;
+
+    void enqueueAuditPersistence(async () => {
+      const safeEntries = prepareApprovalAuditEntriesForPersistence(nextEntries);
+      const result = await saveApprovalAuditLog(safeEntries);
+      if (!result.ok) {
+        set({
+          approvalAuditStorageStatus: "error",
+          approvalAuditStorageWarning: result.error.message
+        });
+        get().showToast("Approved run recorded for this session, but local persistence failed", "warn");
+        return;
+      }
+      set({
+        approvalAuditStorageStatus: "persisted",
+        approvalAuditStorageWarning:
+          result.droppedEntries > 0
+            ? `${result.droppedEntries} invalid audit entries were not persisted.`
+            : null
+      });
+    });
+  },
+
+  setPrivateLocalEndpoint: (endpoint) =>
     set((state) => ({
-      approvalAuditEntries: appendApprovalAuditEntry(state.approvalAuditEntries, entry),
-      operationStatus: `Approved dry-run · ${entry.status.replace("_", " ")}`,
-      lastCommand: `${entry.actionTitle} · ${entry.status.replace("_", " ")}`
-    }))
+      privateLocalModel: { ...state.privateLocalModel, endpoint: endpoint.trim() }
+    })),
+
+  setPrivateLocalModelLabel: (modelLabel) =>
+    set((state) => ({
+      privateLocalModel: { ...state.privateLocalModel, modelLabel: modelLabel.trim() }
+    })),
+
+  markPrivateLocalConfigured: () =>
+    set((state) => ({
+      privateLocalModel: { ...state.privateLocalModel, configured: true }
+    })),
+
+  clearPrivateLocalModelSession: () =>
+    set({
+      privateLocalModel: {
+        endpoint: "http://localhost:8000/v1",
+        modelLabel: "",
+        configured: false
+      }
+    })
 }));
 
 export function filterCommands(query: string) {

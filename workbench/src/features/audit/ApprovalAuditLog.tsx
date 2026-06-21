@@ -1,5 +1,9 @@
-import { formatSafeAuditSummary, type ApprovalAuditEntry } from "../../audit/approval-audit";
-import { Badge, Icon } from "../../components/primitives";
+import {
+  AUDIT_SESSION_LIMIT,
+  formatSafeAuditSummary,
+  type ApprovalAuditEntry
+} from "../../audit/approval-audit";
+import { Badge, Button, Icon } from "../../components/primitives";
 import { useWorkbenchStore } from "../../state/workbench-store";
 
 interface ApprovalAuditLogProps {
@@ -20,6 +24,9 @@ function formatTimestamp(timestamp: string): string {
 export function ApprovalAuditLog({ compact = false }: ApprovalAuditLogProps) {
   const entries = useWorkbenchStore((state) => state.approvalAuditEntries);
   const showToast = useWorkbenchStore((state) => state.showToast);
+  const storageStatus = useWorkbenchStore((state) => state.approvalAuditStorageStatus);
+  const storageWarning = useWorkbenchStore((state) => state.approvalAuditStorageWarning);
+  const clearApprovalAuditHistory = useWorkbenchStore((state) => state.clearApprovalAuditHistory);
   const visibleEntries = compact ? entries.slice(0, 3) : entries;
 
   const copySafeSummary = async (entry: ApprovalAuditEntry) => {
@@ -35,6 +42,23 @@ export function ApprovalAuditLog({ compact = false }: ApprovalAuditLogProps) {
     }
   };
 
+  const clearHistory = async () => {
+    const confirmed = window.confirm(
+      "Clear approval audit history? This removes only the fixed local app-config history file."
+    );
+    if (!confirmed) return;
+    await clearApprovalAuditHistory();
+  };
+
+  const storageLabel =
+    storageStatus === "persisted"
+      ? "PERSISTED LOCALLY"
+      : storageStatus === "loading"
+        ? "LOADING HISTORY"
+        : storageStatus === "error"
+          ? "SESSION FALLBACK"
+          : "SESSION ONLY";
+
   return (
     <section
       className={`approval-audit ${compact ? "approval-audit--compact" : ""}`.trim()}
@@ -45,14 +69,41 @@ export function ApprovalAuditLog({ compact = false }: ApprovalAuditLogProps) {
         <div>
           <Icon name="clipboard-list" />
           <div>
-            <p className="eyebrow">SESSION ONLY · SANITIZED</p>
+            <p className="eyebrow">LOCAL HISTORY · SANITIZED</p>
             <h2 id={compact ? "recent-approval-runs-title" : "approval-log-title"}>
               {compact ? "Recent approved runs" : "Approval log"}
             </h2>
           </div>
         </div>
-        <Badge label="NO PERSISTENCE" tone="cyan" />
+        {!compact ? (
+          <div className="approval-audit__controls">
+            <Badge label={storageLabel} tone={storageStatus === "persisted" ? "green" : "cyan"} />
+            <Button
+              label="Clear history"
+              iconName="file-x"
+              variant="ghost"
+              disabled={(entries.length === 0 && !storageWarning) || storageStatus === "loading"}
+              onClick={clearHistory}
+            />
+          </div>
+        ) : null}
       </header>
+
+      {!compact ? (
+        <div className="approval-audit__policy" role="note">
+          <span>{entries.length} / {AUDIT_SESSION_LIMIT} entries</span>
+          <p>
+            {storageStatus === "persisted"
+              ? "Stored in local app config only. No repository or workspace writes. Output bodies are not persisted."
+              : "Session only in web preview or while desktop persistence is unavailable. Reloading clears session-only history."}
+          </p>
+        </div>
+      ) : null}
+      {!compact && storageWarning ? (
+        <p className="approval-audit__warning" role="status">
+          <Icon name="triangle-alert" /> {storageWarning}
+        </p>
+      ) : null}
 
       {visibleEntries.length === 0 ? (
         <div className="approval-audit__empty">

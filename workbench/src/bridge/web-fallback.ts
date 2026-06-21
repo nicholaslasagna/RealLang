@@ -1,6 +1,9 @@
 import { cliReportSources } from "../data/cli/cli-report-sources";
 import { SECURITY_SCAN_CATALOG } from "../data/security/security-model";
 import type {
+  ApprovalAuditClearResult,
+  ApprovalAuditLoadResult,
+  ApprovalAuditSaveResult,
   ApprovedDryRunActionId,
   ApprovedDryRunInput,
   ApprovedDryRunResult,
@@ -69,6 +72,39 @@ export function webRunApprovedDryRunAction(
     error: {
       code: "unsupported_web",
       message: "Approved local checks are available in the desktop shell only. Web mode never executes commands."
+    }
+  };
+}
+
+export function webLoadApprovalAuditLog(): ApprovalAuditLoadResult {
+  return {
+    ok: true,
+    data: { version: 1, savedAt: "0", entries: [] },
+    warning: {
+      code: "session_only_web",
+      message: "Web preview keeps approval history in memory for this session only.",
+      droppedEntries: 0
+    }
+  };
+}
+
+export function webSaveApprovalAuditLog(): ApprovalAuditSaveResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Approval history persistence is available in the desktop shell only."
+    },
+    droppedEntries: 0
+  };
+}
+
+export function webClearApprovalAuditLog(): ApprovalAuditClearResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Web preview has no persisted approval history file."
     }
   };
 }

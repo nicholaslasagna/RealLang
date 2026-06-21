@@ -25,7 +25,11 @@ function resetStore() {
     toast: null,
     desktopLoadStatus: "idle",
     desktopLoadSourceId: null,
-    desktopLoadError: null
+    desktopLoadError: null,
+    approvalAuditEntries: [],
+    approvalAuditHydrated: false,
+    approvalAuditStorageStatus: "idle",
+    approvalAuditStorageWarning: null
   });
 }
 

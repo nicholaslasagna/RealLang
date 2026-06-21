@@ -5,3 +5,19 @@ public/assets/
 legacy/js/data-bundle.js
 src-tauri/target/
 src-tauri/gen/
+
+# Private local provider config (session UI only; never commit local copies)
+.realforge.local.toml
+.realforge.private.toml
+private-prompts/
+models/private/
+models/**/weights/
+models/**/checkpoints/
+models/**/blobs/
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.onnx
+*.mlx

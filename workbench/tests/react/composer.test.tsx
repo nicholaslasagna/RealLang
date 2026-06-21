@@ -38,7 +38,10 @@ function resetStore(actionId: CommandActionId = "repair-diagnostic-dry-run") {
     desktopLoadStatus: "idle",
     desktopLoadSourceId: null,
     desktopLoadError: null,
-    approvalAuditEntries: []
+    approvalAuditEntries: [],
+    approvalAuditHydrated: false,
+    approvalAuditStorageStatus: "idle",
+    approvalAuditStorageWarning: null
   });
 }
 

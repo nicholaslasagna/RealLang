@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.19)
+# RealForge Workbench - Tauri desktop shell (0.6-0.20)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -21,6 +21,8 @@ checklist**. No real updater, no install path, no endpoints/keys, no new command
 action). Still dry-run/check-only — no write bridge, no arbitrary argv, no shell.
 **0.19** adds frontend-only, session-memory execution auditing for those approved
 checks. It adds no Tauri command, filesystem write, persistence, or execution power.
+**0.20** adds a fixed-file, app-config-only store for sanitized approval metadata.
+It adds no command execution, shell, network, workspace write, or general file API.
 
 ## What 0.16 includes (version metadata)
 
@@ -159,13 +161,14 @@ trust rules as paste/import.
 
 ```text
 workbench/
-  src/audit/                     → typed sanitized session-only approval entries
+  src/audit/                     → typed audit entries + persistence sanitization
   src/composer/                  → typed action catalog + bridge availability
   src/features/audit/            → recent/full audit views; safe summary copy
   src/features/composer/         → preview UI; no process or IPC primitives
   src/bridge/                    → frontend bridge (web fallback + Tauri invoke)
   src-tauri/src/bridge/
     approval.rs                  → two approved no-write validation actions
+    approval_audit_store.rs      → fixed app-config metadata persistence
     allowlist.rs                 → Rust-side source IDs + fixed argv
     workspace.rs                 → repo discovery, validation, session override
     health.rs                    → bridge health + optional probe
@@ -250,6 +253,9 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `list_security_scan_sources` | Read-only scan source metadata (0.14; no argv over IPC) |
 | `run_security_scan_source` | Run one allowlisted read-only security scan (0.14) |
 | `run_approved_dry_run_action` | Run one of two allowlisted checks after acknowledgement |
+| `load_approval_audit_log` | Load the fixed sanitized app-config audit file |
+| `save_approval_audit_log` | Replace the fixed file with validated metadata entries |
+| `clear_approval_audit_log` | Remove only the fixed app-config audit file |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -284,7 +290,10 @@ import {
   getUpdateStatus,
   checkForUpdate,
   loadReadOnlyReportSource,
-  runApprovedDryRunAction
+  runApprovedDryRunAction,
+  loadApprovalAuditLog,
+  saveApprovalAuditLog,
+  clearApprovalAuditLog
 } from "../bridge";
 ```
 
@@ -314,7 +323,7 @@ dev bridge.
 - Denied subcommands list blocks write/apply/scheduler paths in allowlist validation
 - Imported JSON remains untrusted; staff gating unchanged
 - No approval-gated writes until a future milestone
-- Approval audit entries live only in frontend session memory; no audit IPC or persistence
+- Approval audit persistence is one fixed app-config file; no path input, workspace write, or output bodies
 - Composer argv tokens are display-only and cannot be submitted to IPC
 - Composer live loads are restricted to the unchanged three-source allowlist
 - Approved actions accept a fixed ID, `approvalAcknowledged`, and only the validated
@@ -325,6 +334,6 @@ dev bridge.
 
 - Signed Tauri updater (endpoints + pubkey + CI artifacts)
 - Approval-gated write bridge (separate milestone)
-- App-config-only persistent audit history, after a separate retention/redaction threat review
+- Encrypted or tamper-evident audit history, after a separate key-management threat review
 - Additional JSON-verified read-only sources (eval, bench, leaderboard)
 - Installers, signing, notarization

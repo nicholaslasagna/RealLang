@@ -1,6 +1,7 @@
 import { getWorkbenchData } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
 import { AboutPanel } from "../../components/AboutPanel";
+import { PrivateLocalModelPanel } from "../../components/PrivateLocalModelPanel";
 import { RuntimeIndicator } from "../../components/RuntimeIndicator";
 import { UpdateCenterPanel } from "../../components/UpdateCenterPanel";
 import { WorkspacePanel } from "../../components/WorkspacePanel";
@@ -10,7 +11,7 @@ const DESCRIPTIONS: Record<string, string> = {
   general: "Appearance and local prototype behavior.",
   workspace: "Bounded paths and artifact locations for the active repository.",
   updates: "Signed desktop application updates and release channel settings.",
-  provider: "Deterministic local provider state and multimodal readiness.",
+  provider: "Private local OpenAI-compatible model configuration (session scaffold; identity stays in gitignored files).",
   permissions: "Effective write, command, and destructive-action boundaries.",
   research: "Network access remains off until an explicit allowlist is supplied.",
   staff: "Advanced update controls are disabled and hidden by default.",
@@ -116,6 +117,7 @@ export function SettingsScreen() {
         ) : null}
         {current.id === "workspace" ? <WorkspacePanel /> : null}
         {current.id === "updates" ? <UpdateCenterPanel /> : null}
+        {current.id === "provider" ? <PrivateLocalModelPanel /> : null}
         {staffSection ? (
           <div className="staff-settings-gate">
             <Icon name="lock-keyhole" />
@@ -128,7 +130,7 @@ export function SettingsScreen() {
         ) : null}
         {current.id === "doctor" ? (
           <DoctorPanel />
-        ) : current.id === "workspace" || current.id === "updates" ? null : (
+        ) : current.id === "workspace" || current.id === "updates" || current.id === "provider" ? null : (
           <div className={`settings-fields ${staffSection ? "settings-fields--gated" : ""}`}>
             {fields.map(([label, value, note]) => (
               <div key={label}>

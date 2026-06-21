@@ -20,9 +20,9 @@
       { "label": "Release notes", "value": "Not configured", "note": "Shown after signed updater is enabled" }
     ] },
     { "id": "provider", "label": "Provider / Local Model", "icon": "cpu", "values": [
-      { "label": "Provider", "value": "mock", "note": "Deterministic offline adapter" },
-      { "label": "Model", "value": "deterministic", "note": "No live local model required" },
-      { "label": "Multimodal", "value": "MOCK ONLY", "note": "No semantic recognition" }
+      { "label": "Provider", "value": "openai_compatible_local", "note": "Private local server (configure in .realforge.local.toml)" },
+      { "label": "Model", "value": "<configured-locally>", "note": "Identity stored in gitignored local config" },
+      { "label": "Trust", "value": "LOCAL UNTRUSTED", "note": "Provider output remains untrusted" }
     ] },
     { "id": "permissions", "label": "Permissions", "icon": "lock-keyhole", "values": [
       { "label": "Permission mode", "value": "READONLY", "note": "Prototype controls cannot change backend permissions" },

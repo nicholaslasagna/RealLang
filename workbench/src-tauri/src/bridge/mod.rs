@@ -5,6 +5,7 @@
 
 mod allowlist;
 mod approval;
+mod approval_audit_store;
 mod health;
 mod real_files;
 mod resolve_python;
@@ -17,6 +18,11 @@ mod workspace_store;
 
 use allowlist::list_source_metadata;
 use approval::run_approved_dry_run_action as spawn_approved_dry_run;
+use approval_audit_store::{
+    clear_approval_audit_log as clear_audit_store, load_approval_audit_log as load_audit_store,
+    save_approval_audit_log as save_audit_store, ApprovalAuditClearResult, ApprovalAuditEntryInput,
+    ApprovalAuditLoadResult, ApprovalAuditSaveResult,
+};
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
 use real_files::list_real_files as list_real;
 use security_scan::{list_scan_source_meta, run_security_scan as spawn_security_scan};
@@ -227,6 +233,21 @@ pub fn run_approved_dry_run_action(
     input: ApprovedDryRunInput,
 ) -> ApprovedDryRunResult {
     spawn_approved_dry_run(&action_id, input)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn load_approval_audit_log() -> ApprovalAuditLoadResult {
+    load_audit_store()
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn save_approval_audit_log(entries: Vec<ApprovalAuditEntryInput>) -> ApprovalAuditSaveResult {
+    save_audit_store(entries)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn clear_approval_audit_log() -> ApprovalAuditClearResult {
+    clear_audit_store()
 }
 
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {

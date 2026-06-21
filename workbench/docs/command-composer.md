@@ -1,4 +1,4 @@
-# RealForge Workbench safe command composer (0.11-0.19)
+# RealForge Workbench safe command composer (0.11-0.20)
 
 Workbench 0.11 adds a typed, session-only composer for reviewing RealForge
 actions before any execution bridge exists. Users choose a high-level intent;
@@ -99,3 +99,22 @@ attempts stopped before approval are not recorded as approved runs. 0.19 adds no
 command and no write, patch, proposal, scheduler, updater, commit, or merge authority.
 Persistent audit history would require app-config-only storage and a separate threat
 model.
+
+## 0.20 persisted approval history
+
+Desktop mode now loads and replaces one fixed app-config file through
+`load_approval_audit_log`, `save_approval_audit_log`, and
+`clear_approval_audit_log`. These are metadata-storage operations, not command
+execution. No path is accepted from the frontend.
+
+Before save, the frontend removes stdout/stderr preview bodies. Rust independently
+validates each entry, reconstructs canonical action titles, relative targets,
+command summaries, trust values, and safety labels, then retains at most 50 entries
+within a 128 KiB file. Absolute workspace paths, full output, preview bodies,
+environment data, provider keys, and arbitrary command metadata are not stored.
+
+Reports shows persisted/session status and a confirmed clear action. Clearing
+removes only the fixed audit file and in-memory history. Web preview remains
+session-only and does not use browser storage. Encryption and tamper evidence are
+deferred. See
+[approval-audit-persistence-threat-model.md](./approval-audit-persistence-threat-model.md).

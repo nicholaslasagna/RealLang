@@ -70,6 +70,23 @@ the repository. No IPC command or execution authority is added. Persistent audit
 storage remains deferred pending an app-config-only design and separate threat model.
 The signed bundle version remains `0.16.0` under the 0.17 release policy.
 
+**Private local model support (provider-agnostic):** Settings → Provider shows a
+generic **Private Local Model** OpenAI-compatible profile. Copy
+`.realforge.toml.example` to gitignored `.realforge.local.toml` for CLI use. The
+public repo never stores model identity, weights, API keys, or private prompts.
+Workbench UI is session-only scaffolding — no browser endpoint probes. Output
+remains **LOCAL UNTRUSTED**.
+
+**0.20** adds threat-modeled, desktop-only persistence for sanitized approval
+history. The fixed `approval-audit-log.json` file lives under Tauri app config,
+keeps at most 50 entries, and is limited to 128 KiB. Rust accepts no storage path,
+reconstructs canonical action/target metadata, and drops invalid entries. Output
+preview bodies, absolute workspace paths, environment data, and secrets are never
+persisted. Reports shows local/session status and provides a confirmed **Clear
+history** action. Web preview remains session-only. This adds no command, shell,
+network, patch, update-install, Git, or workspace-write authority. See the
+[persistence threat model](docs/approval-audit-persistence-threat-model.md).
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -103,6 +120,7 @@ Historical milestones:
 - **0.17** Signed-updater threat model + typed release-readiness checklist (no real updater, no unsigned install, no fake endpoints/keys)
 - **0.18** Controlled workspace-relative `.real` file check (validated picker; still dry-run/check-only, no write bridge, no arbitrary argv)
 - **0.19** Session-only approval audit log and sanitized execution transparency (no persistence, no new IPC or execution power)
+- **0.20** App-config-only sanitized approval history (fixed file, confirmed clear, web remains session-only)
 
 ## Toolchain and dependency security
 

@@ -1,5 +1,8 @@
 import { isDesktopRuntime } from "./detect-runtime";
 import type {
+  ApprovalAuditClearResult,
+  ApprovalAuditLoadResult,
+  ApprovalAuditSaveResult,
   ApprovedDryRunActionId,
   ApprovedDryRunInput,
   ApprovedDryRunResult,
@@ -17,16 +20,20 @@ import type {
   WorkspacePaths,
   WorkspaceResolution
 } from "./types";
+import type { PersistedApprovalAuditEntry } from "./types";
 import {
   webBridgeCapabilities,
   webBridgeHealth,
+  webClearApprovalAuditLog,
   webListRealFiles,
   webListSecurityScanSources,
+  webLoadApprovalAuditLog,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
   webRunSecurityScanSource,
   webRuntimeInfo,
+  webSaveApprovalAuditLog,
   webSavedWorkspace,
   webUpdateCheckResult,
   webUpdateStatus,
@@ -133,6 +140,41 @@ export async function runApprovedDryRunAction(
       ok: false,
       error: { code: "ipc_failed", message }
     };
+  }
+}
+
+/** Load the fixed app-config approval history (desktop only; never a user path). */
+export async function loadApprovalAuditLog(): Promise<ApprovalAuditLoadResult> {
+  if (!isDesktopRuntime()) return webLoadApprovalAuditLog();
+  try {
+    return await invokeDesktop<ApprovalAuditLoadResult>("load_approval_audit_log");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: { code: "ipc_failed", message } };
+  }
+}
+
+/** Replace the fixed app-config history with already stripped metadata entries. */
+export async function saveApprovalAuditLog(
+  entries: readonly PersistedApprovalAuditEntry[]
+): Promise<ApprovalAuditSaveResult> {
+  if (!isDesktopRuntime()) return webSaveApprovalAuditLog();
+  try {
+    return await invokeDesktop<ApprovalAuditSaveResult>("save_approval_audit_log", { entries });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: { code: "ipc_failed", message }, droppedEntries: entries.length };
+  }
+}
+
+/** Remove only the fixed app-config approval history file. */
+export async function clearApprovalAuditLog(): Promise<ApprovalAuditClearResult> {
+  if (!isDesktopRuntime()) return webClearApprovalAuditLog();
+  try {
+    return await invokeDesktop<ApprovalAuditClearResult>("clear_approval_audit_log");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: { code: "ipc_failed", message } };
   }
 }
 

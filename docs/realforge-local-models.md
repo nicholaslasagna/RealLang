@@ -13,25 +13,32 @@ does not execute model-proposed commands.
 
 ## Configuration file
 
+Copy `.realforge.toml.example` to **`.realforge.local.toml`** (gitignored) for private
+local models. Do not commit the local file — model identity stays on your machine.
+
 ### Ollama
 
 ```toml
 [model]
 provider = "ollama"
-model = "qwen2.5-coder:32b"
+model = "<configured-locally>"
 base_url = "http://localhost:11434"
 ```
 
 ### OpenAI-compatible local server
 
-For LM Studio, llama.cpp server, vLLM, or similar **local** endpoints:
+For privately served local endpoints (LM Studio, llama.cpp server, vLLM, or similar):
 
 ```toml
 [model]
 provider = "openai_compatible_local"
-model = "local-coder"
-base_url = "http://localhost:1234/v1"
+display_name = "Private Local Model"
+model = "<configured-locally>"
+base_url = "http://localhost:8000/v1"
+trust = "local_untrusted"
 ```
+
+See also `docs/provider-config.example.toml`.
 
 Environment variables still supplement config when `base_url` is omitted:
 
@@ -73,8 +80,20 @@ base URL only.
 ## What is intentionally excluded
 
 - Cloud OpenAI, Anthropic, Gemini, or Cursor integrations
-- API key management for cloud services
+- Committing private model names, weights, API keys, or local paths into the public repo
 - Automatic file editing from model output without `--apply` and permission gates
+
+## Workbench private local model UI
+
+Settings → **Provider / Local Model** shows a generic **Private Local Model** profile:
+
+- OpenAI-compatible local provider type
+- Session-only endpoint/model fields (no browser network calls)
+- **LOCAL UNTRUSTED** trust label
+- Instructions to copy `.realforge.toml.example` → `.realforge.local.toml`
+
+Real config loading from disk in the desktop shell is future work; the public repo
+stays provider-agnostic.
 
 ## Provider interface
 

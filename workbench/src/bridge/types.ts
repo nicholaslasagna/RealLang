@@ -132,6 +132,54 @@ export type ApprovedDryRunResult =
   | { ok: true; data: ApprovedDryRunExecution }
   | { ok: false; error: BridgeError };
 
+/** Strict metadata-only approval entry stored by the desktop app-config bridge. */
+export interface PersistedApprovalAuditEntry {
+  id: string;
+  timestamp: string;
+  actionId: string;
+  actionTitle: string;
+  targetKind: string;
+  targetRelativePath: string;
+  workspaceLabel: string;
+  commandSummary: string;
+  acknowledgementKind: string;
+  status: string;
+  errorCode?: string;
+  exitCode?: number;
+  durationMs: number;
+  stdoutTruncated: boolean;
+  stderrTruncated: boolean;
+  untrustedOutput: boolean;
+  writesFiles: boolean;
+  networkRequired: boolean;
+  safetyLabels: string[];
+  source: string;
+}
+
+export interface ApprovalAuditLogPayload {
+  version: 1;
+  savedAt: string;
+  entries: PersistedApprovalAuditEntry[];
+}
+
+export interface ApprovalAuditStorageWarning {
+  code: string;
+  message: string;
+  droppedEntries: number;
+}
+
+export type ApprovalAuditLoadResult =
+  | { ok: true; data: ApprovalAuditLogPayload; warning?: ApprovalAuditStorageWarning }
+  | { ok: false; error: BridgeError };
+
+export type ApprovalAuditSaveResult =
+  | { ok: true; data: ApprovalAuditLogPayload; droppedEntries: number }
+  | { ok: false; error: BridgeError; droppedEntries: number };
+
+export type ApprovalAuditClearResult =
+  | { ok: true }
+  | { ok: false; error: BridgeError };
+
 /** Read-only workspace .real file listing (desktop only). */
 export interface RealFileListResult {
   ok: boolean;

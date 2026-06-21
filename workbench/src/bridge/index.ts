@@ -1,6 +1,7 @@
 export { isDesktopRuntime, isWebPreviewRuntime } from "./detect-runtime";
 export {
   bridgeModeLabel,
+  clearApprovalAuditLog,
   checkBridgeHealth,
   checkForUpdate,
   clearSavedWorkspace,
@@ -13,10 +14,12 @@ export {
   listReadOnlyReportSources,
   listRealFiles,
   listSecurityScanSources,
+  loadApprovalAuditLog,
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
   runSecurityScanSource,
   runtimeModeLabel,
+  saveApprovalAuditLog,
   saveWorkspaceSelection,
   selectWorkspaceDirectory
 } from "./workbench-bridge";
@@ -28,6 +31,11 @@ export {
   workspaceStatusTone
 } from "./workspace-labels";
 export type {
+  ApprovalAuditClearResult,
+  ApprovalAuditLoadResult,
+  ApprovalAuditLogPayload,
+  ApprovalAuditSaveResult,
+  ApprovalAuditStorageWarning,
   ApprovedDryRunActionId,
   ApprovedDryRunExecution,
   ApprovedDryRunInput,
@@ -39,6 +47,7 @@ export type {
   BridgeResult,
   LoadedReadOnlyReport,
   LoadReadOnlyReportResult,
+  PersistedApprovalAuditEntry,
   ReadOnlyReportSourceMeta,
   RealFileListResult,
   RuntimeInfo,

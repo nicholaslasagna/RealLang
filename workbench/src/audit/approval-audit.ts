@@ -1,6 +1,7 @@
 import type {
   ApprovedDryRunActionId,
-  ApprovedDryRunResult
+  ApprovedDryRunResult,
+  PersistedApprovalAuditEntry
 } from "../bridge/types";
 
 export const AUDIT_PREVIEW_LIMIT = 2_048;
@@ -138,6 +139,160 @@ export function appendApprovalAuditEntry(
   entry: ApprovalAuditEntry
 ): ApprovalAuditEntry[] {
   return [entry, ...entries].slice(0, AUDIT_SESSION_LIMIT);
+}
+
+const AUDIT_STATUSES = new Set<ApprovalAuditStatus>([
+  "success",
+  "failed",
+  "timed_out",
+  "rejected",
+  "unavailable"
+]);
+
+function canonicalAction(actionId: ApprovedDryRunActionId) {
+  return actionId === "realc-check-hello-example"
+    ? {
+        actionTitle: "Check the fixed hello.real example",
+        targetKind: "fixed_example" as const,
+        targetRelativePath: "examples/hello.real"
+      }
+    : {
+        actionTitle: "Check a workspace .real file",
+        targetKind: "workspace_real_file" as const,
+        targetRelativePath: ""
+      };
+}
+
+function validAuditId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+}
+
+function validAuditTimestamp(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length <= 64 &&
+    /^[0-9T:Z.+-]+$/.test(value) &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
+function validAuditErrorCode(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z0-9_]{1,64}$/.test(value);
+}
+
+/** Remove all process-output bodies before crossing the persistence IPC boundary. */
+export function prepareApprovalAuditEntriesForPersistence(
+  entries: readonly ApprovalAuditEntry[]
+): PersistedApprovalAuditEntry[] {
+  return entries.slice(0, AUDIT_SESSION_LIMIT).map((entry) => {
+    const canonical = canonicalAction(entry.actionId);
+    const targetRelativePath =
+      entry.actionId === "realc-check-hello-example"
+        ? canonical.targetRelativePath
+        : safeRelativeTarget(entry.actionId, entry.targetRelativePath);
+    return {
+      id: entry.id,
+      timestamp: entry.timestamp,
+      actionId: entry.actionId,
+      actionTitle: canonical.actionTitle,
+      targetKind: canonical.targetKind,
+      targetRelativePath,
+      workspaceLabel: "Selected workspace",
+      commandSummary: `realc ${targetRelativePath} --check`,
+      acknowledgementKind: "explicit_checkbox",
+      status: entry.status,
+      ...(entry.errorCode ? { errorCode: entry.errorCode } : {}),
+      ...(entry.exitCode !== undefined ? { exitCode: entry.exitCode } : {}),
+      durationMs: entry.durationMs,
+      stdoutTruncated: entry.stdoutTruncated || Boolean(entry.stdoutPreview),
+      stderrTruncated: entry.stderrTruncated || Boolean(entry.stderrPreview),
+      untrustedOutput: true,
+      writesFiles: false,
+      networkRequired: false,
+      safetyLabels: ["APPROVED", "DRY RUN", "UNTRUSTED OUTPUT", "NO WRITES", "NETWORK OFF", "LOCAL ONLY"],
+      source: "approved_dry_run_bridge"
+    };
+  });
+}
+
+function normalizePersistedEntry(value: unknown): ApprovalAuditEntry | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const entry = value as Record<string, unknown>;
+  if (
+    !validAuditId(entry.id) ||
+    !validAuditTimestamp(entry.timestamp) ||
+    (entry.actionId !== "realc-check-hello-example" && entry.actionId !== "realc-check-workspace-file") ||
+    !AUDIT_STATUSES.has(entry.status as ApprovalAuditStatus) ||
+    entry.workspaceLabel !== "Selected workspace" ||
+    entry.acknowledgementKind !== "explicit_checkbox" ||
+    entry.source !== "approved_dry_run_bridge" ||
+    entry.untrustedOutput !== true ||
+    entry.writesFiles !== false ||
+    entry.networkRequired !== false ||
+    typeof entry.durationMs !== "number" ||
+    !Number.isFinite(entry.durationMs) ||
+    entry.durationMs < 0 ||
+    entry.durationMs > 86_400_000 ||
+    typeof entry.stdoutTruncated !== "boolean" ||
+    typeof entry.stderrTruncated !== "boolean" ||
+    (entry.errorCode !== undefined && !validAuditErrorCode(entry.errorCode)) ||
+    (entry.exitCode !== undefined && (!Number.isInteger(entry.exitCode) || typeof entry.exitCode !== "number"))
+  ) {
+    return null;
+  }
+
+  const actionId = entry.actionId;
+  const canonical = canonicalAction(actionId);
+  const targetRelativePath =
+    actionId === "realc-check-hello-example"
+      ? canonical.targetRelativePath
+      : safeRelativeTarget(actionId, typeof entry.targetRelativePath === "string" ? entry.targetRelativePath : undefined);
+  if (targetRelativePath === "[redacted-target]" || entry.targetKind !== canonical.targetKind) return null;
+
+  return {
+    id: entry.id,
+    timestamp: entry.timestamp,
+    actionId,
+    actionTitle: canonical.actionTitle,
+    targetKind: canonical.targetKind,
+    targetRelativePath,
+    workspaceLabel: "Selected workspace",
+    commandSummary: `realc ${targetRelativePath} --check`,
+    acknowledgementKind: "explicit_checkbox",
+    status: entry.status as ApprovalAuditStatus,
+    ...(typeof entry.errorCode === "string" ? { errorCode: entry.errorCode } : {}),
+    ...(typeof entry.exitCode === "number" ? { exitCode: entry.exitCode } : {}),
+    durationMs: Math.round(entry.durationMs),
+    stdoutTruncated: entry.stdoutTruncated,
+    stderrTruncated: entry.stderrTruncated,
+    untrustedOutput: true,
+    writesFiles: false,
+    networkRequired: false,
+    safetyLabels: ["APPROVED", "DRY RUN", "UNTRUSTED OUTPUT", "NO WRITES", "NETWORK OFF", "LOCAL ONLY"],
+    source: "approved_dry_run_bridge"
+  };
+}
+
+export function sanitizePersistedApprovalAuditEntries(entries: readonly unknown[]): ApprovalAuditEntry[] {
+  return entries
+    .slice(0, AUDIT_SESSION_LIMIT)
+    .map(normalizePersistedEntry)
+    .filter((entry): entry is ApprovalAuditEntry => entry !== null);
+}
+
+export function mergeApprovalAuditEntries(
+  sessionEntries: readonly ApprovalAuditEntry[],
+  persistedEntries: readonly ApprovalAuditEntry[]
+): ApprovalAuditEntry[] {
+  const seen = new Set<string>();
+  const merged: ApprovalAuditEntry[] = [];
+  for (const entry of [...sessionEntries, ...persistedEntries]) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    merged.push(entry);
+    if (merged.length === AUDIT_SESSION_LIMIT) break;
+  }
+  return merged;
 }
 
 /** Metadata-only export. Process output and absolute workspace paths are intentionally omitted. */

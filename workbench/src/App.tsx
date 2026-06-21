@@ -12,6 +12,7 @@ export default function App() {
   const screen = useWorkbenchStore((s) => s.screen);
   const sidebarOpen = useWorkbenchStore((s) => s.sidebarOpen);
   const openPalette = useWorkbenchStore((s) => s.openPalette);
+  const initializeApprovalAuditHistory = useWorkbenchStore((s) => s.initializeApprovalAuditHistory);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(
@@ -30,6 +31,10 @@ export default function App() {
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
   }, [screen]);
+
+  useEffect(() => {
+    void initializeApprovalAuditHistory();
+  }, [initializeApprovalAuditHistory]);
 
   return (
     <>

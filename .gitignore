@@ -31,5 +31,34 @@ llm_study/results/**/*.json
 .realforge/engines/
 .realforge/multimodal/
 .realforge/pipelines/
+
+# Local model weights and caches (never commit)
+*.safetensors
+*.gguf
+*.bin
+*.pt
+*.pth
+*.onnx
+*.mlx
+models/private/
+models/**/weights/
+models/**/checkpoints/
+models/**/blobs/
+.huggingface/
+.cache/huggingface/
+ollama/models/
+.lmstudio/
+.llama/
+
+# Private RealForge provider config (copy from .realforge.toml.example)
+.realforge.local.toml
+.realforge.private.toml
+**/.realforge.local.toml
+**/.realforge.private.toml
+**/private-prompts/
+**/private_prompts/
+**/*.private-prompt.*
+**/*.private.prompt.*
+
 workbench/dist/
 .DS_Store

@@ -67,6 +67,13 @@ export interface ImportField {
 }
 
 export type DesktopLoadStatus = "idle" | "loading" | "error";
+export type ApprovalAuditStorageStatus = "idle" | "loading" | "persisted" | "session_only" | "error";
+
+export interface PrivateLocalModelSession {
+  endpoint: string;
+  modelLabel: string;
+  configured: boolean;
+}
 
 export interface WorkbenchState {
   screen: WorkbenchScreen;
@@ -87,4 +94,8 @@ export interface WorkbenchState {
   desktopLoadSourceId: string | null;
   desktopLoadError: string | null;
   approvalAuditEntries: ApprovalAuditEntry[];
+  approvalAuditHydrated: boolean;
+  approvalAuditStorageStatus: ApprovalAuditStorageStatus;
+  approvalAuditStorageWarning: string | null;
+  privateLocalModel: PrivateLocalModelSession;
 }

@@ -3,19 +3,25 @@ import { cliReportSources } from "../../src/data/cli/cli-report-sources";
 import { isDesktopRuntime, isWebPreviewRuntime } from "../../src/bridge/detect-runtime";
 import {
   bridgeModeLabel,
+  clearApprovalAuditLog,
   getRuntimeInfo,
   listBridgeCapabilities,
   listReadOnlyReportSources,
+  loadApprovalAuditLog,
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
-  runtimeModeLabel
+  runtimeModeLabel,
+  saveApprovalAuditLog
 } from "../../src/bridge/workbench-bridge";
 import {
   webBridgeCapabilities,
+  webClearApprovalAuditLog,
+  webLoadApprovalAuditLog,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
-  webRuntimeInfo
+  webRuntimeInfo,
+  webSaveApprovalAuditLog
 } from "../../src/bridge/web-fallback";
 
 describe("workbench bridge client (web mode)", () => {
@@ -51,6 +57,22 @@ describe("workbench bridge client (web mode)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("unsupported_web");
     expect(webRunApprovedDryRunAction("realc-check-hello-example", { approvalAcknowledged: true }).ok).toBe(false);
+  });
+
+  it("keeps approval history session-only in web mode", async () => {
+    const loaded = await loadApprovalAuditLog();
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.data.entries).toEqual([]);
+      expect(loaded.warning?.code).toBe("session_only_web");
+    }
+    const saved = await saveApprovalAuditLog([]);
+    expect(saved.ok).toBe(false);
+    const cleared = await clearApprovalAuditLog();
+    expect(cleared.ok).toBe(false);
+    expect(webLoadApprovalAuditLog().ok).toBe(true);
+    expect(webSaveApprovalAuditLog().ok).toBe(false);
+    expect(webClearApprovalAuditLog().ok).toBe(false);
   });
 
   it("refuses CLI load in web mode with explicit unsupported result", async () => {
