@@ -40,6 +40,7 @@ signing/notarization.
 - Workbench 0.25: desktop Settings can run that fixed smoke check after explicit approval; no prompt input, browser request, private identity, or response persistence
 - Workbench 0.26: desktop Settings adds one approval-gated private chat sandbox; user text only, no workspace/files/tools/history, session memory only
 - Workbench 0.27: hardens private chat with one active request, input-free desktop cancellation, redacted timeout/cancel states, and capped untrusted copy
+- Workbench 0.28: adds a sanitized private provider readiness dashboard; smoke state is session-only and workspace/files/tools/memory/image execution remain disconnected
 - Provider status remains a sanitized boolean/host shape, with CLI guidance for full env/repo precedence
 
 See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
@@ -340,6 +341,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 14. **Provider smoke display** (0.25) - fixed desktop command, fresh approval, sanitized untrusted session result
 15. **Private chat sandbox** (0.26) - bounded stdin-only text, fresh approval, no context/tools/history/persistence
 16. **Private chat hardening** (0.27) - single active request, fixed-child cancellation, safe clear/copy behavior, no new authority
-17. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+17. **Private provider readiness** (0.28) - sanitized lifecycle, session-only smoke status, explicit disconnected capabilities, no new authority
+18. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

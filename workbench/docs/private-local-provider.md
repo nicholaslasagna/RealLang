@@ -87,6 +87,15 @@ explicit action that includes only the capped visible response with a **LOCAL
 UNTRUSTED** label. No hidden transcript, audit record, workspace/file context,
 tools, shell, writes, or image generation are added.
 
+Workbench 0.28 adds a **Provider Readiness** dashboard above these separate
+surfaces. It derives a sanitized lifecycle from provider status plus the fixed
+smoke check's current-session status. It does not ingest the smoke response or chat
+prompt/response bodies. The dashboard shows local configuration booleans, fixed
+chat limits, metadata-only image-provider state, and an explicit disconnected list
+for workspace context, files, tools, shell, memory, persistence, and image
+generation. The trust boundary remains `local_untrusted`; private identity remains
+local-only. See [provider readiness dashboard](provider-readiness-dashboard.md).
+
 ## RealForge CLI
 
 The Python RealForge CLI/runtime loads the same fixed home config file with precedence:

@@ -114,6 +114,13 @@ clear-sandbox remain session-only, and explicit copy includes only the capped
 visible response prefixed **LOCAL UNTRUSTED**. There is still no workspace context,
 tool use, transcript, persistence, audit entry, shell, write path, or image request.
 
+**0.28** adds a frontend-only **Provider Readiness** dashboard under Settings →
+Provider / Local Model. It summarizes sanitized configuration, current-session
+smoke status, chat sandbox availability, and metadata-only image-provider state.
+Workspace context, files, tools, shell, memory, persistence, and image generation
+remain explicitly off. No new IPC, provider call, storage, or execution authority
+is added. See the [readiness dashboard documentation](docs/provider-readiness-dashboard.md).
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -151,6 +158,7 @@ Historical milestones:
 - **0.25** Approval-gated fixed provider smoke display (desktop only; no arbitrary prompt, identity exposure, or persistence)
 - **0.26** Approval-gated private chat sandbox (single turn, stdin-only, no context/tools/history/persistence)
 - **0.27** Private chat sandbox hardening (single active request, desktop cancellation, redacted timeout/cancel states, safe visible-response copy)
+- **0.28** Private provider readiness dashboard (sanitized lifecycle, session-only smoke status, disconnected capabilities visible, no new authority)
 
 ## Toolchain and dependency security
 

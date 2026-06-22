@@ -1,7 +1,7 @@
 import { type FormEvent } from "react";
 import type { ComposedAction, CommandActionId } from "../../composer/action-model";
 import { commandActionDefinitions } from "../../composer/action-model";
-import { Badge, Button, Icon } from "../../components/primitives";
+import { Button, Icon } from "../../components/primitives";
 import { useWorkbenchStore } from "../../state/workbench-store";
 
 const quickActionIds: readonly CommandActionId[] = [
@@ -37,12 +37,6 @@ export function ComposerDock({ action }: ComposerDockProps) {
 
   return (
     <form className="composer composer--safe" data-testid="safe-command-composer" onSubmit={onSubmit}>
-      <div className="composer-context">
-        <span>{action.domain}</span>
-        <span>{action.currentExecutionStatus.replaceAll("_", " ")}</span>
-        <span>session only</span>
-        <small>No shell input · no workspace writes</small>
-      </div>
       <div className="composer-intents" aria-label="Quick action intents">
         {quickActionIds.map((actionId) => {
           const definition = commandActionDefinitions.find((candidate) => candidate.id === actionId);
@@ -68,14 +62,16 @@ export function ComposerDock({ action }: ComposerDockProps) {
         <textarea
           id="task-context"
           name="task-context"
-          rows={1}
-          placeholder="Add context for this intent. Command strings are not accepted."
+          rows={2}
+          placeholder="Describe what you want to build or fix…"
         />
-        <Badge label="PREVIEW" tone="blue" />
         <button className="send-button" type="submit" aria-label="Stage action context">
           <Icon name="arrow-up" />
         </button>
       </div>
+      <p className="composer-hint">
+        Plain language only — no shell input. Nothing runs or is written without your explicit approval.
+      </p>
     </form>
   );
 }

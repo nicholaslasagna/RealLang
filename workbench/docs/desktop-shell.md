@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.27)
+# RealForge Workbench - Tauri desktop shell (0.6-0.28)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -34,6 +34,9 @@ workspace context, files, tools, history, or persistence. Output remains untrust
 for that fixed child process. Cancellation and timeout kill and reap the child and
 return static redacted errors. This adds no prompt fields, path, argv, workspace
 read, write, tool, shell, or provider authority to IPC.
+**0.28** adds a frontend-only provider readiness dashboard derived from the
+existing sanitized status and session smoke metadata. It adds no Tauri command,
+provider call, persistence, workspace access, shell, or write authority.
 
 ## What 0.16 includes (version metadata)
 

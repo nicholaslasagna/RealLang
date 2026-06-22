@@ -4,6 +4,7 @@ import {
   runPrivateProviderSmoke,
   type ProviderSmokeResult
 } from "../bridge";
+import type { ProviderSmokeSessionStatus } from "../providers";
 import { Badge, Button, Icon } from "./primitives";
 
 const RESPONSE_PREVIEW_LIMIT = 160;
@@ -23,7 +24,11 @@ function resultLabel(status: string): string {
   return "FAILED";
 }
 
-export function ProviderSmokeCard() {
+interface ProviderSmokeCardProps {
+  onSessionStatusChange?: (status: ProviderSmokeSessionStatus) => void;
+}
+
+export function ProviderSmokeCard({ onSessionStatusChange }: ProviderSmokeCardProps) {
   const desktop = isDesktopRuntime();
   const [approved, setApproved] = useState(false);
   const [running, setRunning] = useState(false);
@@ -35,6 +40,7 @@ export function ProviderSmokeCard() {
     setResult(null);
     const nextResult = await runPrivateProviderSmoke({ approvalAcknowledged: true });
     setResult(nextResult);
+    onSessionStatusChange?.(nextResult.ok ? nextResult.data.status : "unavailable");
     setApproved(false);
     setRunning(false);
   }

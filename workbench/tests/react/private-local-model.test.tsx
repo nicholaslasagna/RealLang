@@ -136,7 +136,7 @@ describe("Private local model panel", () => {
     expect(screen.getByText(/home private config/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^YES$/).length).toBeGreaterThan(0);
     expect(screen.getByText("http://localhost:8000")).toBeInTheDocument();
-    expect(screen.getByText(/api key configured/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/api key configured/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/realforge provider status --json/i)).toBeInTheDocument();
     expect(screen.getAllByText(/realforge provider smoke --json/i).length).toBeGreaterThan(0);
   });
@@ -145,7 +145,7 @@ describe("Private local model panel", () => {
     mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
     render(<PrivateLocalModelPanel />);
     await waitFor(() => {
-      expect(screen.getByText(/model configured/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/model configured/i).length).toBeGreaterThan(0);
     });
     expect(screen.queryByText(/super-secret/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/sk-/i)).not.toBeInTheDocument();
@@ -162,6 +162,39 @@ describe("Private local model panel", () => {
     expect(screen.getByText(/image execution enabled/i)).toBeInTheDocument();
     expect(screen.getByText("http://localhost:8188")).toBeInTheDocument();
     expect(screen.getByText(/^DISABLED$/)).toBeInTheDocument();
+  });
+
+  it("renders the sanitized provider lifecycle and disconnected boundaries", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+    const dashboard = await screen.findByTestId("provider-readiness-dashboard");
+    expect(within(dashboard).getByText("Provider Readiness")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Private config")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Sanitized status")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Fixed smoke check")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Private chat sandbox")).toBeInTheDocument();
+    expect(within(dashboard).getByText("Image provider")).toBeInTheDocument();
+    expect(within(dashboard).getAllByText("OFF")).toHaveLength(7);
+    for (const label of ["Workspace context", "File access", "Tools", "Shell", "Memory", "Persistence", "Image generation"]) {
+      expect(within(dashboard).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(dashboard).getByText("CONFIGURED")).toBeInTheDocument();
+    expect(within(dashboard).getByText("METADATA ONLY")).toBeInTheDocument();
+  });
+
+  it("advances readiness from configured to sandbox ready after a session smoke pass", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+    const dashboard = await screen.findByTestId("provider-readiness-dashboard");
+    expect(within(dashboard).getByText("CONFIGURED")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
+    fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
+
+    await waitFor(() => expect(within(dashboard).getByText("SANDBOX READY")).toBeInTheDocument());
+    expect(within(dashboard).getAllByText("PASS").length).toBeGreaterThan(0);
+    expect(window.localStorage.length).toBe(0);
+    expect(window.sessionStorage.length).toBe(0);
   });
 
   it("renders structured invalid config errors safely", async () => {
@@ -206,6 +239,9 @@ describe("Private local model panel", () => {
     expect(mocks.runPrivateProviderSmoke).not.toHaveBeenCalled();
     expect(desktopOnlyButtons.length).toBeGreaterThan(1);
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
+    const dashboard = screen.getByTestId("provider-readiness-dashboard");
+    expect(within(dashboard).getByText("DESKTOP ONLY")).toBeInTheDocument();
+    expect(within(dashboard).getByText("LOCKED")).toBeInTheDocument();
   });
 
   it("requires fresh approval and exposes no prompt textbox", async () => {

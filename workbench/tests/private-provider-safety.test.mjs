@@ -79,12 +79,38 @@ test("docs provider example matches public-safe template", async () => {
 test("private local model UI sources avoid forbidden identity strings", async () => {
   const sources = await Promise.all([
     read(workbenchRoot, "src/providers/model-profiles.ts"),
+    read(workbenchRoot, "src/providers/provider-readiness.ts"),
+    read(workbenchRoot, "src/components/ProviderReadinessDashboard.tsx"),
     read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx")
   ]);
   const combined = sources.join("\n");
   for (const pattern of FORBIDDEN_IDENTITY) {
     assert.doesNotMatch(combined, pattern);
   }
+});
+
+test("provider readiness is frontend-only sanitized derivation with no persistence", async () => {
+  const [model, dashboard, panel, smoke] = await Promise.all([
+    read(workbenchRoot, "src/providers/provider-readiness.ts"),
+    read(workbenchRoot, "src/components/ProviderReadinessDashboard.tsx"),
+    read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx"),
+    read(workbenchRoot, "src/components/ProviderSmokeCard.tsx")
+  ]);
+  const combined = `${model}\n${dashboard}\n${panel}\n${smoke}`;
+  assert.match(model, /derivePrivateProviderReadiness/);
+  assert.match(model, /imageProviderExecutionEnabled: false/);
+  assert.match(model, /workspaceContextEnabled: false/);
+  assert.match(model, /fileAccessEnabled: false/);
+  assert.match(model, /toolsEnabled: false/);
+  assert.match(model, /memoryEnabled: false/);
+  assert.match(model, /persistenceEnabled: false/);
+  assert.match(dashboard, /LOCAL UNTRUSTED/);
+  assert.match(dashboard, /Disconnected by design/);
+  assert.match(smoke, /onSessionStatusChange/);
+  assert.doesNotMatch(combined, /localStorage|sessionStorage|indexedDB/);
+  assert.doesNotMatch(combined, /\bfetch\s*\(|XMLHttpRequest/);
+  assert.doesNotMatch(combined, /invokeDesktop|run_private_provider/);
+  assert.doesNotMatch(model, /response_preview|api_key:|model_path|endpoint_host/);
 });
 
 test("private local image model scaffold stays generic and inert", async () => {

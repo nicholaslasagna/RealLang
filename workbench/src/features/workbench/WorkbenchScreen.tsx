@@ -118,6 +118,7 @@ export function WorkbenchScreen() {
   const navigate = useWorkbenchStore((s) => s.navigate);
   const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const runtime = useComposerRuntime(staffPreview);
   const action = composeActionPlan(actionId, runtime);
   const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
@@ -128,21 +129,36 @@ export function WorkbenchScreen() {
   };
 
   return (
-    <div className="workbench-layout">
+    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"}`}>
       <section className="workbench-main">
-        <header className="workbench-header">
+        <header className="workbench-header workbench-header--calm">
           <div>
-            <p className="eyebrow">WORKBENCH · SAFE COMMAND COMPOSER</p>
+            <p className="eyebrow">WORKBENCH</p>
             <h1>{action.title}</h1>
-            <span>Compose structured intent, inspect the safety boundary, then choose the next safe step.</span>
+            <span>Describe a task in plain language — RealForge plans it and runs only safe, approved steps.</span>
           </div>
-          <div>
-            <Badge label="PREVIEW ONLY" tone="blue" />
-            <Badge label={action.writesFiles ? "WRITES DISABLED" : "NO WRITES"} tone={action.writesFiles ? "violet" : "green"} />
-          </div>
+          <button
+            type="button"
+            className={`details-toggle ${showDetails ? "is-active" : ""}`}
+            aria-pressed={showDetails}
+            onClick={() => setShowDetails((open) => !open)}
+          >
+            <Icon name={showDetails ? "x" : "sliders-horizontal"} />
+            <span>{showDetails ? "Hide details" : "Details"}</span>
+          </button>
         </header>
         <div className="thread-scroll">
           <div className="thread">
+            <div className="thread-greeting">
+              <span className="mini-mark" aria-hidden="true" />
+              <div>
+                <b>RealForge</b>
+                <p>
+                  Hi — tell me what you want to build or fix. I&rsquo;ll lay out a plan, show exactly what
+                  would run, and never touch your files without your approval.
+                </p>
+              </div>
+            </div>
             {stagedTask ? (
               <div className="thread-message thread-message--user">
                 {stagedTask}
@@ -193,7 +209,9 @@ export function WorkbenchScreen() {
         </div>
         <ComposerDock action={action} />
       </section>
-      <ActionInspector action={action} runtime={runtime.runtime} bridgeHealthy={runtime.bridgeHealthy} />
+      {showDetails ? (
+        <ActionInspector action={action} runtime={runtime.runtime} bridgeHealthy={runtime.bridgeHealthy} />
+      ) : null}
     </div>
   );
 }

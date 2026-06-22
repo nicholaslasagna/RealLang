@@ -3,4 +3,24 @@
   --sidebar: 224px;
   --topbar: 58px;
   --rail: 34px;
+
+  /* Spacing scale — consistent breathing room (0.17 UX pass). */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radius scale — softer, friendlier surfaces. */
+  --radius-1: 6px;
+  --radius-2: 10px;
+  --radius-3: 14px;
+  --radius-4: 20px;
+  --radius-pill: 999px;
+
+  /* Comfortable reading column for conversational surfaces. */
+  --reading-width: 720px;
 }

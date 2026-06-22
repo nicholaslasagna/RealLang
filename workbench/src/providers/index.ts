@@ -13,3 +13,13 @@ export type {
   ProviderConfigStatus,
   ProviderKind
 } from "./model-profiles";
+export {
+  derivePrivateProviderReadiness,
+  providerReadinessLabel
+} from "./provider-readiness";
+export type {
+  PrivateProviderReadiness,
+  ProviderChatSandboxLimits,
+  ProviderOverallReadiness,
+  ProviderSmokeSessionStatus
+} from "./provider-readiness";
