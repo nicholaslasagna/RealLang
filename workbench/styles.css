@@ -1426,11 +1426,62 @@ textarea:focus-visible,
 
 .action-preview {
   overflow: hidden;
-  border: 1px solid rgba(49, 216, 208, 0.24);
-  border-radius: 6px;
-  background: linear-gradient(145deg, rgba(49, 216, 208, 0.055), rgba(13, 15, 21, 0.94) 42%);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-3);
+  background: var(--surface-1);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
 }
+
+/* Calm "here's what I'm allowed to do" summary — reassuring, not alarming. */
+.action-preview__assurance {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.action-preview__assurance > .icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.action-preview__assurance span { color: var(--text); }
+
+/* Full safety labels, facts grid, and argv preview — collapsed by default but
+   always present in the DOM so nothing is hidden from inspection or tests. */
+.action-preview__details { border-top: 1px solid var(--line); }
+
+.action-preview__details > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  list-style: none;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+  transition: color 120ms ease;
+}
+
+.action-preview__details > summary::-webkit-details-marker { display: none; }
+.action-preview__details > summary:hover { color: var(--text-2); }
+
+.action-preview__chevron {
+  width: 13px;
+  height: 13px;
+  transition: transform 140ms ease;
+}
+
+.action-preview__details[open] > summary .action-preview__chevron { transform: rotate(90deg); }
+.action-preview__details-body { padding-bottom: var(--space-2); }
 
 .action-preview__header {
   display: grid;

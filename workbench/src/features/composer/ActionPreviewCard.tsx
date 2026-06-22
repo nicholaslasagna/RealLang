@@ -23,6 +23,24 @@ function safetyTone(label: string) {
   return "blue";
 }
 
+/**
+ * A calm, human one-line summary of what the action is allowed to do.
+ * The precise machine labels remain available (collapsed) in the details
+ * section below — this row is an additive, reassuring summary, not a
+ * replacement for any safety information.
+ */
+function safetySummary(action: ComposedAction): string {
+  const parts: string[] = [];
+  if (action.approvedDryRunActionId) parts.push("Approval-gated check");
+  else if (action.fixedSourceId) parts.push("Read-only report");
+  else parts.push("Safe preview");
+  if (action.runsCommands && !action.fixedSourceId) parts.push("dry run");
+  parts.push(action.writesFiles ? "no writes (disabled)" : "no writes");
+  if (action.approvalRequired) parts.push("approval required");
+  if (action.networkRequired) parts.push("network gated");
+  return parts.join(" · ");
+}
+
 function ExecutionControl({
   action,
   bridgeLoading,
@@ -95,32 +113,45 @@ export function ActionPreviewCard(props: ActionPreviewCardProps) {
         <Badge label={actionStatusLabel(action.currentExecutionStatus)} tone={actionStatusTone(action.currentExecutionStatus)} />
       </header>
 
-      <div className="action-preview__labels" aria-label="Action safety metadata">
-        {action.safetyLabels.map((label) => (
-          <Badge key={label} label={label} tone={safetyTone(label)} />
-        ))}
-      </div>
+      <p className="action-preview__assurance">
+        <Icon name="shield-check" />
+        <span>{safetySummary(action)}</span>
+      </p>
 
-      <dl className="action-preview__facts">
-        <div><dt>Writes files</dt><dd>{action.writesFiles ? "YES · DISABLED" : "NO"}</dd></div>
-        <div><dt>Runs commands</dt><dd>{action.approvedDryRunActionId ? "FIXED CHECK" : action.runsCommands ? "PLANNED" : "NO"}</dd></div>
-        <div><dt>Network</dt><dd>{action.networkRequired ? "REQUIRES APPROVAL" : "OFF"}</dd></div>
-        <div><dt>Approval</dt><dd>{action.approvalRequired ? "REQUIRED" : "NOT REQUIRED"}</dd></div>
-      </dl>
-
-      {action.proposedArgvPreview ? (
-        <section className="argv-preview" aria-label={action.approvedDryRunActionId ? "Fixed approval argument preview" : "Display-only argument preview"}>
-          <header>
-            <span>{action.approvedDryRunActionId ? "FIXED APPROVAL ARGV" : "PROPOSED ARGV PREVIEW"}</span>
-            <b>{action.approvedDryRunActionId ? "RUST ALLOWLIST · NO USER ARGS" : "DISPLAY ONLY · NOT EXECUTABLE"}</b>
-          </header>
-          <div>
-            {action.proposedArgvPreview.map((token, index) => (
-              <code key={`${token}-${index}`}>{token}</code>
+      <details className="action-preview__details">
+        <summary>
+          <Icon name="chevron-right" className="action-preview__chevron" />
+          <span>Show safety details</span>
+        </summary>
+        <div className="action-preview__details-body">
+          <div className="action-preview__labels" aria-label="Action safety metadata">
+            {action.safetyLabels.map((label) => (
+              <Badge key={label} label={label} tone={safetyTone(label)} />
             ))}
           </div>
-        </section>
-      ) : null}
+
+          <dl className="action-preview__facts">
+            <div><dt>Writes files</dt><dd>{action.writesFiles ? "YES · DISABLED" : "NO"}</dd></div>
+            <div><dt>Runs commands</dt><dd>{action.approvedDryRunActionId ? "FIXED CHECK" : action.runsCommands ? "PLANNED" : "NO"}</dd></div>
+            <div><dt>Network</dt><dd>{action.networkRequired ? "REQUIRES APPROVAL" : "OFF"}</dd></div>
+            <div><dt>Approval</dt><dd>{action.approvalRequired ? "REQUIRED" : "NOT REQUIRED"}</dd></div>
+          </dl>
+
+          {action.proposedArgvPreview ? (
+            <section className="argv-preview" aria-label={action.approvedDryRunActionId ? "Fixed approval argument preview" : "Display-only argument preview"}>
+              <header>
+                <span>{action.approvedDryRunActionId ? "FIXED APPROVAL ARGV" : "PROPOSED ARGV PREVIEW"}</span>
+                <b>{action.approvedDryRunActionId ? "RUST ALLOWLIST · NO USER ARGS" : "DISPLAY ONLY · NOT EXECUTABLE"}</b>
+              </header>
+              <div>
+                {action.proposedArgvPreview.map((token, index) => (
+                  <code key={`${token}-${index}`}>{token}</code>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      </details>
 
       <div className="action-preview__footer">
         <div className="action-preview__warnings">
