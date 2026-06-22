@@ -118,3 +118,33 @@ removes only the fixed audit file and in-memory history. Web preview remains
 session-only and does not use browser storage. Encryption and tamper evidence are
 deferred. See
 [approval-audit-persistence-threat-model.md](./approval-audit-persistence-threat-model.md).
+
+## Conversation flow (0.31)
+
+The Workbench presents its existing composer as one continuous, approval-first
+conversation. The flow is presentation only — it adds no provider authority, no
+live model wiring, no workspace context, no tools, no shell, and no persistence.
+
+Sequence:
+
+1. **Greeting** — a friendly assistant opening (`WorkbenchGreeting`) states the
+   approval-first contract: nothing runs or touches files until you approve it.
+2. **Describe** — the user types intent in plain language in the composer. No
+   shell command or arbitrary argument is accepted.
+3. **Preview** — the always-present `ActionPreviewCard` shows the composed
+   action with a calm one-line safety summary; full labels, the facts grid, and
+   the display-only argv stay inspectable under **Show safety details**.
+4. **Approve** — write/execute paths remain gated. The one fixed dry-run check
+   requires explicit, per-run acknowledgement before the read-only bridge runs.
+5. **Result** — `WorkbenchResultCard` renders the inert execution report with a
+   clear pass/finished/blocked affordance. Output stays `UNTRUSTED` and cannot
+   trigger apply, repair, commit, merge, update, or scheduler actions.
+6. **Reference** — sanitized approval history stays available as a secondary
+   `Reference` block, not a primary conversation turn.
+
+An empty Workbench shows the greeting plus a `WorkbenchFlowHint` ("Describe →
+Preview → Approve → Result") so the preview reads as a starting point rather than
+an abrupt dump. Illustrative planning evidence appears only after the user stages
+intent, and is labelled as untrusted, illustrative provider output. None of these
+changes alter the approval gates, dry-run-only behavior, untrusted output trust
+level, or the absence of workspace/tool/model autonomy.

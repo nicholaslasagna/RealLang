@@ -1684,8 +1684,24 @@ textarea:focus-visible,
   background: rgba(66, 211, 154, 0.035);
 }
 
-.approval-result > header { display: flex; align-items: flex-start; gap: 6px; }
+.approval-result > header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .approval-result > header > div { min-width: 0; flex: 1; }
+
+/* Clear pass / fail / blocked affordance after approval. */
+.approval-result__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-basis: 100%;
+  margin-bottom: var(--space-1);
+  font-size: 13px;
+  font-weight: 700;
+}
+.approval-result__status .icon { width: 15px; height: 15px; }
+.approval-result__status--pass { color: var(--green); }
+.approval-result__status--fail { color: var(--amber); }
+.approval-result--pass { border-color: rgba(66, 211, 154, 0.3); }
+.approval-result--fail { border-color: rgba(240, 181, 68, 0.28); background: rgba(240, 181, 68, 0.04); }
 .approval-result h3 { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--text); font-family: var(--font-mono); font-size: 11px; }
 .approval-result dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
 .approval-result dl > div { padding: 8px; border: 1px solid var(--line); border-radius: 3px; }
@@ -1693,8 +1709,79 @@ textarea:focus-visible,
 .approval-result dd { margin: 4px 0 0; color: var(--text-2); font-family: var(--font-mono); font-size: 9px; }
 .approval-result pre { max-height: 160px; margin: 7px 0 0; padding: 10px; overflow: auto; border: 1px solid var(--line); border-radius: 3px; background: rgba(0, 0, 0, 0.28); color: var(--text-2); font-size: 10px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .approval-result > p { display: flex; align-items: center; gap: 7px; margin: 10px 0 0; color: var(--text-3); font-size: 9px; }
-.approval-result--error { display: flex; align-items: center; gap: 8px; border-color: rgba(240, 181, 68, 0.28); background: rgba(240, 181, 68, 0.04); }
+.approval-result--error { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-color: rgba(240, 181, 68, 0.28); background: rgba(240, 181, 68, 0.04); }
 .approval-result--error p { margin: 0; color: var(--text-2); font-size: 10px; }
+
+/* "How this works" empty-state orientation — calm, secondary. */
+.flow-hint {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-3);
+  background: rgba(255, 255, 255, 0.014);
+}
+
+.flow-hint__label {
+  margin: 0 0 var(--space-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flow-hint__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.flow-hint__steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.flow-hint__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-2);
+  background: rgba(49, 216, 208, 0.06);
+  color: var(--cyan);
+}
+
+.flow-hint__icon .icon { width: 14px; height: 14px; }
+.flow-hint__steps b { display: block; color: var(--text); font-size: 12px; }
+.flow-hint__steps small { display: block; margin-top: 2px; color: var(--text-3); font-size: 10px; line-height: 1.4; }
+
+@media (max-width: 760px) {
+  .flow-hint__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Audit/history as secondary reference, not a conversation turn. */
+.thread-reference {
+  margin-top: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.thread-reference__label {
+  margin: 0 0 var(--space-3);
+  color: var(--text-3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.thread-reference .approval-audit--compact { opacity: 0.94; }
 
 /* Session-only approval transparency (0.19). */
 .approval-audit {

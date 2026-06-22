@@ -8,6 +8,8 @@ import { ActionPreviewCard } from "../composer/ActionPreviewCard";
 import { ApprovedDryRunPanel } from "../composer/ApprovedDryRunPanel";
 import { ComposerDock } from "../composer/ComposerDock";
 import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
+import { WorkbenchGreeting } from "./WorkbenchGreeting";
+import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
 
 function PlanCard() {
   const steps = [
@@ -149,16 +151,8 @@ export function WorkbenchScreen() {
         </header>
         <div className="thread-scroll">
           <div className="thread">
-            <div className="thread-greeting">
-              <span className="mini-mark" aria-hidden="true" />
-              <div>
-                <b>RealForge</b>
-                <p>
-                  Hi — tell me what you want to build or fix. I&rsquo;ll lay out a plan, show exactly what
-                  would run, and never touch your files without your approval.
-                </p>
-              </div>
-            </div>
+            <WorkbenchGreeting />
+            {!stagedTask ? <WorkbenchFlowHint /> : null}
             {stagedTask ? (
               <div className="thread-message thread-message--user">
                 {stagedTask}
@@ -183,20 +177,20 @@ export function WorkbenchScreen() {
                 onClose={() => setApprovalActionId(null)}
               />
             ) : null}
-            <ApprovalAuditLog compact />
-            {showsRepairEvidence ? (
+            {showsRepairEvidence && stagedTask ? (
               <>
                 <div className="agent-label">
                   <span className="mini-mark" />
                   <b>RealForge</b>
-                  <small>mock · planner</small>
+                  <small>mock · illustrative plan</small>
                   <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
                 </div>
                 <PlanCard />
                 <PatchCard />
                 <ValidationCard />
               </>
-            ) : (
+            ) : null}
+            {!showsRepairEvidence ? (
               <article className="composer-boundary-card">
                 <Icon name="shield-check" />
                 <div>
@@ -204,7 +198,11 @@ export function WorkbenchScreen() {
                   <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
                 </div>
               </article>
-            )}
+            ) : null}
+            <section className="thread-reference" aria-label="Reference">
+              <p className="thread-reference__label">Reference</p>
+              <ApprovalAuditLog compact />
+            </section>
           </div>
         </div>
         <ComposerDock action={action} />

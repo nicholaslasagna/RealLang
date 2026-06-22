@@ -3,8 +3,9 @@ import type { ComposedAction } from "../../composer/action-model";
 import { listRealFiles, runApprovedDryRunAction } from "../../bridge";
 import type { ApprovedDryRunExecution } from "../../bridge";
 import { createApprovalAuditEntry } from "../../audit/approval-audit";
-import { Badge, Button, Icon, StateNote } from "../../components/primitives";
+import { Button, Icon, StateNote } from "../../components/primitives";
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { WorkbenchResultCard } from "../workbench/WorkbenchResultCard";
 
 interface ApprovedDryRunPanelProps {
   action: ComposedAction;
@@ -193,34 +194,7 @@ export function ApprovedDryRunPanel({ action, workspacePath, onClose }: Approved
         />
       </div>
 
-      {error ? (
-        <div className="approval-result approval-result--error" role="alert">
-          <Badge label="BLOCKED" tone="amber" />
-          <p>{error}</p>
-        </div>
-      ) : null}
-
-      {result ? (
-        <article className="approval-result" data-testid="approved-dry-run-result" aria-live="polite">
-          <header>
-            <div>
-              <p className="eyebrow">INERT EXECUTION REPORT</p>
-              <h3>{result.commandSummary}</h3>
-            </div>
-            <Badge label="UNTRUSTED OUTPUT" tone="amber" />
-            <Badge label={result.passed ? "PASS" : "FAIL"} tone={result.passed ? "green" : "amber"} />
-          </header>
-          <dl>
-            <div><dt>Exit code</dt><dd>{result.exitCode}</dd></div>
-            <div><dt>Duration</dt><dd>{result.durationMs} ms</dd></div>
-            <div><dt>Writes</dt><dd>NO</dd></div>
-            <div><dt>Follow-up</dt><dd>NONE</dd></div>
-          </dl>
-          {result.stdout ? <pre aria-label="Approved check stdout">{result.stdout}</pre> : null}
-          {result.stderr ? <pre aria-label="Approved check stderr">{result.stderr}</pre> : null}
-          <p><Icon name="lock-keyhole" /> Output cannot trigger apply, repair, commit, merge, update, or scheduler actions.</p>
-        </article>
-      ) : null}
+      <WorkbenchResultCard result={result} error={error} />
     </section>
   );
 }

@@ -167,6 +167,7 @@ Historical milestones:
 - **0.27** Private chat sandbox hardening (single active request, desktop cancellation, redacted timeout/cancel states, safe visible-response copy)
 - **0.28** Private provider readiness dashboard (sanitized lifecycle, session-only smoke status, disconnected capabilities visible, no new authority)
 - **0.29** Provider area UX consolidation (ordered console, reduced duplication, unchanged approval and trust boundaries)
+- **0.31** Conversation flow polish (greeting → describe → preview → approve → result → reference; gated illustrative evidence, secondary audit, clearer result affordance; no new authority, IPC, or execution power)
 
 ## Toolchain and dependency security
 
