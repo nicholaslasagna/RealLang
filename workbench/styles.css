@@ -2805,6 +2805,7 @@ textarea:focus-visible,
 .private-local-model__summary { display: flex; flex-wrap: wrap; gap: 8px; }
 .private-local-model__intro,
 .private-local-model__hint { margin: 0; color: var(--text-3); font-size: 12px; line-height: 1.55; }
+.private-local-model__message { margin: 0; color: var(--text-2); font-size: 11px; }
 .private-local-model__grid { display: flex; flex-direction: column; gap: 8px; }
 .private-local-model__row {
   display: grid;

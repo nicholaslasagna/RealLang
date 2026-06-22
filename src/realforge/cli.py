@@ -31,6 +31,16 @@ from realforge.index.file_index import format_index_report, scan_workspace, writ
 from realforge.index.symbols import format_symbol_table, scan_workspace_symbols
 from realforge.interaction import build_slash_registry, format_slash_commands, format_slash_json
 from realforge.permissions import PermissionMode, Permissions
+from realforge.provider_status import (
+    build_provider_status_report,
+    format_provider_status,
+    format_provider_status_json,
+)
+from realforge.provider_smoke import (
+    format_provider_smoke,
+    format_provider_smoke_json,
+    run_private_provider_smoke,
+)
 from realforge.providers import resolve_provider
 from realforge.errors import ProviderPlanError
 from realforge.report import format_check_fail, format_check_pass
@@ -244,6 +254,33 @@ def main(argv: list[str] | None = None) -> int:
     gen_mode.add_argument("--apply", action="store_true", help="write generated source with backup if needed")
 
     sub.add_parser("doctor", help="check RealForge environment and optional local model settings")
+
+    provider = sub.add_parser("provider", help="sanitized local provider configuration status")
+    provider_sub = provider.add_subparsers(dest="provider_command", required=True)
+    provider_status = provider_sub.add_parser(
+        "status",
+        help="show redacted provider configuration (no secrets or private model names)",
+    )
+    provider_status.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable sanitized provider status JSON",
+    )
+    provider_status.add_argument(
+        "--config-root",
+        type=Path,
+        default=None,
+        help="workspace root for repo .realforge.toml precedence (default: current directory)",
+    )
+    provider_smoke = provider_sub.add_parser(
+        "smoke",
+        help="run a fixed minimal chat request against the configured local provider",
+    )
+    provider_smoke.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable sanitized provider smoke JSON",
+    )
 
     index = sub.add_parser("index", help="scan workspace and list tracked project files")
     index.add_argument(
@@ -1260,6 +1297,17 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
+
+    if args.command == "provider":
+        if args.provider_command == "status":
+            report = build_provider_status_report(args.config_root)
+            print(format_provider_status_json(report) if args.json else format_provider_status(report))
+            return 0 if report.ok else 1
+        if args.provider_command == "smoke":
+            report = run_private_provider_smoke()
+            print(format_provider_smoke_json(report) if args.json else format_provider_smoke(report))
+            return 0 if report.ok else 1
+        return 1
 
     if args.command in {
         "check",

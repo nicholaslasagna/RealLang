@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from realforge.config import RealForgeConfig, default_config
+from realforge.private_provider_config import format_redacted_provider_status
 from realforge.runner import run_command
 
 
@@ -54,12 +55,16 @@ def run_doctor(config: RealForgeConfig | None = None) -> DoctorReport:
         detail = f"{realc_cmd} ({err})"
     checks.append(DoctorCheck(name="realc", ok=realc_ok, detail=detail))
 
-    if cfg.config_path is not None:
+    if cfg.model_identity_redacted and cfg.private_provider_status is not None:
+        model_detail = format_redacted_provider_status(cfg.private_provider_status)
+    elif cfg.config_path is not None:
         model_detail = (
             f"{cfg.config_path}: provider={cfg.model.provider}, "
             f"model={cfg.model.model or '(unset)'}, "
             f"base_url={cfg.model.base_url or '(unset)'}"
         )
+    elif cfg.private_provider_status is not None and cfg.private_provider_status.configured:
+        model_detail = format_redacted_provider_status(cfg.private_provider_status)
     else:
         model_detail = "no .realforge.toml (default provider: mock)"
 
@@ -79,14 +84,27 @@ def run_doctor(config: RealForgeConfig | None = None) -> DoctorReport:
         )
     elif cfg.model.provider in {"openai_compatible_local", "openai-compatible-local"}:
         configured = cfg.model.base_url or cfg.openai_compatible_base_url
+        if cfg.model_identity_redacted:
+            status = cfg.private_provider_status
+            detail = format_redacted_provider_status(status) if status else (
+                f"provider={cfg.model.provider} trust=local_untrusted"
+            )
+            ok = bool(
+                configured
+                and status is not None
+                and status.model_configured
+            )
+        else:
+            ok = bool(configured and cfg.model.model)
+            detail = (
+                f"provider={cfg.model.provider} model={cfg.model.model or '(unset)'} "
+                f"base_url={configured or '(unset)'}"
+            )
         checks.append(
             DoctorCheck(
                 name="openai-compatible-local",
-                ok=bool(configured and cfg.model.model),
-                detail=(
-                    f"provider={cfg.model.provider} model={cfg.model.model or '(unset)'} "
-                    f"base_url={configured or '(unset)'}"
-                ),
+                ok=ok,
+                detail=detail,
             )
         )
     else:

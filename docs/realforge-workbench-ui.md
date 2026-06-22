@@ -32,9 +32,12 @@ signing/notarization.
 - Settings → **Provider / Local Model** generic **Private Local Model** profile
 - OpenAI-compatible local provider type; endpoint scaffold in session only
 - **LOCAL UNTRUSTED** trust label; output remains untrusted until validated
-- Public template: `.realforge.toml.example` → copy to gitignored `.realforge.local.toml`
+- Public template: `.realforge.toml.example` → copy to gitignored `~/.realforge.local.toml`
 - No model weights, private names, API keys, or paths in the public repo
 - No browser fetch/network; RealForge CLI uses local ignored config when wired
+- Workbench 0.23: Settings provider panel matches `realforge provider status --json`
+- RealForge 0.24: Settings links to the CLI-only `realforge provider smoke --json`; no smoke IPC or browser request was added
+  shape (sanitized booleans only; CLI hint for full env/repo precedence)
 
 See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
 

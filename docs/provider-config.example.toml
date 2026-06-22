@@ -1,19 +1,19 @@
 # Example RealForge provider configuration — PUBLIC TEMPLATE ONLY
 #
-# Copy to .realforge.local.toml (gitignored) at your repository root.
-# Do not commit .realforge.local.toml or .realforge.private.toml.
-#
-# Your local model identity stays in ignored local files, not this repository.
-# All provider output remains UNTRUSTED until validated.
+# Copy to ~/.realforge.local.toml in your user home directory.
+# Do not commit ~/.realforge.local.toml.
 
-[model]
-provider = "openai_compatible_local"
+[provider]
+kind = "openai_compatible_local"
 display_name = "Private Local Model"
 model = "<configured-locally>"
 base_url = "http://localhost:8000/v1"
 # api_key = "<optional-local-placeholder>"
 trust = "local_untrusted"
 
-[model.trust]
-output_untrusted = true
-allow_cloud_endpoints = false
+# Optional future private local image provider (metadata only; execution not enabled).
+# [image_provider]
+# kind = "local_image_provider"
+# display_name = "Private Local Image Model"
+# base_url = "http://localhost:8188"
+# trust = "local_untrusted"

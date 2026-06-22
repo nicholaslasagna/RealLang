@@ -16,6 +16,7 @@ import type {
   SavedWorkspace,
   SecurityScanResult,
   SecurityScanSourceMeta,
+  ProviderStatus,
   UpdateCheckResult,
   UpdateConfiguration,
   UpdateStatus,
@@ -242,5 +243,29 @@ export function webUpdateCheckResult(): UpdateCheckResult {
     message: "Update checks are available in the desktop shell only.",
     latestVersion: null,
     releaseNotes: null
+  };
+}
+
+export function webLoadPrivateLocalProviderConfig(): ProviderStatus {
+  return webLoadProviderStatus();
+}
+
+export function webLoadProviderStatus(): ProviderStatus {
+  return {
+    ok: true,
+    configured: false,
+    source: "unavailable",
+    provider_kind: "mock",
+    trust: "local_untrusted",
+    endpoint_configured: false,
+    endpoint_host: null,
+    model_configured: false,
+    api_key_configured: false,
+    image_provider_configured: false,
+    image_provider_kind: null,
+    image_endpoint_host: null,
+    image_provider_execution_enabled: false,
+    warnings: ["Provider status is read from the desktop shell only."],
+    errors: []
   };
 }

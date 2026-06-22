@@ -72,10 +72,11 @@ The signed bundle version remains `0.16.0` under the 0.17 release policy.
 
 **Private local model support (provider-agnostic):** Settings → Provider shows a
 generic **Private Local Model** OpenAI-compatible profile. Copy
-`.realforge.toml.example` to gitignored `.realforge.local.toml` for CLI use. The
+`.realforge.toml.example` to gitignored `~/.realforge.local.toml` for local use. The
 public repo never stores model identity, weights, API keys, or private prompts.
-Workbench UI is session-only scaffolding — no browser endpoint probes. Output
-remains **LOCAL UNTRUSTED**.
+Desktop IPC reads sanitized home-config metadata only (no secrets). Workbench UI
+session fields remain supplementary — no browser endpoint probes. Output
+remains **LOCAL UNTRUSTED**. See [docs/private-local-provider.md](docs/private-local-provider.md).
 
 **0.20** adds threat-modeled, desktop-only persistence for sanitized approval
 history. The fixed `approval-audit-log.json` file lives under Tauri app config,

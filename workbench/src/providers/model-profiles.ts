@@ -1,6 +1,6 @@
 /** Generic model provider profiles — public-safe metadata only (no private identities). */
 
-export type ProviderKind = "mock" | "ollama" | "openai_compatible_local";
+export type ProviderKind = "mock" | "ollama" | "openai_compatible_local" | "local_image_provider";
 
 export type ModelTrustLevel = "deterministic" | "local_untrusted" | "cloud_untrusted";
 
@@ -31,6 +31,19 @@ export const PRIVATE_LOCAL_MODEL_PROFILE: ModelProviderProfile = {
     "Connect to a user-served OpenAI-compatible endpoint on localhost. Model identity and secrets belong in gitignored local config."
 };
 
+export const PRIVATE_LOCAL_IMAGE_MODEL_PROFILE: ModelProviderProfile = {
+  id: "private-local-image",
+  displayName: "Private Local Image Model",
+  providerKind: "local_image_provider",
+  defaultBaseUrl: "http://localhost:8188",
+  modelNamePlaceholder: "<configured-locally>",
+  trustLevel: "local_untrusted",
+  repositoryVisibility: "public_safe",
+  storesPrivateIdentityInRepo: false,
+  description:
+    "Future local image-generation endpoint on localhost. Metadata only — no generation calls from Workbench."
+};
+
 export const MOCK_PROVIDER_PROFILE: ModelProviderProfile = {
   id: "mock",
   displayName: "Deterministic Mock",
@@ -45,6 +58,7 @@ export const MOCK_PROVIDER_PROFILE: ModelProviderProfile = {
 
 export const MODEL_PROVIDER_PROFILES: ModelProviderProfile[] = [
   PRIVATE_LOCAL_MODEL_PROFILE,
+  PRIVATE_LOCAL_IMAGE_MODEL_PROFILE,
   MOCK_PROVIDER_PROFILE
 ];
 

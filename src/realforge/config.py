@@ -16,6 +16,14 @@ from realforge.config_file import (
     load_realforge_settings,
 )
 from realforge.permissions import PermissionMode
+from realforge.private_provider_config import (
+    PrivateProviderConfigError,
+    PrivateProviderStatus,
+    PrivateImageProviderStatus,
+    build_private_image_provider_status,
+    build_private_provider_status,
+    load_private_local_config_bundle,
+)
 
 
 @dataclass(frozen=True)
@@ -31,6 +39,9 @@ class RealForgeConfig:
     config_path: Path | None = None
     ollama_base_url: str | None = None
     openai_compatible_base_url: str | None = None
+    private_provider_status: PrivateProviderStatus | None = None
+    private_image_provider_status: PrivateImageProviderStatus | None = None
+    model_identity_redacted: bool = False
 
 
 def _realc_command() -> tuple[str, ...]:
@@ -51,11 +62,38 @@ def _merge_model_settings(
     base_url = file_settings.base_url
 
     if provider == "ollama":
-        base_url = base_url or ollama_env
+        base_url = ollama_env or base_url
     elif provider in {"openai_compatible_local", "openai-compatible-local"}:
-        base_url = base_url or openai_env
+        base_url = openai_env or base_url
 
-    return ModelSettings(provider=provider, model=model, base_url=base_url)
+    return ModelSettings(
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_key=file_settings.api_key,
+        display_name=file_settings.display_name,
+        trust=file_settings.trust,
+    )
+
+
+def _apply_private_provider_settings(
+    repo_settings: ModelSettings,
+    private_runtime,
+) -> tuple[ModelSettings, bool]:
+    if private_runtime is None or not private_runtime.configured:
+        return repo_settings, False
+
+    return (
+        ModelSettings(
+            provider=private_runtime.provider or repo_settings.provider,
+            model=private_runtime.model,
+            base_url=private_runtime.base_url,
+            api_key=private_runtime.api_key,
+            display_name=private_runtime.display_name,
+            trust=private_runtime.trust,
+        ),
+        True,
+    )
 
 
 def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
@@ -70,6 +108,19 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
             config_path,
             workspace_root=root,
         )
+
+    try:
+        private_bundle = load_private_local_config_bundle()
+    except PrivateProviderConfigError as err:
+        raise ConfigFileError(err.message) from err
+
+    private_runtime = private_bundle.chat
+    private_status = build_private_provider_status(private_runtime)
+    private_image_status = build_private_image_provider_status(private_bundle.image)
+    file_settings, model_identity_redacted = _apply_private_provider_settings(
+        file_settings,
+        private_runtime,
+    )
 
     ollama_env = os.environ.get("REALFORGE_OLLAMA_URL")
     openai_env = os.environ.get("REALFORGE_OPENAI_COMPAT_URL")
@@ -92,6 +143,9 @@ def load_config(workspace_root: Path | None = None) -> RealForgeConfig:
         config_path=config_path,
         ollama_base_url=legacy_ollama,
         openai_compatible_base_url=legacy_openai,
+        private_provider_status=private_status,
+        private_image_provider_status=private_image_status,
+        model_identity_redacted=model_identity_redacted,
     )
 
 

@@ -12,14 +12,15 @@ def test_load_model_settings_ollama(tmp_path: Path):
         """
 [model]
 provider = "ollama"
-model = "qwen2.5-coder:32b"
+model = "local-coder-example"
 base_url = "http://localhost:11434"
+trust = "local_untrusted"
 """.strip(),
         encoding="utf-8",
     )
     settings = load_model_settings(config_path, workspace_root=tmp_path)
     assert settings.provider == "ollama"
-    assert settings.model == "qwen2.5-coder:32b"
+    assert settings.model == "local-coder-example"
     assert settings.base_url == "http://localhost:11434"
 
 

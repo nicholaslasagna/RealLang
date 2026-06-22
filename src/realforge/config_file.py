@@ -14,6 +14,9 @@ class ModelSettings:
     provider: str = "mock"
     model: str | None = None
     base_url: str | None = None
+    api_key: str | None = None
+    display_name: str | None = None
+    trust: str = "local_untrusted"
 
 
 @dataclass(frozen=True)

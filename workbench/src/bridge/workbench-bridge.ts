@@ -18,7 +18,8 @@ import type {
   UpdateCheckResult,
   UpdateStatus,
   WorkspacePaths,
-  WorkspaceResolution
+  WorkspaceResolution,
+  ProviderStatus
 } from "./types";
 import type { PersistedApprovalAuditEntry } from "./types";
 import {
@@ -28,6 +29,7 @@ import {
   webListRealFiles,
   webListSecurityScanSources,
   webLoadApprovalAuditLog,
+  webLoadProviderStatus,
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
@@ -249,6 +251,38 @@ export async function clearSavedWorkspace(): Promise<void> {
     throw new Error("Workspace persistence is available in the desktop shell only.");
   }
   await invokeDesktop<void>("clear_saved_workspace");
+}
+
+/** Load sanitized provider status from fixed home config (desktop only). */
+export async function loadProviderStatus(): Promise<ProviderStatus> {
+  if (!isDesktopRuntime()) return webLoadProviderStatus();
+  try {
+    return await invokeDesktop<ProviderStatus>("load_private_local_provider_config");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      configured: false,
+      source: "home_private",
+      provider_kind: null,
+      trust: "local_untrusted",
+      endpoint_configured: false,
+      endpoint_host: null,
+      model_configured: false,
+      api_key_configured: false,
+      image_provider_configured: false,
+      image_provider_kind: null,
+      image_endpoint_host: null,
+      image_provider_execution_enabled: false,
+      warnings: [],
+      errors: [{ code: "ipc_failed", message }]
+    };
+  }
+}
+
+/** @deprecated Use loadProviderStatus */
+export async function loadPrivateLocalProviderConfig(): Promise<ProviderStatus> {
+  return loadProviderStatus();
 }
 
 /** Desktop update center metadata — not configured until signed releases exist. */

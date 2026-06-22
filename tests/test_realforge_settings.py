@@ -15,9 +15,10 @@ from realforge.settings_surface import (
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _env() -> dict[str, str]:
+def _env(*, home: Path) -> dict[str, str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT / "src")
+    env["HOME"] = str(home)
     return env
 
 
@@ -93,7 +94,9 @@ def test_settings_doctor_blocks_missing_gitignore_entries(tmp_path: Path):
     assert ".realforge/creative/" in check.detail
 
 
-def test_settings_cli_json_reports_effective_values_without_writes(tmp_path: Path):
+def test_settings_cli_json_reports_effective_values_without_writes(
+    tmp_path: Path, isolated_home_env: Path
+):
     _write_gitignore(tmp_path)
     source = tmp_path / "source.txt"
     source.write_text("unchanged\n", encoding="utf-8")
@@ -101,7 +104,7 @@ def test_settings_cli_json_reports_effective_values_without_writes(tmp_path: Pat
         [sys.executable, "-m", "realforge.cli", "settings", "--json"],
         capture_output=True,
         text=True,
-        env=_env(),
+        env=_env(home=isolated_home_env),
         cwd=str(tmp_path),
     )
     assert proc.returncode == 0, proc.stderr
@@ -112,13 +115,15 @@ def test_settings_cli_json_reports_effective_values_without_writes(tmp_path: Pat
     assert not (tmp_path / ".realforge").exists()
 
 
-def test_settings_doctor_cli_supports_json_after_subcommand(tmp_path: Path):
+def test_settings_doctor_cli_supports_json_after_subcommand(
+    tmp_path: Path, isolated_home_env: Path
+):
     _write_gitignore(tmp_path)
     proc = subprocess.run(
         [sys.executable, "-m", "realforge.cli", "settings", "doctor", "--json"],
         capture_output=True,
         text=True,
-        env=_env(),
+        env=_env(home=isolated_home_env),
         cwd=str(tmp_path),
     )
     assert proc.returncode == 0, proc.stderr
@@ -127,7 +132,9 @@ def test_settings_doctor_cli_supports_json_after_subcommand(tmp_path: Path):
     assert all(item["status"] == "PASS" for item in payload["checks"])
 
 
-def test_settings_doctor_cli_returns_blocked_for_unsafe_config(tmp_path: Path):
+def test_settings_doctor_cli_returns_blocked_for_unsafe_config(
+    tmp_path: Path, isolated_home_env: Path
+):
     _write_gitignore(tmp_path)
     (tmp_path / ".realforge.toml").write_text(
         "[improvement]\nauto_apply = true\n",
@@ -137,7 +144,7 @@ def test_settings_doctor_cli_returns_blocked_for_unsafe_config(tmp_path: Path):
         [sys.executable, "-m", "realforge.cli", "settings", "doctor"],
         capture_output=True,
         text=True,
-        env=_env(),
+        env=_env(home=isolated_home_env),
         cwd=str(tmp_path),
     )
     assert proc.returncode == 1

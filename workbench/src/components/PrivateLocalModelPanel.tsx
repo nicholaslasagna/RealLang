@@ -1,148 +1,249 @@
-import { isDesktopRuntime } from "../bridge";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { isDesktopRuntime, loadProviderStatus } from "../bridge";
+import type { ProviderStatus } from "../bridge";
 import {
+  PRIVATE_LOCAL_IMAGE_MODEL_PROFILE,
   PRIVATE_LOCAL_MODEL_PROFILE,
   providerConfigStatusLabel,
   trustLevelLabel
 } from "../providers";
 import type { ProviderConfigStatus } from "../providers";
-import { useWorkbenchStore } from "../state/workbench-store";
 import { Badge, Button, Icon } from "./primitives";
+
+const HOME_CONFIG_LABEL = "~/.realforge.local.toml";
+const CLI_STATUS_HINT = "realforge provider status --json";
+const CLI_SMOKE_HINT = "realforge provider smoke --json";
 
 function resolveStatus(desktop: boolean, configured: boolean): ProviderConfigStatus {
   if (!desktop) return "unavailable";
-  return configured ? "configured_locally" : "not_configured";
+  if (configured) return "configured_locally";
+  return "not_configured";
+}
+
+function yesNo(value: boolean): string {
+  return value ? "YES" : "NO";
+}
+
+function sourceLabel(source: string | undefined): string {
+  if (source === "home_private") return "Home private config";
+  if (source === "defaults") return "Defaults";
+  if (source === "unavailable") return "Unavailable in web preview";
+  return source ?? "—";
+}
+
+function StatusRow({
+  label,
+  hint,
+  children
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="private-local-model__row">
+      <span>
+        <b>{label}</b>
+        {hint ? <small>{hint}</small> : null}
+      </span>
+      {children}
+    </div>
+  );
 }
 
 export function PrivateLocalModelPanel() {
   const profile = PRIVATE_LOCAL_MODEL_PROFILE;
+  const imageProfile = PRIVATE_LOCAL_IMAGE_MODEL_PROFILE;
   const desktop = isDesktopRuntime();
-  const session = useWorkbenchStore((s) => s.privateLocalModel);
-  const setEndpoint = useWorkbenchStore((s) => s.setPrivateLocalEndpoint);
-  const setModelLabel = useWorkbenchStore((s) => s.setPrivateLocalModelLabel);
-  const markConfigured = useWorkbenchStore((s) => s.markPrivateLocalConfigured);
-  const clearSession = useWorkbenchStore((s) => s.clearPrivateLocalModelSession);
+  const [status, setStatus] = useState<ProviderStatus | null>(null);
+  const [loading, setLoading] = useState(desktop);
 
-  const status = resolveStatus(desktop, session.configured);
-  const displayedModel =
-    session.modelLabel.trim() || (session.configured ? profile.modelNamePlaceholder : profile.modelNamePlaceholder);
+  const refreshStatus = useCallback(async () => {
+    if (!desktop) {
+      setStatus(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setStatus(await loadProviderStatus());
+    setLoading(false);
+  }, [desktop]);
+
+  useEffect(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
+
+  const chatStatus = resolveStatus(desktop, status?.configured ?? false);
 
   return (
     <div className="private-local-model" data-testid="private-local-model-panel">
       <div className="private-local-model__summary">
         <Badge label={profile.displayName.toUpperCase()} tone="cyan" />
         <Badge label={trustLevelLabel(profile.trustLevel)} tone="amber" />
-        <Badge label={providerConfigStatusLabel(status).toUpperCase()} tone={status === "configured_locally" ? "green" : "amber"} />
+        <Badge
+          label={providerConfigStatusLabel(chatStatus).toUpperCase()}
+          tone={chatStatus === "configured_locally" ? "green" : "amber"}
+        />
       </div>
       <p className="private-local-model__intro">
-        Connect RealForge to a privately served OpenAI-compatible model on localhost. Model identity is stored in
-        gitignored local config (for example <code>.realforge.local.toml</code>), not in this public repository.
-        Provider output remains <strong>untrusted</strong> until validated.
+        Sanitized local provider metadata only. Model identity lives in{" "}
+        <code>{HOME_CONFIG_LABEL}</code> (gitignored). Provider output remains <strong>untrusted</strong>.
       </p>
-      <div className="private-local-model__grid">
-        <div className="private-local-model__row">
-          <span>
-            <b>Provider type</b>
-            <small>OpenAI-compatible local server</small>
-          </span>
-          <code>{profile.providerKind}</code>
-        </div>
-        <div className="private-local-model__row">
-          <span>
-            <b>Display name</b>
-            <small>Public-safe label only</small>
-          </span>
-          <code>{profile.displayName}</code>
-        </div>
-        <div className="private-local-model__row">
-          <span>
-            <b>Endpoint</b>
-            <small>Session scaffold — copy to local config for CLI use</small>
-          </span>
-          {desktop ? (
-            <input
-              className="private-local-model__input"
-              type="url"
-              value={session.endpoint}
-              placeholder={profile.defaultBaseUrl ?? "http://localhost:8000/v1"}
-              aria-label="Local OpenAI-compatible endpoint"
-              onChange={(event) => setEndpoint(event.target.value)}
-            />
-          ) : (
-            <code>{profile.defaultBaseUrl}</code>
-          )}
-        </div>
-        <div className="private-local-model__row">
-          <span>
-            <b>Model name</b>
-            <small>Shown only when you enter it in this session</small>
-          </span>
-          {desktop ? (
-            <input
-              className="private-local-model__input"
-              type="text"
-              value={session.modelLabel}
-              placeholder={profile.modelNamePlaceholder}
-              aria-label="Local model name"
-              onChange={(event) => setModelLabel(event.target.value)}
-            />
-          ) : (
-            <code>{profile.modelNamePlaceholder}</code>
-          )}
-        </div>
-        <div className="private-local-model__row">
-          <span>
-            <b>Active model label</b>
-            <small>Runtime session display</small>
-          </span>
-          <code>{displayedModel}</code>
-        </div>
-        <div className="private-local-model__row">
-          <span>
-            <b>Repository visibility</b>
-            <small>Private identity never committed</small>
-          </span>
-          <Badge label={profile.storesPrivateIdentityInRepo ? "STORED" : "NOT IN REPO"} tone="green" />
-        </div>
+      {loading ? (
+        <p className="private-local-model__hint" role="status">
+          Loading provider status…
+        </p>
+      ) : null}
+      <div className="private-local-model__grid" data-testid="provider-status-grid">
+        <StatusRow label="Status ok" hint="Structured home config read">
+          <Badge label={yesNo(status?.ok ?? false)} tone={status?.ok ? "green" : "amber"} />
+        </StatusRow>
+        <StatusRow label="Configured" hint="Chat provider ready">
+          <Badge label={yesNo(status?.configured ?? false)} tone={status?.configured ? "green" : "amber"} />
+        </StatusRow>
+        <StatusRow label="Source" hint="Fixed home config only">
+          <code>{sourceLabel(status?.source)}</code>
+        </StatusRow>
+        <StatusRow label="Provider kind">
+          <code>{status?.provider_kind ?? profile.providerKind}</code>
+        </StatusRow>
+        <StatusRow label="Trust">
+          <code>{status?.trust ?? "local_untrusted"}</code>
+        </StatusRow>
+        <StatusRow label="Endpoint configured">
+          <Badge
+            label={yesNo(status?.endpoint_configured ?? false)}
+            tone={status?.endpoint_configured ? "green" : "amber"}
+          />
+        </StatusRow>
+        <StatusRow label="Endpoint host" hint="Local host/port only">
+          <code>{status?.endpoint_host ?? "(not configured)"}</code>
+        </StatusRow>
+        <StatusRow label="Model configured" hint="Boolean only — never exact name">
+          <Badge
+            label={yesNo(status?.model_configured ?? false)}
+            tone={status?.model_configured ? "green" : "amber"}
+          />
+        </StatusRow>
+        <StatusRow label="API key configured" hint="Boolean only — never value">
+          <Badge
+            label={yesNo(status?.api_key_configured ?? false)}
+            tone={status?.api_key_configured ? "green" : "amber"}
+          />
+        </StatusRow>
+        <StatusRow label="Local config file" hint="Fixed home path only">
+          <code>{HOME_CONFIG_LABEL}</code>
+        </StatusRow>
+        <StatusRow label="Repository visibility">
+          <Badge label="NOT IN REPO" tone="green" />
+        </StatusRow>
       </div>
+      {status?.warnings?.length ? (
+        <div className="private-local-model__notes" data-testid="provider-status-warnings">
+          <p className="eyebrow">WARNINGS</p>
+          <ul>
+            {status.warnings.map((warning) => (
+              <li key={warning}>
+                <Icon name="triangle-alert" />
+                {warning}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {status?.errors?.length ? (
+        <div className="private-local-model__notes" data-testid="provider-status-errors">
+          <p className="eyebrow">ERRORS</p>
+          <ul>
+            {status.errors.map((entry) => (
+              <li key={`${entry.code}:${entry.message}`}>
+                <Icon name="triangle-alert" />
+                [{entry.code}] {entry.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <div className="private-local-model__notes">
-        <p className="eyebrow">LOCAL CONFIG</p>
+        <p className="eyebrow">CLI PARITY</p>
         <ul>
           <li>
-            <Icon name="file-text" />
-            Copy <code>.realforge.toml.example</code> to <code>.realforge.local.toml</code> (gitignored).
+            <Icon name="terminal" />
+            Run <code>{CLI_STATUS_HINT}</code> in a terminal for full precedence (repo/env/home).
+          </li>
+          <li>
+            <Icon name="activity" />
+            Run <code>{CLI_SMOKE_HINT}</code> in a terminal to verify local runtime reachability.
+          </li>
+          <li>
+            <Icon name="wifi-off" />
+            Workbench does not execute CLI commands, probe endpoints, or call the network.
           </li>
           <li>
             <Icon name="shield-check" />
             Do not commit API keys, weights, private prompts, or model paths.
           </li>
-          <li>
-            <Icon name="wifi-off" />
-            Workbench does not call the endpoint from the browser — RealForge CLI uses local config when wired.
-          </li>
         </ul>
       </div>
       <footer className="private-local-model__footer">
         {desktop ? (
-          <>
-            <Button
-              label="Mark configured locally"
-              iconName="check"
-              variant="primary"
-              disabled={!session.endpoint.trim()}
-              onClick={() => markConfigured()}
-            />
-            <Button
-              label="Clear session"
-              iconName="x"
-              variant="secondary"
-              onClick={() => clearSession()}
-            />
-          </>
+          <Button
+            label="Refresh provider status"
+            iconName="activity"
+            variant="secondary"
+            disabled={loading}
+            onClick={() => void refreshStatus()}
+          />
         ) : (
-          <span className="private-local-model__hint">Desktop shell required for session configuration scaffold</span>
+          <span className="private-local-model__hint">Desktop shell required for provider status</span>
         )}
-        <span className="private-local-model__hint">No network probe · no endpoint test from UI</span>
+        <span className="private-local-model__hint">Secrets and model names are never returned over IPC</span>
       </footer>
+      <section
+        className="private-local-model private-local-model--image"
+        data-testid="private-local-image-model-panel"
+        aria-label="Private local image model"
+      >
+        <div className="private-local-model__summary">
+          <Badge label={imageProfile.displayName.toUpperCase()} tone="cyan" />
+          <Badge label="FUTURE" tone="amber" />
+          <Badge label={trustLevelLabel(imageProfile.trustLevel)} tone="amber" />
+          <Badge
+            label={
+              status?.image_provider_configured
+                ? providerConfigStatusLabel("configured_locally").toUpperCase()
+                : providerConfigStatusLabel(resolveStatus(desktop, false)).toUpperCase()
+            }
+            tone={status?.image_provider_configured ? "green" : "amber"}
+          />
+        </div>
+        <p className="private-local-model__intro">
+          Optional local image provider metadata from <code>[image_provider]</code>. Execution remains disabled.
+        </p>
+        <div className="private-local-model__grid">
+          <StatusRow label="Image provider configured">
+            <Badge
+              label={yesNo(status?.image_provider_configured ?? false)}
+              tone={status?.image_provider_configured ? "green" : "amber"}
+            />
+          </StatusRow>
+          <StatusRow label="Image execution enabled">
+            <Badge
+              label={status?.image_provider_execution_enabled ? "ENABLED" : "DISABLED"}
+              tone="amber"
+            />
+          </StatusRow>
+          <StatusRow label="Provider type">
+            <code>{status?.image_provider_kind ?? imageProfile.providerKind}</code>
+          </StatusRow>
+          <StatusRow label="Endpoint host" hint="Safe local host/port only; never probed">
+            <code>{status?.image_endpoint_host ?? "(not configured)"}</code>
+          </StatusRow>
+          <StatusRow label="Trust">
+            <code>{status?.trust ?? "local_untrusted"}</code>
+          </StatusRow>
+        </div>
+      </section>
     </div>
   );
 }

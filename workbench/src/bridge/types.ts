@@ -280,3 +280,37 @@ export interface SecurityScanExecution {
 export type SecurityScanResult =
   | { ok: true; data: SecurityScanExecution }
   | { ok: false; error: BridgeError };
+
+export interface ProviderStatusError {
+  code: string;
+  message: string;
+}
+
+export interface ChatProviderConfigStatus {
+  configured: boolean;
+  provider_kind: string | null;
+  trust: "local_untrusted";
+  endpoint_configured: boolean;
+  endpoint_host: string | null;
+  model_configured: boolean;
+  api_key_configured: boolean;
+}
+
+export interface ImageProviderConfigStatus {
+  image_provider_configured: boolean;
+  image_provider_kind: "local_image_provider" | null;
+  image_endpoint_host: string | null;
+  image_provider_execution_enabled: boolean;
+}
+
+/** Sanitized multimodal status aligned with `realforge provider status --json`. */
+export interface MultimodalPrivateLocalProviderStatus
+  extends ChatProviderConfigStatus, ImageProviderConfigStatus {
+  ok: boolean;
+  source: string;
+  warnings: string[];
+  errors: ProviderStatusError[];
+}
+
+export type ProviderStatus = MultimodalPrivateLocalProviderStatus;
+export type PrivateLocalProviderConfig = ProviderStatus;

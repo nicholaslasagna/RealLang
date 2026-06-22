@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { PrivateLocalModelPanel } from "../../src/components/PrivateLocalModelPanel";
-import { PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
-import { useWorkbenchStore } from "../../src/state/workbench-store";
+import { PRIVATE_LOCAL_IMAGE_MODEL_PROFILE, PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
+import type { ProviderStatus } from "../../src/bridge";
 
 const mocks = vi.hoisted(() => ({
+  loadProviderStatus: vi.fn(),
   isDesktopRuntime: vi.fn(() => true)
 }));
 
@@ -12,15 +13,54 @@ vi.mock("../../src/bridge", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/bridge")>();
   return {
     ...actual,
+    loadProviderStatus: mocks.loadProviderStatus,
+    loadPrivateLocalProviderConfig: mocks.loadProviderStatus,
     isDesktopRuntime: mocks.isDesktopRuntime
   };
 });
+
+const defaultsStatus: ProviderStatus = {
+  ok: true,
+  configured: false,
+  source: "defaults",
+  provider_kind: "mock",
+  trust: "local_untrusted",
+  endpoint_configured: false,
+  endpoint_host: null,
+  model_configured: false,
+  api_key_configured: false,
+  image_provider_configured: false,
+  image_provider_kind: null,
+  image_endpoint_host: null,
+  image_provider_execution_enabled: false,
+  warnings: [],
+  errors: []
+};
+
+const configuredStatus: ProviderStatus = {
+  ok: true,
+  configured: true,
+  source: "home_private",
+  provider_kind: "openai_compatible_local",
+  trust: "local_untrusted",
+  endpoint_configured: true,
+  endpoint_host: "http://localhost:8000",
+  model_configured: true,
+  api_key_configured: true,
+  image_provider_configured: true,
+  image_provider_kind: "local_image_provider",
+  image_endpoint_host: "http://localhost:8188",
+  image_provider_execution_enabled: false,
+  warnings: [],
+  errors: []
+};
 
 describe("Private local model panel", () => {
   beforeEach(() => {
     cleanup();
     mocks.isDesktopRuntime.mockReturnValue(true);
-    useWorkbenchStore.getState().clearPrivateLocalModelSession();
+    mocks.loadProviderStatus.mockReset();
+    mocks.loadProviderStatus.mockResolvedValue(defaultsStatus);
   });
 
   afterEach(() => {
@@ -35,48 +75,93 @@ describe("Private local model panel", () => {
     });
     expect(screen.getByText(PRIVATE_LOCAL_MODEL_PROFILE.displayName.toUpperCase())).toBeInTheDocument();
     expect(screen.getAllByText(/local untrusted/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/not in repo/i)).toBeInTheDocument();
-    expect(screen.getByText(/model identity is stored in gitignored local config/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/~\/\.realforge\.local\.toml/).length).toBeGreaterThan(0);
+  });
+
+  it("renders CLI-parity provider status fields", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+    await waitFor(() => {
+      expect(screen.getByTestId("provider-status-grid")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/home private config/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^YES$/).length).toBeGreaterThan(0);
+    expect(screen.getByText("http://localhost:8000")).toBeInTheDocument();
+    expect(screen.getByText(/api key configured/i)).toBeInTheDocument();
+    expect(screen.getByText(/realforge provider status --json/i)).toBeInTheDocument();
+    expect(screen.getByText(/realforge provider smoke --json/i)).toBeInTheDocument();
+  });
+
+  it("does not expose API key value or exact model name", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+    await waitFor(() => {
+      expect(screen.getByText(/model configured/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/super-secret/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sk-/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/private-runtime-model/i)).not.toBeInTheDocument();
+  });
+
+  it("shows image provider configured with execution disabled", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+    await waitFor(() => {
+      expect(screen.getByTestId("private-local-image-model-panel")).toBeInTheDocument();
+    });
+    expect(screen.getByText(PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.displayName.toUpperCase())).toBeInTheDocument();
+    expect(screen.getByText(/image execution enabled/i)).toBeInTheDocument();
+    expect(screen.getByText("http://localhost:8188")).toBeInTheDocument();
+    expect(screen.getByText(/^DISABLED$/)).toBeInTheDocument();
+  });
+
+  it("renders structured invalid config errors safely", async () => {
+    mocks.loadProviderStatus.mockResolvedValue({
+      ...defaultsStatus,
+      ok: false,
+      source: "home_private",
+      errors: [{ code: "invalid_toml", message: "Private local config TOML is invalid." }]
+    });
+    render(<PrivateLocalModelPanel />);
+    await waitFor(() => {
+      expect(screen.getByTestId("provider-status-errors")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/invalid_toml/i)).toBeInTheDocument();
+    expect(screen.queryByText(/super-secret/i)).not.toBeInTheDocument();
   });
 
   it("does not hardcode private model names", () => {
     const source = [
       PRIVATE_LOCAL_MODEL_PROFILE.displayName,
       PRIVATE_LOCAL_MODEL_PROFILE.modelNamePlaceholder,
-      PRIVATE_LOCAL_MODEL_PROFILE.id
+      PRIVATE_LOCAL_MODEL_PROFILE.id,
+      PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.displayName,
+      PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.id
     ].join(" ");
-    const forbidden = ["qw" + "en", "ae" + "on", "dr" + "oyd"];
+    const forbidden = ["qw" + "en", "ae" + "on", "dr" + "oyd", "fl" + "ux"];
     for (const term of forbidden) {
       expect(source.toLowerCase()).not.toContain(term);
     }
   });
 
-  it("shows web unavailable state without endpoint inputs", async () => {
+  it("shows web unavailable state without loading status", async () => {
     mocks.isDesktopRuntime.mockReturnValue(false);
+    mocks.loadProviderStatus.mockClear();
     render(<PrivateLocalModelPanel />);
     await waitFor(() => {
-      expect(screen.getByText(/unavailable in web preview/i)).toBeInTheDocument();
+      expect(screen.getByText(/desktop shell required/i)).toBeInTheDocument();
     });
-    expect(screen.queryByLabelText(/local openai-compatible endpoint/i)).not.toBeInTheDocument();
+    expect(mocks.loadProviderStatus).not.toHaveBeenCalled();
   });
 
-  it("updates session endpoint and model label without network calls", async () => {
+  it("does not use fetch", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
       throw new Error("fetch should not be called");
     });
     render(<PrivateLocalModelPanel />);
-    const endpointInputs = screen.getAllByLabelText(/local openai-compatible endpoint/i);
-    fireEvent.change(endpointInputs[endpointInputs.length - 1], {
-      target: { value: "http://127.0.0.1:9000/v1" }
+    await waitFor(() => {
+      expect(mocks.loadProviderStatus).toHaveBeenCalled();
     });
-    const modelInputs = screen.getAllByLabelText(/local model name/i);
-    fireEvent.change(modelInputs[modelInputs.length - 1], {
-      target: { value: "my-private-model" }
-    });
-    fireEvent.click(screen.getByRole("button", { name: /mark configured locally/i }));
-    expect(useWorkbenchStore.getState().privateLocalModel.configured).toBe(true);
-    expect(useWorkbenchStore.getState().privateLocalModel.endpoint).toBe("http://127.0.0.1:9000/v1");
-    expect(screen.getAllByText("my-private-model").length).toBeGreaterThan(0);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });

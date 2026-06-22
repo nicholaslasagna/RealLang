@@ -27,6 +27,21 @@ def _workspace_root(config: RealForgeConfig) -> Path:
     return (config.workspace_root or Path.cwd()).resolve()
 
 
+def _staff_model_label(config: RealForgeConfig) -> str:
+    if config.model_identity_redacted:
+        return "<configured locally>" if config.model.model else "(default)"
+    return config.model.model or "(default)"
+
+
+def _staff_base_url_label(config: RealForgeConfig) -> str:
+    if config.model_identity_redacted and config.private_provider_status:
+        host = config.private_provider_status.endpoint_host
+        if host and config.private_provider_status.endpoint_scheme:
+            return f"{config.private_provider_status.endpoint_scheme}://{host}"
+        return "(local endpoint configured)"
+    return config.model.base_url or "(none)"
+
+
 def _staff_counts(workspace_root: Path) -> tuple[int, int, int]:
     pending_proposals = sum(
         1 for proposal in list_proposals(workspace_root) if proposal.status == ProposalStatus.PENDING.value
@@ -96,8 +111,8 @@ def format_staff_status(config: RealForgeConfig) -> str:
         "",
         "Provider config:",
         f"  provider: {model.provider}",
-        f"  model: {model.model or '(default)'}",
-        f"  base_url: {model.base_url or '(none)'}",
+        f"  model: {_staff_model_label(config)}",
+        f"  base_url: {_staff_base_url_label(config)}",
     ]
     if config.config_path:
         lines.append(f"  config: {config.config_path.name} (local workspace config)")

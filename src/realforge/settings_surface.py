@@ -28,6 +28,8 @@ OUTPUT_DIRECTORIES = (
 class EffectiveSettings:
     provider: str
     configured_model: str | None
+    model_identity_redacted: bool
+    provider_trust: str
     staff_enabled: bool
     scheduler_enabled: bool
     research_network_behavior: str
@@ -54,9 +56,15 @@ class SettingsDoctorReport:
 
 def build_effective_settings(config: RealForgeConfig) -> EffectiveSettings:
     workspace = (config.workspace_root or Path.cwd()).resolve()
+    if config.model_identity_redacted:
+        configured_model = "<configured locally>" if config.model.model else None
+    else:
+        configured_model = config.model.model
     return EffectiveSettings(
         provider=config.model.provider,
-        configured_model=config.model.model,
+        configured_model=configured_model,
+        model_identity_redacted=config.model_identity_redacted,
+        provider_trust=config.model.trust,
         staff_enabled=config.staff.enabled,
         scheduler_enabled=config.scheduler.enabled,
         research_network_behavior=(
@@ -97,6 +105,7 @@ def format_settings(settings: EffectiveSettings) -> str:
         "Provider",
         f"  Provider: {settings.provider}",
         f"  Model: {settings.configured_model or '(mock/default or not configured)'}",
+        f"  Trust: {settings.provider_trust} (provider output is untrusted)",
         "",
         "Workspace",
         f"  Root: {settings.workspace_root}",
@@ -116,7 +125,16 @@ def format_settings(settings: EffectiveSettings) -> str:
         "Output directories (explicit writes only)",
     ]
     lines.extend(f"  {path}" for path in settings.output_directories)
-    lines.extend(("", "Next: realforge settings doctor"))
+    lines.extend(
+        (
+            "",
+            "Provider status: realforge provider status",
+            "JSON: realforge provider status --json",
+            "Smoke test: realforge provider smoke",
+            "Smoke JSON: realforge provider smoke --json",
+            "Next: realforge settings doctor",
+        )
+    )
     return "\n".join(lines)
 
 
@@ -211,6 +229,24 @@ def run_settings_doctor(config: RealForgeConfig) -> SettingsDoctorReport:
     else:
         if provider == "mock":
             checks.append(_check("PASS", "model-provider", "mock fallback is configured"))
+        elif config.model_identity_redacted:
+            status = config.private_provider_status
+            if status and status.configured and config.model.model and config.model.base_url:
+                checks.append(
+                    _check(
+                        "PASS",
+                        "model-provider",
+                        f"private local provider configured ({provider}); model identity redacted",
+                    )
+                )
+            else:
+                checks.append(
+                    _check(
+                        "BLOCKED",
+                        "model-provider",
+                        f"{provider} private local config is incomplete",
+                    )
+                )
         elif not config.model.model:
             checks.append(_check("BLOCKED", "model-provider", f"{provider} requires [model].model"))
         elif not config.model.base_url:

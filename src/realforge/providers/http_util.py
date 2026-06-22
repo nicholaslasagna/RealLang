@@ -2,35 +2,95 @@ from __future__ import annotations
 
 import json
 import re
+import socket
 import urllib.error
 import urllib.request
+from collections.abc import Callable
+from typing import Any
 
 
 class HTTPProviderError(Exception):
-    pass
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
 
 
-def post_json(url: str, payload: dict, *, timeout: float = 120.0) -> dict:
+def post_json(
+    url: str,
+    payload: dict,
+    *,
+    timeout: float = 120.0,
+    extra_headers: dict[str, str] | None = None,
+    opener: Callable[..., Any] | None = None,
+    max_response_bytes: int = 2 * 1024 * 1024,
+) -> dict:
+    headers = {"Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         url,
         data=body,
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
+    open_request = opener or urllib.request.urlopen
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read().decode("utf-8")
+        with open_request(request, timeout=timeout) as response:
+            raw_bytes = response.read(max_response_bytes + 1)
+        if len(raw_bytes) > max_response_bytes:
+            raise HTTPProviderError(
+                "response_too_large",
+                "Local provider response exceeded the allowed size.",
+            )
     except urllib.error.HTTPError as err:
-        detail = err.read().decode("utf-8", errors="replace")
-        raise HTTPProviderError(f"HTTP {err.code} from {url}: {detail}") from err
+        raise HTTPProviderError(
+            "http_error",
+            f"Local provider returned HTTP {err.code}.",
+        ) from err
+    except (TimeoutError, socket.timeout) as err:
+        raise HTTPProviderError(
+            "timeout",
+            "Local provider request timed out.",
+        ) from err
     except urllib.error.URLError as err:
-        raise HTTPProviderError(f"request failed for {url}: {err}") from err
+        if isinstance(err.reason, (TimeoutError, socket.timeout)):
+            raise HTTPProviderError(
+                "timeout",
+                "Local provider request timed out.",
+            ) from err
+        raise HTTPProviderError(
+            "connection_failed",
+            "Could not connect to the local provider.",
+        ) from err
+    except OSError as err:
+        raise HTTPProviderError(
+            "connection_failed",
+            "Could not connect to the local provider.",
+        ) from err
 
     try:
-        return json.loads(raw)
+        raw = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError as err:
+        raise HTTPProviderError(
+            "invalid_response",
+            "Local provider returned a non-text response.",
+        ) from err
+
+    try:
+        data = json.loads(raw)
     except json.JSONDecodeError as err:
-        raise HTTPProviderError(f"invalid JSON response from {url}: {raw[:200]}") from err
+        raise HTTPProviderError(
+            "invalid_json",
+            "Local provider returned invalid JSON.",
+        ) from err
+    if not isinstance(data, dict):
+        raise HTTPProviderError(
+            "invalid_json",
+            "Local provider returned invalid JSON.",
+        )
+    return data
 
 
 def extract_json_object(text: str) -> dict:

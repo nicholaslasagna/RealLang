@@ -17,7 +17,7 @@ test("approval persistence is a fixed app-config file store, not a general write
   assert.match(production, /MAX_AUDIT_ENTRIES: usize = 50/);
   assert.match(production, /MAX_AUDIT_FILE_BYTES: u64 = 128 \* 1024/);
   assert.match(production, /stdout_preview/);
-  assert.match(production, /stdout_truncated = input\.stdout_truncated \|\| input\.stdout_preview\.is_some\(\)/);
+  assert.match(production, /stdout_truncated = input\.stdout_truncated \|\| stdout_preview\.is_some\(\)/);
   assert.match(saveSignature, /entries: Vec<ApprovalAuditEntryInput>/);
   assert.doesNotMatch(saveSignature, /path|workspace|command|argv/);
   assert.doesNotMatch(production, /Command::new|reqwest|TcpStream|sh\s+-c|cmd\.exe/);

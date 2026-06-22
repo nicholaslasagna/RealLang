@@ -34,6 +34,7 @@ llm_study/results/**/*.json
 
 # Local model weights and caches (never commit)
 *.safetensors
+*.ckpt
 *.gguf
 *.bin
 *.pt

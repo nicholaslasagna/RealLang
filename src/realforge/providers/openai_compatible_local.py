@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urljoin
 
 from realforge.config import RealForgeConfig
@@ -28,6 +30,7 @@ from realforge.providers.base import (
 )
 from realforge.errors import ProviderPlanError
 from realforge.providers.http_util import HTTPProviderError, post_json
+from realforge.providers.smoke_constants import SMOKE_USER_PROMPT
 from realforge.providers.prompts import (
     GENERATE_SYSTEM_PROMPT,
     IMPROVE_SYSTEM_PROMPT,
@@ -43,7 +46,7 @@ from realforge.self_improvement_plan import SelfImprovementPlan, parse_improveme
 
 
 class OpenAICompatibleLocalProvider(ModelProvider):
-    """Local OpenAI-compatible HTTP adapter (LM Studio, llama.cpp server, etc.)."""
+    """HTTP adapter for a user-configured OpenAI-compatible local provider."""
 
     def __init__(self, config: RealForgeConfig) -> None:
         self._config = config
@@ -51,6 +54,7 @@ class OpenAICompatibleLocalProvider(ModelProvider):
             config.model.base_url or config.openai_compatible_base_url or ""
         ).rstrip("/")
         self._model = config.model.model
+        self._api_key = config.model.api_key
 
     @property
     def name(self) -> str:
@@ -65,33 +69,81 @@ class OpenAICompatibleLocalProvider(ModelProvider):
             )
         return self._model
 
-    def _chat(self, system: str, user: str) -> str:
+    def _request_chat(
+        self,
+        system: str | None,
+        user: str,
+        *,
+        timeout: float = 120.0,
+        max_tokens: int | None = None,
+        opener: Callable[..., Any] | None = None,
+        max_response_bytes: int = 2 * 1024 * 1024,
+    ) -> str:
         if not self._base_url:
-            raise RuntimeError(
-                "OpenAI-compatible base URL is not configured. "
-                "Set [model].base_url or REALFORGE_OPENAI_COMPAT_URL."
+            raise HTTPProviderError(
+                "not_configured",
+                "OpenAI-compatible local provider endpoint is not configured.",
             )
         url = urljoin(self._base_url + "/", "chat/completions")
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": user})
         payload = {
             "model": self.model_name,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
+            "messages": messages,
             "stream": False,
         }
-        try:
-            data = post_json(url, payload)
-        except HTTPProviderError as err:
-            raise RuntimeError(str(err)) from err
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+        headers: dict[str, str] = {}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+        data = post_json(
+            url,
+            payload,
+            timeout=timeout,
+            extra_headers=headers,
+            opener=opener,
+            max_response_bytes=max_response_bytes,
+        )
         choices = data.get("choices", [])
         if not choices or not isinstance(choices, list):
-            raise RuntimeError("OpenAI-compatible server returned no choices")
+            raise HTTPProviderError(
+                "invalid_response",
+                "Local provider returned no chat choices.",
+            )
         message = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
         content = message.get("content") if isinstance(message, dict) else None
         if not isinstance(content, str) or not content.strip():
-            raise RuntimeError("OpenAI-compatible server returned an empty response")
+            raise HTTPProviderError(
+                "invalid_response",
+                "Local provider returned an empty chat response.",
+            )
         return content.strip()
+
+    def _chat(self, system: str, user: str) -> str:
+        try:
+            return self._request_chat(system, user)
+        except HTTPProviderError as err:
+            raise RuntimeError(err.message) from err
+
+    def smoke_chat(
+        self,
+        *,
+        opener: Callable[..., Any] | None = None,
+        timeout: float = 5.0,
+        max_tokens: int = 4,
+    ) -> str:
+        """Run the fixed, bounded CLI smoke request without workspace context or tools."""
+        return self._request_chat(
+            None,
+            SMOKE_USER_PROMPT,
+            timeout=min(max(timeout, 0.1), 5.0),
+            max_tokens=min(max(max_tokens, 1), 4),
+            opener=opener,
+            max_response_bytes=32 * 1024,
+        )
 
     def generate_plan(self, request: PlanRequest) -> AgentPlan:
         user = build_plan_user_prompt(

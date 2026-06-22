@@ -7,6 +7,7 @@ mod allowlist;
 mod approval;
 mod approval_audit_store;
 mod health;
+mod private_provider_config;
 mod real_files;
 mod resolve_python;
 mod security_scan;
@@ -22,6 +23,9 @@ use approval_audit_store::{
     clear_approval_audit_log as clear_audit_store, load_approval_audit_log as load_audit_store,
     save_approval_audit_log as save_audit_store, ApprovalAuditClearResult, ApprovalAuditEntryInput,
     ApprovalAuditLoadResult, ApprovalAuditSaveResult,
+};
+use private_provider_config::{
+    load_private_local_provider_config as read_private_provider_config, ProviderStatusReport,
 };
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
 use real_files::list_real_files as list_real;
@@ -248,6 +252,11 @@ pub fn save_approval_audit_log(entries: Vec<ApprovalAuditEntryInput>) -> Approva
 #[tauri::command(rename_all = "camelCase")]
 pub fn clear_approval_audit_log() -> ApprovalAuditClearResult {
     clear_audit_store()
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn load_private_local_provider_config() -> ProviderStatusReport {
+    read_private_provider_config()
 }
 
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {

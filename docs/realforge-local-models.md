@@ -13,8 +13,80 @@ does not execute model-proposed commands.
 
 ## Configuration file
 
-Copy `.realforge.toml.example` to **`.realforge.local.toml`** (gitignored) for private
-local models. Do not commit the local file — model identity stays on your machine.
+Store **private** provider settings in **`~/.realforge.local.toml`** in your user home
+directory (gitignored). Do not commit that file, model weights, API keys, or private prompts.
+
+**Model weights** belong outside the repository (for example a user-owned `~/Models/...`
+directory on your machine). The public repo never tracks weight files.
+
+The RealForge CLI and runtime read `~/.realforge.local.toml` when present. Diagnostics
+show only redacted status (configured, provider kind, local endpoint host/port,
+`model_configured`, `trust=local_untrusted`) — never API keys or private model names.
+
+Public templates use generic labels only (**Private Local Model**, **user-configured local
+model**, **OpenAI-compatible local provider**). Upstream model licenses and attribution
+must be handled privately on your machine if you redistribute a derivative; the public
+repo does not claim ownership of upstream weights.
+
+Local model output remains **untrusted** until validated by RealForge adapters,
+diagnostics, benchmarks, and staff approval gates where required.
+
+### Configuration precedence (CLI/runtime)
+
+1. Explicit CLI flags and environment variables (`REALFORGE_OLLAMA_URL`, `REALFORGE_OPENAI_COMPAT_URL`)
+2. `~/.realforge.local.toml` (private, gitignored)
+3. Repo-local `.realforge.toml` (public template values only)
+4. Defaults (`mock` provider)
+
+Provider output remains **untrusted** regardless of source.
+
+### Provider status command (sanitized)
+
+```bash
+realforge provider status
+realforge provider status --json
+```
+
+Reports redacted fields only: `configured`, `source` (`env`, `home_private`, `repo`,
+`defaults`), `provider_kind`, `trust`, `endpoint_configured`, safe local `endpoint_host`,
+`model_configured`, `api_key_configured` (boolean), `image_provider_configured`,
+`image_provider_kind`, safe local `image_endpoint_host`, and
+`image_provider_execution_enabled` (false until image execution ships).
+
+Never prints API keys, exact private model names, weight paths, or full config contents.
+
+Invalid `~/.realforge.local.toml` returns a structured error from `provider status`.
+Other commands that call `load_config()` remain blocked until the home file is fixed.
+
+Workbench Settings → **Provider / Local Model** shows the same sanitized status fields
+via desktop IPC (`home_private` / `defaults` only). Use the CLI command in a terminal for
+full env/repo precedence.
+
+Public private-local templates use `trust = "local_untrusted"` on `[provider]`.
+
+### Provider smoke command (reachability)
+
+`provider status` verifies **configuration**. `provider smoke` reads only the fixed
+private home config and verifies that its OpenAI-compatible local endpoint accepts a
+minimal fixed chat request.
+
+```bash
+realforge provider smoke
+realforge provider smoke --json
+```
+
+Smoke behavior:
+
+- Only supports `openai_compatible_local`
+- Sends the fixed prompt `Reply with OK.` (no arbitrary user prompt)
+- Uses a very low `max_tokens` cap and a short timeout
+- No tools, workspace context, file contents, or provider output persistence
+- Treats model output as **untrusted**; prints only a capped response preview
+- Redacts connection, HTTP, and JSON errors without returning headers or response bodies
+
+Never prints API keys, exact private model names, model paths, or the full response when long.
+
+Workbench does not execute smoke tests yet — run the CLI command in your terminal.
 
 ### Ollama
 
@@ -27,11 +99,11 @@ base_url = "http://localhost:11434"
 
 ### OpenAI-compatible local server
 
-For privately served local endpoints (LM Studio, llama.cpp server, vLLM, or similar):
+For a user-configured OpenAI-compatible local provider:
 
 ```toml
-[model]
-provider = "openai_compatible_local"
+[provider]
+kind = "openai_compatible_local"
 display_name = "Private Local Model"
 model = "<configured-locally>"
 base_url = "http://localhost:8000/v1"
@@ -39,6 +111,22 @@ trust = "local_untrusted"
 ```
 
 See also `docs/provider-config.example.toml`.
+
+### Optional private local image provider (future)
+
+Image generation is **not executed** yet. You may add metadata for a future local image
+provider in the same home config file:
+
+```toml
+[image_provider]
+kind = "local_image_provider"
+display_name = "Private Local Image Model"
+base_url = "http://localhost:8188"
+trust = "local_untrusted"
+```
+
+RealForge records redacted status only (`execution_enabled=false`). No browser or CLI
+image calls are made in this milestone.
 
 Environment variables still supplement config when `base_url` is omitted:
 
@@ -88,12 +176,12 @@ base URL only.
 Settings → **Provider / Local Model** shows a generic **Private Local Model** profile:
 
 - OpenAI-compatible local provider type
-- Session-only endpoint/model fields (no browser network calls)
+- Sanitized chat/image status and local host/port only (no browser network calls)
 - **LOCAL UNTRUSTED** trust label
-- Instructions to copy `.realforge.toml.example` → `.realforge.local.toml`
+- Instructions to copy `.realforge.toml.example` → `~/.realforge.local.toml`
+- Desktop IPC reads sanitized metadata from the fixed home config file (no secrets)
 
-Real config loading from disk in the desktop shell is future work; the public repo
-stays provider-agnostic.
+See [private local provider](../workbench/docs/private-local-provider.md).
 
 ## Provider interface
 

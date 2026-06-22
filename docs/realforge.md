@@ -540,8 +540,9 @@ Example `.realforge.toml`:
 ```toml
 [model]
 provider = "ollama"
-model = "qwen2.5-coder:32b"
+model = "<configured-locally>"
 base_url = "http://localhost:11434"
+trust = "local_untrusted"
 
 [staff]
 enabled = false
