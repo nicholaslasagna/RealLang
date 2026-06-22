@@ -1,7 +1,9 @@
 import { useState } from "react";
 import {
+  cancelPrivateProviderChatSandbox,
   isDesktopRuntime,
   runPrivateProviderChatSandbox,
+  type BridgeError,
   type ProviderChatSandboxResult
 } from "../bridge";
 import { Badge, Button, Icon } from "./primitives";
@@ -20,12 +22,22 @@ function clampCharacters(value: string, limit: number): string {
   return Array.from(value).slice(0, limit).join("");
 }
 
+function bridgeErrorTitle(error: BridgeError): string {
+  if (error.code === "cancelled") return "Request cancelled";
+  if (error.code === "timeout") return "Request timed out";
+  if (error.code === "request_in_progress") return "Request already running";
+  return "Private chat sandbox unavailable";
+}
+
 export function PrivateChatSandboxCard() {
   const desktop = isDesktopRuntime();
   const [prompt, setPrompt] = useState("");
   const [approved, setApproved] = useState(false);
   const [running, setRunning] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [result, setResult] = useState<ProviderChatSandboxResult | null>(null);
+  const [controlError, setControlError] = useState<BridgeError | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "unavailable">("idle");
 
   const promptLength = Array.from(prompt).length;
   const canSend = desktop && prompt.trim().length > 0 && approved && !running;
@@ -42,16 +54,50 @@ export function PrivateChatSandboxCard() {
     if (!canSend) return;
     setRunning(true);
     setResult(null);
+    setControlError(null);
+    setCopyStatus("idle");
     try {
-      setResult(
-        await runPrivateProviderChatSandbox({
-          prompt,
-          approvalAcknowledged: true
-        })
-      );
+      const nextResult = await runPrivateProviderChatSandbox({
+        prompt,
+        approvalAcknowledged: true
+      });
+      setControlError(null);
+      setResult(nextResult);
     } finally {
       setApproved(false);
+      setCancelling(false);
       setRunning(false);
+    }
+  }
+
+  async function cancelPrompt(): Promise<void> {
+    if (!desktop || !running || cancelling) return;
+    setCancelling(true);
+    setControlError(null);
+    const cancellation = await cancelPrivateProviderChatSandbox();
+    if (!cancellation.ok) {
+      setControlError(cancellation.error);
+      setCancelling(false);
+    }
+  }
+
+  function clearResponse(): void {
+    if (running) return;
+    setResult(null);
+    setControlError(null);
+    setCopyStatus("idle");
+  }
+
+  async function copyResponse(): Promise<void> {
+    if (!response || !navigator.clipboard?.writeText) {
+      setCopyStatus("unavailable");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(`LOCAL UNTRUSTED\n\n${response}`);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("unavailable");
     }
   }
 
@@ -60,6 +106,8 @@ export function PrivateChatSandboxCard() {
     setPrompt("");
     setApproved(false);
     setResult(null);
+    setControlError(null);
+    setCopyStatus("idle");
   }
 
   return (
@@ -83,7 +131,7 @@ export function PrivateChatSandboxCard() {
       <div className="private-chat-sandbox__facts" aria-label="Private chat sandbox safety facts">
         <span><Icon name="file-x" /> No files or context</span>
         <span><Icon name="terminal" /> No tools or shell</span>
-        <span><Icon name="shield-check" /> No persistence</span>
+        <span><Icon name="shield-check" /> No memory or history</span>
         <span><Icon name="lock-keyhole" /> Approval per send</span>
       </div>
 
@@ -122,6 +170,22 @@ export function PrivateChatSandboxCard() {
           disabled={!canSend}
           onClick={() => void sendPrompt()}
         />
+        {running ? (
+          <Button
+            label={cancelling ? "Cancelling request" : "Cancel request"}
+            iconName="x"
+            variant="secondary"
+            disabled={cancelling}
+            onClick={() => void cancelPrompt()}
+          />
+        ) : null}
+        <Button
+          label="Clear response"
+          iconName="x"
+          variant="secondary"
+          disabled={running || (!result && !controlError)}
+          onClick={clearResponse}
+        />
         <Button
           label="Clear sandbox"
           iconName="x"
@@ -132,11 +196,21 @@ export function PrivateChatSandboxCard() {
         <span>{desktop ? "One request only · no automatic follow-up" : "Web preview cannot contact providers"}</span>
       </div>
 
+      {controlError ? (
+        <div className="private-chat-sandbox__error" role="alert" data-testid="chat-sandbox-control-error">
+          <Icon name="triangle-alert" />
+          <span>
+            <b>[{controlError.code}] Cancellation unavailable</b>
+            <small>{controlError.message}</small>
+          </span>
+        </div>
+      ) : null}
+
       {result && !result.ok ? (
         <div className="private-chat-sandbox__error" role="alert" data-testid="chat-sandbox-bridge-error">
           <Icon name="triangle-alert" />
           <span>
-            <b>[{result.error.code}] Private chat sandbox unavailable</b>
+            <b>[{result.error.code}] {bridgeErrorTitle(result.error)}</b>
             <small>{result.error.message}</small>
           </span>
         </div>
@@ -169,9 +243,21 @@ export function PrivateChatSandboxCard() {
                 <b>Local provider output</b>
                 <Badge label="LOCAL UNTRUSTED" tone="amber" />
                 {responseTruncated ? <Badge label="TRUNCATED" tone="neutral" /> : null}
+                <button
+                  className="private-chat-sandbox__copy"
+                  type="button"
+                  onClick={() => void copyResponse()}
+                >
+                  <Icon name="clipboard-list" />
+                  {copyStatus === "copied" ? "Copied untrusted response" : "Copy response"}
+                </button>
               </div>
               <pre aria-label="Untrusted private chat sandbox response">{response}</pre>
-              <small>Review before use. This response is not saved or copied to diagnostics.</small>
+              <small>
+                {copyStatus === "unavailable"
+                  ? "Clipboard unavailable. The response remains visible and unsaved."
+                  : "Review before use. Copy includes the LOCAL UNTRUSTED label; nothing is copied to diagnostics."}
+              </small>
             </div>
           ) : null}
         </div>

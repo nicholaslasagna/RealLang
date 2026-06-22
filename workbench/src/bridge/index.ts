@@ -1,6 +1,7 @@
 export { isDesktopRuntime, isWebPreviewRuntime } from "./detect-runtime";
 export {
   bridgeModeLabel,
+  cancelPrivateProviderChatSandbox,
   clearApprovalAuditLog,
   checkBridgeHealth,
   checkForUpdate,
@@ -58,6 +59,7 @@ export type {
   PrivateLocalProviderConfig,
   ProviderStatus,
   ProviderStatusError,
+  ProviderChatSandboxCancelResult,
   ProviderChatSandboxError,
   ProviderChatSandboxInput,
   ProviderChatSandboxReport,

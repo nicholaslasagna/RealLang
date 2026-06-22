@@ -40,6 +40,21 @@ test("Tauri chat sandbox owns fixed argv and accepts no path or arbitrary args",
   assert.doesNotMatch(source, /fs::|read_dir|read_to_string|File::|TcpStream|reqwest/);
 });
 
+test("Tauri chat cancellation is input-free, single-request, and kills the fixed child", async () => {
+  const [rust, bridgeModule, library] = await Promise.all([
+    readWorkbench("src-tauri/src/bridge/provider_chat_sandbox.rs"),
+    readWorkbench("src-tauri/src/bridge/mod.rs"),
+    readWorkbench("src-tauri/src/lib.rs")
+  ]);
+  assert.match(rust, /ACTIVE_CHAT_REQUEST/);
+  assert.match(rust, /request_in_progress/);
+  assert.match(rust, /cancellation\.store\(true, Ordering::Release\)/);
+  assert.match(rust, /terminate_child\(&mut child\)/);
+  assert.match(bridgeModule, /pub fn cancel_private_provider_chat_sandbox\(\)/);
+  assert.match(library, /cancel_private_provider_chat_sandbox/);
+  assert.doesNotMatch(bridgeModule, /cancel_private_provider_chat_sandbox\([^)]*(prompt|path|args|argv)/);
+});
+
 test("chat sandbox adds no shell, browser network, or write bridge", async () => {
   const [cargo, rust, bridge, component] = await Promise.all([
     readWorkbench("src-tauri/Cargo.toml"),
@@ -55,6 +70,10 @@ test("chat sandbox adds no shell, browser network, or write bridge", async () =>
     bridge,
     /invokeDesktop<ProviderChatSandboxResult>\("run_private_provider_chat_sandbox", \{ input \}\)/
   );
+  assert.match(
+    bridge,
+    /invokeDesktop<ProviderChatSandboxCancelResult>\("cancel_private_provider_chat_sandbox"\)/
+  );
 });
 
 test("chat sandbox UI is single-turn, approval-gated, and non-persistent", async () => {
@@ -65,11 +84,14 @@ test("chat sandbox UI is single-turn, approval-gated, and non-persistent", async
   assert.match(component, /approvalAcknowledged: true/);
   assert.match(component, /<textarea/);
   assert.match(component, /Clear sandbox/);
+  assert.match(component, /Clear response/);
+  assert.match(component, /Cancel request/);
   assert.match(component, /LOCAL UNTRUSTED/);
   assert.doesNotMatch(
     component,
-    /useWorkbenchStore|localStorage|sessionStorage|saveApprovalAudit|recordApprovalAudit|clipboard/
+    /useWorkbenchStore|localStorage|sessionStorage|saveApprovalAudit|recordApprovalAudit/
   );
+  assert.match(component, /navigator\.clipboard\.writeText\(`LOCAL UNTRUSTED\\n\\n\$\{response\}`\)/);
   assert.doesNotMatch(component, /apply patch|run command|image generation button/i);
 });
 

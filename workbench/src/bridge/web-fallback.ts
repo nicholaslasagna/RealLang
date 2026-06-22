@@ -17,6 +17,7 @@ import type {
   SecurityScanResult,
   SecurityScanSourceMeta,
   ProviderStatus,
+  ProviderChatSandboxCancelResult,
   ProviderChatSandboxInput,
   ProviderChatSandboxResult,
   ProviderSmokeInput,
@@ -99,6 +100,17 @@ export function webRunPrivateProviderChatSandbox(
     error: {
       code: "unsupported_web",
       message: "Private chat sandbox is available in the desktop shell only. Web mode never contacts providers."
+    }
+  };
+}
+
+export function webCancelPrivateProviderChatSandbox(): ProviderChatSandboxCancelResult {
+  return {
+    ok: false,
+    status: "unavailable",
+    error: {
+      code: "unsupported_web",
+      message: "Private chat cancellation is available in the desktop shell only. Web mode never contacts providers."
     }
   };
 }

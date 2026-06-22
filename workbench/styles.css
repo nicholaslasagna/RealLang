@@ -2938,6 +2938,10 @@ textarea:focus-visible,
 .private-chat-sandbox__response { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
 .private-chat-sandbox__response > div { display: flex; align-items: center; gap: 6px; }
 .private-chat-sandbox__response > div b { margin-right: auto; color: var(--text-2); font-size: 9px; text-transform: uppercase; }
+.private-chat-sandbox__copy { display: inline-flex; min-height: 26px; align-items: center; gap: 5px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 3px; background: rgba(255, 255, 255, 0.025); color: var(--text-3); font: 8px/1 var(--font-mono); cursor: pointer; }
+.private-chat-sandbox__copy:hover { border-color: var(--line-strong); color: var(--text-2); }
+.private-chat-sandbox__copy:focus-visible { outline: 2px solid rgba(177, 119, 255, 0.45); outline-offset: 2px; }
+.private-chat-sandbox__copy .icon { width: 11px; height: 11px; }
 .private-chat-sandbox__response pre { max-height: 260px; margin: 8px 0 5px; padding: 11px; overflow: auto; border: 1px solid var(--line); border-radius: 3px; background: rgba(0, 0, 0, 0.32); color: var(--text-2); font: 10px/1.55 var(--font-sans); white-space: pre-wrap; overflow-wrap: anywhere; }
 .private-chat-sandbox__response small { color: var(--text-3); font-size: 9px; }
 

@@ -1,4 +1,4 @@
-# Private chat sandbox threat model (Workbench 0.26)
+# Private chat sandbox threat model (Workbench 0.26-0.27)
 
 Workbench 0.26 introduces one single-turn text sandbox for a user-configured local
 provider. It is an approval-gated diagnostic interaction, not an agent, workspace
@@ -9,6 +9,10 @@ assistant, tool runner, or memory system.
 User-written text is accepted only by the Private Chat Sandbox. The UI applies a
 visible character limit, and Rust independently validates character and byte caps.
 Every send requires a fresh acknowledgement. Approval resets after the attempt.
+
+Workbench disables additional sends while a request is active. The desktop bridge
+also permits only one sandbox child process at a time, so a modified or stale UI
+cannot create concurrent provider requests through this IPC surface.
 
 The desktop IPC accepts only:
 
@@ -49,14 +53,38 @@ The response never includes an API key, exact model identity, model path, endpoi
 URL, request headers, private configuration, child environment, command arguments,
 or raw stderr. Provider text is always **LOCAL UNTRUSTED** and requires user review.
 
+Provider and process errors are converted to static structured error codes and
+messages. They do not echo the prompt, child stderr, headers, endpoint, provider
+identity, or private configuration.
+
+## Cancellation and timeout behavior
+
+Workbench 0.27 adds best-effort cancellation at the desktop child-process boundary.
+Cancellation accepts no user data and can only signal the currently active fixed
+sandbox process. Rust kills and reaps that child before returning a structured
+`cancelled` result. A cancellation request made while no sandbox process is active
+is inert.
+
+The existing fixed timeout remains authoritative. On timeout, Rust kills and reaps
+the child and returns a static redacted `timeout` error. Standard output and standard
+error are capped independently and are discarded for cancelled or timed-out runs.
+Standalone CLI cancellation is deferred; direct CLI use remains bounded by its
+fixed timeout.
+
 ## Persistence and audit policy
 
-Prompt and response text remain in component memory only. Clear removes both from
-the current UI state; reload or application restart also removes them. Workbench
+Prompt and response text remain in component memory only. Clear-response removes
+the visible result, while clear-sandbox removes both the prompt and result. Reload
+or application restart also removes them. Workbench
 does not write either body to app config, browser storage, the repository, the
 workspace, `.realforge`, diagnostics, or the approval audit log.
 
-Workbench 0.26 does not record chat audit metadata. A future metadata-only audit
+There is no hidden transcript or multi-turn history. Copy is an explicit user
+action and copies only the capped response currently visible in the card, prefixed
+with `LOCAL UNTRUSTED`. Workbench does not automatically copy output to diagnostics,
+reports, audit history, or persistent storage.
+
+Workbench 0.27 does not record chat audit metadata. A future metadata-only audit
 entry would require a separate schema and privacy review and could contain only
 bounded non-content facts such as input length, status, duration, and truncation.
 

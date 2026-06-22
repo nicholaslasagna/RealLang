@@ -79,6 +79,14 @@ realforge provider chat-sandbox --stdin --json
 The sandbox is not an agent and does not persist prompts or responses. See the
 [private chat sandbox threat model](private-chat-sandbox-threat-model.md).
 
+Workbench 0.27 keeps this authority unchanged while adding one-request-at-a-time
+enforcement, desktop child-process cancellation, and explicit timeout/cancelled
+states. Approval resets after each attempt. Users may clear only the visible
+response or clear the entire sandbox; neither action writes history. Copy is an
+explicit action that includes only the capped visible response with a **LOCAL
+UNTRUSTED** label. No hidden transcript, audit record, workspace/file context,
+tools, shell, writes, or image generation are added.
+
 ## RealForge CLI
 
 The Python RealForge CLI/runtime loads the same fixed home config file with precedence:

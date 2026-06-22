@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.26)
+# RealForge Workbench - Tauri desktop shell (0.6-0.27)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -30,6 +30,10 @@ provider or command bridge.
 **0.26** adds one approval-gated, single-turn private chat sandbox. User text is
 bounded, written only to a fixed CLI command's stdin, and never combined with
 workspace context, files, tools, history, or persistence. Output remains untrusted.
+**0.27** permits only one active sandbox request and adds input-free cancellation
+for that fixed child process. Cancellation and timeout kill and reap the child and
+return static redacted errors. This adds no prompt fields, path, argv, workspace
+read, write, tool, shell, or provider authority to IPC.
 
 ## What 0.16 includes (version metadata)
 
@@ -267,6 +271,7 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `clear_approval_audit_log` | Remove only the fixed app-config audit file |
 | `run_private_provider_smoke` | Run fixed provider smoke after acknowledgement; sanitized response only |
 | `run_private_provider_chat_sandbox` | Send one bounded approved stdin request; sanitized response only |
+| `cancel_private_provider_chat_sandbox` | Signal only the active fixed chat sandbox child; accepts no input |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -346,6 +351,8 @@ dev bridge.
 - Provider smoke output remains component-local and is not written to approval history
 - Private chat sandbox accepts only bounded `prompt` plus `approvalAcknowledged`;
   Rust owns fixed `provider chat-sandbox --stdin --json` arguments
+- Only one sandbox child may run at a time; cancellation accepts no arguments and
+  can only kill/reap that fixed child. Standalone CLI cancellation is deferred.
 - Chat prompt and response stay in component memory and never enter approval history
 - Health probe uses the same allowlisted `capabilities --json` path as report load
 

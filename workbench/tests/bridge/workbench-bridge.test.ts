@@ -3,6 +3,7 @@ import { cliReportSources } from "../../src/data/cli/cli-report-sources";
 import { isDesktopRuntime, isWebPreviewRuntime } from "../../src/bridge/detect-runtime";
 import {
   bridgeModeLabel,
+  cancelPrivateProviderChatSandbox,
   clearApprovalAuditLog,
   getRuntimeInfo,
   listBridgeCapabilities,
@@ -17,6 +18,7 @@ import {
 } from "../../src/bridge/workbench-bridge";
 import {
   webBridgeCapabilities,
+  webCancelPrivateProviderChatSandbox,
   webClearApprovalAuditLog,
   webLoadApprovalAuditLog,
   webLoadReadOnlyReportSource,
@@ -80,6 +82,10 @@ describe("workbench bridge client (web mode)", () => {
     expect(
       webRunPrivateProviderChatSandbox({ prompt: "Hello", approvalAcknowledged: true }).ok
     ).toBe(false);
+    const cancellation = await cancelPrivateProviderChatSandbox();
+    expect(cancellation.ok).toBe(false);
+    if (!cancellation.ok) expect(cancellation.error.code).toBe("unsupported_web");
+    expect(webCancelPrivateProviderChatSandbox().ok).toBe(false);
   });
 
   it("keeps approval history session-only in web mode", async () => {

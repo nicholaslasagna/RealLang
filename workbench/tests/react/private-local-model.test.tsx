@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { PrivateLocalModelPanel } from "../../src/components/PrivateLocalModelPanel";
 import { PRIVATE_LOCAL_IMAGE_MODEL_PROFILE, PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
-import type { ProviderStatus } from "../../src/bridge";
+import type { ProviderChatSandboxResult, ProviderStatus } from "../../src/bridge";
 
 const mocks = vi.hoisted(() => ({
+  cancelPrivateProviderChatSandbox: vi.fn(),
   loadProviderStatus: vi.fn(),
   runPrivateProviderChatSandbox: vi.fn(),
   runPrivateProviderSmoke: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("../../src/bridge", async (importOriginal) => {
     ...actual,
     loadProviderStatus: mocks.loadProviderStatus,
     loadPrivateLocalProviderConfig: mocks.loadProviderStatus,
+    cancelPrivateProviderChatSandbox: mocks.cancelPrivateProviderChatSandbox,
     runPrivateProviderChatSandbox: mocks.runPrivateProviderChatSandbox,
     runPrivateProviderSmoke: mocks.runPrivateProviderSmoke,
     isDesktopRuntime: mocks.isDesktopRuntime
@@ -102,10 +104,16 @@ describe("Private local model panel", () => {
         error: null
       }
     });
+    mocks.cancelPrivateProviderChatSandbox.mockReset();
+    mocks.cancelPrivateProviderChatSandbox.mockResolvedValue({
+      ok: true,
+      status: "cancellation_requested"
+    });
   });
 
   afterEach(() => {
     cleanup();
+    delete (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
     vi.restoreAllMocks();
   });
 
@@ -310,6 +318,77 @@ describe("Private local model panel", () => {
     expect(send).toBeDisabled();
   });
 
+  it("locks the sandbox while running and resets approval after completion", async () => {
+    let resolveRequest: (value: ProviderChatSandboxResult) => void = () => {};
+    mocks.runPrivateProviderChatSandbox.mockImplementation(
+      () => new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+    );
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    const approval = screen.getByRole("checkbox", { name: /approve this one local provider request/i });
+    fireEvent.change(textarea, { target: { value: "One request" } });
+    fireEvent.click(approval);
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+
+    expect(screen.getByRole("button", { name: /waiting for local response/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /cancel request/i })).toBeEnabled();
+    expect(textarea).toBeDisabled();
+
+    resolveRequest({
+      ok: false,
+      error: { code: "cancelled", message: "Private chat sandbox request was cancelled." }
+    });
+    await waitFor(() => expect(screen.getByText(/request cancelled/i)).toBeInTheDocument());
+    expect(approval).not.toBeChecked();
+    expect(textarea).toBeEnabled();
+  });
+
+  it("requests desktop cancellation and renders the redacted cancelled state", async () => {
+    let resolveRequest: (value: ProviderChatSandboxResult) => void = () => {};
+    mocks.runPrivateProviderChatSandbox.mockImplementation(
+      () => new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+    );
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    fireEvent.change(textarea, { target: { value: "Sensitive user text" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+    fireEvent.click(screen.getByRole("button", { name: /cancel request/i }));
+
+    await waitFor(() => expect(mocks.cancelPrivateProviderChatSandbox).toHaveBeenCalledWith());
+    expect(screen.getByRole("button", { name: /cancelling request/i })).toBeDisabled();
+    resolveRequest({
+      ok: false,
+      error: { code: "cancelled", message: "Private chat sandbox request was cancelled." }
+    });
+    const error = await screen.findByTestId("chat-sandbox-bridge-error");
+    expect(error).toHaveTextContent("[cancelled] Request cancelled");
+    expect(error).not.toHaveTextContent("Sensitive user text");
+  });
+
+  it("renders a redacted timeout state without echoing the prompt", async () => {
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: false,
+      error: {
+        code: "timeout",
+        message: "Private chat sandbox timed out before returning a result."
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    fireEvent.change(textarea, { target: { value: "Do not echo this prompt" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+
+    const error = await screen.findByTestId("chat-sandbox-bridge-error");
+    expect(error).toHaveTextContent("[timeout] Request timed out");
+    expect(error).not.toHaveTextContent("Do not echo this prompt");
+  });
+
   it("caps sandbox prompt and response text", async () => {
     mocks.runPrivateProviderChatSandbox.mockResolvedValue({
       ok: true,
@@ -373,6 +452,55 @@ describe("Private local model panel", () => {
     fireEvent.click(screen.getByRole("button", { name: /clear sandbox/i }));
     expect(textarea).toHaveValue("");
     expect(screen.queryByTestId("chat-sandbox-result")).not.toBeInTheDocument();
+  });
+
+  it("clears only the visible response when requested", async () => {
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    fireEvent.change(textarea, { target: { value: "Keep this draft" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+    expect(await screen.findByTestId("chat-sandbox-result")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /clear response/i }));
+    expect(screen.queryByTestId("chat-sandbox-result")).not.toBeInTheDocument();
+    expect(textarea).toHaveValue("Keep this draft");
+  });
+
+  it("copies only the capped visible response with an untrusted label", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        status: "pass",
+        input_length: 5,
+        duration_ms: 48,
+        response: "R".repeat(5_000),
+        response_truncated: true,
+        untrusted_output: true,
+        error: null
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    fireEvent.change(await screen.findByRole("textbox", { name: /your sandbox text/i }), {
+      target: { value: "Hello" }
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /copy response/i }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText).toHaveBeenCalledWith(`LOCAL UNTRUSTED\n\n${"R".repeat(4_096)}`);
+    expect(screen.getByRole("button", { name: /copied untrusted response/i })).toBeInTheDocument();
+
   });
 
   it("does not use fetch", async () => {

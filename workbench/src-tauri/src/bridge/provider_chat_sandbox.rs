@@ -1,7 +1,8 @@
-//! Approval-gated private chat sandbox bridge for Workbench 0.26.
+//! Approval-gated private chat sandbox bridge for Workbench 0.26-0.27.
 //!
 //! The frontend can submit only a bounded prompt and acknowledgement boolean.
 //! Rust owns the executable and argv; the prompt is written only to child stdin.
+//! One process may run at a time, and cancellation can only signal that process.
 
 use super::resolve_python::resolve_python;
 use super::types::BridgeError;
@@ -10,6 +11,10 @@ use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Stdio};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -31,6 +36,8 @@ const PASSTHROUGH_ENV: &[&str] = &[
     "TEMP",
     "TMP",
 ];
+
+static ACTIVE_CHAT_REQUEST: Mutex<Option<Arc<AtomicBool>>> = Mutex::new(None);
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -104,7 +111,7 @@ impl ProviderChatSandboxResult {
         }
     }
 
-    fn failure(code: &str, message: impl Into<String>) -> Self {
+    pub(crate) fn failure(code: &str, message: impl Into<String>) -> Self {
         Self {
             ok: false,
             data: None,
@@ -113,6 +120,81 @@ impl ProviderChatSandboxResult {
                 message: message.into(),
             }),
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderChatSandboxCancelResult {
+    pub ok: bool,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<BridgeError>,
+}
+
+#[derive(Debug)]
+struct ActiveChatRequestGuard {
+    cancellation: Arc<AtomicBool>,
+}
+
+impl Drop for ActiveChatRequestGuard {
+    fn drop(&mut self) {
+        if let Ok(mut active) = ACTIVE_CHAT_REQUEST.lock() {
+            if active
+                .as_ref()
+                .is_some_and(|current| Arc::ptr_eq(current, &self.cancellation))
+            {
+                *active = None;
+            }
+        }
+    }
+}
+
+fn begin_chat_request() -> Result<(Arc<AtomicBool>, ActiveChatRequestGuard), BridgeError> {
+    let mut active = ACTIVE_CHAT_REQUEST.lock().map_err(|_| BridgeError {
+        code: "request_state_unavailable".to_string(),
+        message: "Private chat sandbox request state is unavailable.".to_string(),
+    })?;
+    if active.is_some() {
+        return Err(BridgeError {
+            code: "request_in_progress".to_string(),
+            message: "A private chat sandbox request is already running.".to_string(),
+        });
+    }
+    let cancellation = Arc::new(AtomicBool::new(false));
+    *active = Some(Arc::clone(&cancellation));
+    Ok((
+        Arc::clone(&cancellation),
+        ActiveChatRequestGuard { cancellation },
+    ))
+}
+
+pub fn cancel_private_provider_chat_sandbox() -> ProviderChatSandboxCancelResult {
+    match ACTIVE_CHAT_REQUEST.lock() {
+        Ok(active) => {
+            if let Some(cancellation) = active.as_ref() {
+                cancellation.store(true, Ordering::Release);
+                ProviderChatSandboxCancelResult {
+                    ok: true,
+                    status: "cancellation_requested".to_string(),
+                    error: None,
+                }
+            } else {
+                ProviderChatSandboxCancelResult {
+                    ok: true,
+                    status: "idle".to_string(),
+                    error: None,
+                }
+            }
+        }
+        Err(_) => ProviderChatSandboxCancelResult {
+            ok: false,
+            status: "unavailable".to_string(),
+            error: Some(BridgeError {
+                code: "request_state_unavailable".to_string(),
+                message: "Private chat sandbox request state is unavailable.".to_string(),
+            }),
+        },
     }
 }
 
@@ -127,6 +209,12 @@ pub fn run_private_provider_chat_sandbox(
     }
     let prompt = match validate_prompt(&input.prompt) {
         Ok(prompt) => prompt,
+        Err(error) => {
+            return ProviderChatSandboxResult::failure(&error.code, error.message);
+        }
+    };
+    let (cancellation, _active_request) = match begin_chat_request() {
+        Ok(active_request) => active_request,
         Err(error) => {
             return ProviderChatSandboxResult::failure(&error.code, error.message);
         }
@@ -168,6 +256,7 @@ pub fn run_private_provider_chat_sandbox(
         CHAT_SANDBOX_TIMEOUT_MS,
         CHAT_SANDBOX_MAX_STDOUT_BYTES,
         CHAT_SANDBOX_MAX_STDERR_BYTES,
+        &cancellation,
     ) {
         Ok(report) => ProviderChatSandboxResult::success(report),
         Err(error) => ProviderChatSandboxResult::failure(&error.code, error.message),
@@ -215,7 +304,11 @@ fn run_fixed_chat(
     timeout_ms: u64,
     max_stdout_bytes: usize,
     max_stderr_bytes: usize,
+    cancellation: &AtomicBool,
 ) -> Result<ProviderChatSandboxReport, BridgeError> {
+    if cancellation.load(Ordering::Acquire) {
+        return Err(cancelled_error());
+    }
     let mut command = Command::new(python);
     command
         .env_clear()
@@ -241,13 +334,15 @@ fn run_fixed_chat(
         code: "spawn_failed".to_string(),
         message: "Could not start the fixed private chat sandbox command.".to_string(),
     })?;
-    let mut stdin = child.stdin.take().ok_or_else(|| BridgeError {
-        code: "spawn_failed".to_string(),
-        message: "Private chat sandbox stdin was unavailable.".to_string(),
-    })?;
+    let Some(mut stdin) = child.stdin.take() else {
+        terminate_child(&mut child);
+        return Err(BridgeError {
+            code: "spawn_failed".to_string(),
+            message: "Private chat sandbox stdin was unavailable.".to_string(),
+        });
+    };
     if stdin.write_all(prompt.as_bytes()).is_err() {
-        let _ = child.kill();
-        let _ = child.wait();
+        terminate_child(&mut child);
         return Err(BridgeError {
             code: "input_failed".to_string(),
             message: "Private chat sandbox input could not be delivered.".to_string(),
@@ -255,14 +350,20 @@ fn run_fixed_chat(
     }
     drop(stdin);
 
-    let stdout = child.stdout.take().ok_or_else(|| BridgeError {
-        code: "spawn_failed".to_string(),
-        message: "Private chat sandbox stdout was unavailable.".to_string(),
-    })?;
-    let stderr = child.stderr.take().ok_or_else(|| BridgeError {
-        code: "spawn_failed".to_string(),
-        message: "Private chat sandbox stderr was unavailable.".to_string(),
-    })?;
+    let Some(stdout) = child.stdout.take() else {
+        terminate_child(&mut child);
+        return Err(BridgeError {
+            code: "spawn_failed".to_string(),
+            message: "Private chat sandbox stdout was unavailable.".to_string(),
+        });
+    };
+    let Some(stderr) = child.stderr.take() else {
+        terminate_child(&mut child);
+        return Err(BridgeError {
+            code: "spawn_failed".to_string(),
+            message: "Private chat sandbox stderr was unavailable.".to_string(),
+        });
+    };
     let stdout_reader = thread::spawn(move || read_capped(stdout, max_stdout_bytes));
     let stderr_reader = thread::spawn(move || read_capped(stderr, max_stderr_bytes));
     let timeout = Duration::from_millis(timeout_ms);
@@ -271,9 +372,14 @@ fn run_fixed_chat(
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break status,
+            Ok(None) if cancellation.load(Ordering::Acquire) => {
+                terminate_child(&mut child);
+                let _ = stdout_reader.join();
+                let _ = stderr_reader.join();
+                return Err(cancelled_error());
+            }
             Ok(None) if started.elapsed() >= timeout => {
-                let _ = child.kill();
-                let _ = child.wait();
+                terminate_child(&mut child);
                 let _ = stdout_reader.join();
                 let _ = stderr_reader.join();
                 return Err(BridgeError {
@@ -284,8 +390,7 @@ fn run_fixed_chat(
             }
             Ok(None) => thread::sleep(Duration::from_millis(25)),
             Err(_) => {
-                let _ = child.kill();
-                let _ = child.wait();
+                terminate_child(&mut child);
                 let _ = stdout_reader.join();
                 let _ = stderr_reader.join();
                 return Err(BridgeError {
@@ -299,6 +404,18 @@ fn run_fixed_chat(
     let stdout = join_capped_output(stdout_reader, "stdout", max_stdout_bytes)?;
     let _stderr = join_capped_output(stderr_reader, "stderr", max_stderr_bytes)?;
     parse_chat_output(&stdout, status)
+}
+
+fn terminate_child(child: &mut std::process::Child) {
+    let _ = child.kill();
+    let _ = child.wait();
+}
+
+fn cancelled_error() -> BridgeError {
+    BridgeError {
+        code: "cancelled".to_string(),
+        message: "Private chat sandbox request was cancelled.".to_string(),
+    }
 }
 
 fn parse_chat_output(
@@ -580,5 +697,35 @@ mod tests {
         assert!(!object.contains_key("model"));
         assert!(!object.contains_key("model_path"));
         assert!(!object.contains_key("endpoint"));
+    }
+
+    #[test]
+    fn concurrent_request_is_rejected_and_cancel_is_input_free() {
+        let (cancellation, guard) = begin_chat_request().unwrap();
+        let concurrent = begin_chat_request().unwrap_err();
+        assert_eq!(concurrent.code, "request_in_progress");
+
+        let cancelled = cancel_private_provider_chat_sandbox();
+        assert!(cancelled.ok);
+        assert_eq!(cancelled.status, "cancellation_requested");
+        assert!(cancellation.load(Ordering::Acquire));
+
+        drop(guard);
+        let idle = cancel_private_provider_chat_sandbox();
+        assert!(idle.ok);
+        assert_eq!(idle.status, "idle");
+    }
+
+    #[test]
+    fn cancellation_and_timeout_errors_are_static_and_redacted() {
+        let cancelled = cancelled_error();
+        assert_eq!(cancelled.code, "cancelled");
+        assert!(!cancelled.message.contains("prompt"));
+
+        let timeout = BridgeError {
+            code: "timeout".to_string(),
+            message: "Private chat sandbox timed out before returning a result.".to_string(),
+        };
+        assert!(!timeout.message.contains("private input"));
     }
 }

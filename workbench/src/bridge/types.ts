@@ -376,3 +376,7 @@ export interface ProviderChatSandboxReport {
 export type ProviderChatSandboxResult =
   | { ok: true; data: ProviderChatSandboxReport }
   | { ok: false; error: BridgeError };
+
+export type ProviderChatSandboxCancelResult =
+  | { ok: true; status: "cancellation_requested" | "idle" }
+  | { ok: false; status: "unavailable"; error: BridgeError };

@@ -1,7 +1,8 @@
 mod bridge;
 
 use bridge::{
-    check_bridge_health, check_for_update, clear_approval_audit_log, clear_saved_workspace,
+    cancel_private_provider_chat_sandbox, check_bridge_health, check_for_update,
+    clear_approval_audit_log, clear_saved_workspace,
     get_bridge_capabilities, get_runtime_info, get_saved_workspace, get_update_status,
     get_workspace_paths, get_workspace_resolution, init_app_config_dir,
     list_readonly_report_sources, list_real_files, list_security_scan_sources,
@@ -38,6 +39,7 @@ pub fn run() {
             load_private_local_provider_config,
             run_private_provider_smoke,
             run_private_provider_chat_sandbox,
+            cancel_private_provider_chat_sandbox,
         ])
         .setup(|app| {
             init_app_config_dir(app.handle());

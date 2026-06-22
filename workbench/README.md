@@ -106,6 +106,14 @@ response stay in component memory only and can be cleared explicitly. Web mode
 cannot run it. This is not an agent, general command bridge, or persistence feature.
 See the [private chat sandbox threat model](docs/private-chat-sandbox-threat-model.md).
 
+**0.27** hardens that sandbox without expanding its authority. The UI and Rust
+bridge allow one request at a time; desktop cancellation signals only the active
+fixed child process, and cancel/timeout paths kill and reap it before returning a
+static redacted result. Approval resets after every attempt. Clear-response and
+clear-sandbox remain session-only, and explicit copy includes only the capped
+visible response prefixed **LOCAL UNTRUSTED**. There is still no workspace context,
+tool use, transcript, persistence, audit entry, shell, write path, or image request.
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -142,6 +150,7 @@ Historical milestones:
 - **0.20** App-config-only sanitized approval history (fixed file, confirmed clear, web remains session-only)
 - **0.25** Approval-gated fixed provider smoke display (desktop only; no arbitrary prompt, identity exposure, or persistence)
 - **0.26** Approval-gated private chat sandbox (single turn, stdin-only, no context/tools/history/persistence)
+- **0.27** Private chat sandbox hardening (single active request, desktop cancellation, redacted timeout/cancel states, safe visible-response copy)
 
 ## Toolchain and dependency security
 

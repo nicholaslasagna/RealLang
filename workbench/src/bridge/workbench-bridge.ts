@@ -20,6 +20,7 @@ import type {
   WorkspacePaths,
   WorkspaceResolution,
   ProviderStatus,
+  ProviderChatSandboxCancelResult,
   ProviderChatSandboxInput,
   ProviderChatSandboxResult,
   ProviderSmokeInput,
@@ -37,6 +38,7 @@ import {
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webCancelPrivateProviderChatSandbox,
   webRunPrivateProviderChatSandbox,
   webRunPrivateProviderSmoke,
   webRunSecurityScanSource,
@@ -321,6 +323,23 @@ export async function runPrivateProviderChatSandbox(
       error: {
         code: "ipc_failed",
         message: "The private chat sandbox bridge could not return a sanitized result."
+      }
+    };
+  }
+}
+
+/** Signal only the currently active fixed sandbox child process (desktop only). */
+export async function cancelPrivateProviderChatSandbox(): Promise<ProviderChatSandboxCancelResult> {
+  if (!isDesktopRuntime()) return webCancelPrivateProviderChatSandbox();
+  try {
+    return await invokeDesktop<ProviderChatSandboxCancelResult>("cancel_private_provider_chat_sandbox");
+  } catch {
+    return {
+      ok: false,
+      status: "unavailable",
+      error: {
+        code: "ipc_failed",
+        message: "The private chat sandbox cancellation signal could not be delivered."
       }
     };
   }

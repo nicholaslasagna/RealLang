@@ -31,8 +31,9 @@ use private_provider_config::{
 };
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
 use provider_chat_sandbox::{
+    cancel_private_provider_chat_sandbox as cancel_private_provider_chat,
     run_private_provider_chat_sandbox as spawn_private_provider_chat_sandbox,
-    ProviderChatSandboxInput, ProviderChatSandboxResult,
+    ProviderChatSandboxCancelResult, ProviderChatSandboxInput, ProviderChatSandboxResult,
 };
 use provider_smoke::{
     run_private_provider_smoke as spawn_private_provider_smoke, ProviderSmokeInput,
@@ -275,10 +276,23 @@ pub fn run_private_provider_smoke(input: ProviderSmokeInput) -> ProviderSmokeRes
 }
 
 #[tauri::command(rename_all = "camelCase")]
-pub fn run_private_provider_chat_sandbox(
+pub async fn run_private_provider_chat_sandbox(
     input: ProviderChatSandboxInput,
 ) -> ProviderChatSandboxResult {
-    spawn_private_provider_chat_sandbox(input)
+    match tauri::async_runtime::spawn_blocking(move || spawn_private_provider_chat_sandbox(input))
+        .await
+    {
+        Ok(result) => result,
+        Err(_) => ProviderChatSandboxResult::failure(
+            "request_failed",
+            "The private chat sandbox request could not be completed.",
+        ),
+    }
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn cancel_private_provider_chat_sandbox() -> ProviderChatSandboxCancelResult {
+    cancel_private_provider_chat()
 }
 
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {
