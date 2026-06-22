@@ -135,6 +135,19 @@ async function run() {
                 }
               };
             }
+            if (command === "run_private_provider_chat_sandbox") {
+              if (args.input?.approvalAcknowledged !== true) throw new Error("approval required");
+              if (typeof args.input?.prompt !== "string" || !args.input.prompt.trim()) throw new Error("prompt required");
+              return {
+                ok: true,
+                data: {
+                  ok: true, attempted: true, configured: true, provider_kind: "openai_compatible_local",
+                  status: "pass", input_length: args.input.prompt.length, duration_ms: 46,
+                  response: "Bounded local response", response_truncated: false,
+                  untrusted_output: true, error: null
+                }
+              };
+            }
             throw new Error(`visual mock does not implement ${command}`);
           }
         };
@@ -175,6 +188,14 @@ async function run() {
       await smokeButton.click();
       await page.waitForSelector('[data-testid="provider-smoke-result"]');
       if (await overflows()) throw new Error(`Provider smoke horizontal overflow detected at ${width}px`);
+
+      await page.getByRole("textbox", { name: /Your sandbox text/i }).fill("One local request");
+      const chatButton = page.getByRole("button", { name: "Send approved text", exact: true });
+      if (await chatButton.isEnabled()) throw new Error(`Private chat started enabled at ${width}px`);
+      await page.getByRole("checkbox", { name: /Approve this one local provider request/i }).check();
+      await chatButton.click();
+      await page.waitForSelector('[data-testid="chat-sandbox-result"]');
+      if (await overflows()) throw new Error(`Private chat sandbox horizontal overflow detected at ${width}px`);
 
       await page.getByRole("button", { name: "Workbench", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');

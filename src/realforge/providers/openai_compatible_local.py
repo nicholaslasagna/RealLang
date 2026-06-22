@@ -145,6 +145,24 @@ class OpenAICompatibleLocalProvider(ModelProvider):
             max_response_bytes=32 * 1024,
         )
 
+    def chat_sandbox(
+        self,
+        user: str,
+        *,
+        opener: Callable[..., Any] | None = None,
+        timeout: float = 20.0,
+        max_tokens: int = 512,
+    ) -> str:
+        """Run one bounded user-only request without context, tools, or persistence."""
+        return self._request_chat(
+            None,
+            user,
+            timeout=min(max(timeout, 0.1), 20.0),
+            max_tokens=min(max(max_tokens, 1), 512),
+            opener=opener,
+            max_response_bytes=128 * 1024,
+        )
+
     def generate_plan(self, request: PlanRequest) -> AgentPlan:
         user = build_plan_user_prompt(
             task=request.task,

@@ -346,3 +346,33 @@ export interface ProviderSmokeReport {
 export type ProviderSmokeResult =
   | { ok: true; data: ProviderSmokeReport }
   | { ok: false; error: BridgeError };
+
+/** The complete frontend-controlled input for one private chat sandbox request. */
+export interface ProviderChatSandboxInput {
+  prompt: string;
+  approvalAcknowledged: boolean;
+}
+
+export interface ProviderChatSandboxError {
+  code: string;
+  message: string;
+}
+
+/** Sanitized single-turn response. Prompt text and private provider identity are absent. */
+export interface ProviderChatSandboxReport {
+  ok: boolean;
+  attempted: boolean;
+  configured: boolean;
+  provider_kind: string | null;
+  status: "pass" | "fail" | "not_configured" | "rejected";
+  input_length: number;
+  duration_ms: number;
+  response: string | null;
+  response_truncated: boolean;
+  untrusted_output: true;
+  error: ProviderChatSandboxError | null;
+}
+
+export type ProviderChatSandboxResult =
+  | { ok: true; data: ProviderChatSandboxReport }
+  | { ok: false; error: BridgeError };

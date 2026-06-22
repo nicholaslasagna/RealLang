@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { PrivateLocalModelPanel } from "../../src/components/PrivateLocalModelPanel";
 import { PRIVATE_LOCAL_IMAGE_MODEL_PROFILE, PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
 import type { ProviderStatus } from "../../src/bridge";
 
 const mocks = vi.hoisted(() => ({
   loadProviderStatus: vi.fn(),
+  runPrivateProviderChatSandbox: vi.fn(),
   runPrivateProviderSmoke: vi.fn(),
   isDesktopRuntime: vi.fn(() => true)
 }));
@@ -16,6 +17,7 @@ vi.mock("../../src/bridge", async (importOriginal) => {
     ...actual,
     loadProviderStatus: mocks.loadProviderStatus,
     loadPrivateLocalProviderConfig: mocks.loadProviderStatus,
+    runPrivateProviderChatSandbox: mocks.runPrivateProviderChatSandbox,
     runPrivateProviderSmoke: mocks.runPrivateProviderSmoke,
     isDesktopRuntime: mocks.isDesktopRuntime
   };
@@ -78,6 +80,23 @@ describe("Private local model panel", () => {
         status: "pass",
         duration_ms: 37,
         response_preview: "OK",
+        response_truncated: false,
+        untrusted_output: true,
+        error: null
+      }
+    });
+    mocks.runPrivateProviderChatSandbox.mockReset();
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        status: "pass",
+        input_length: 16,
+        duration_ms: 48,
+        response: "Bounded response",
         response_truncated: false,
         untrusted_output: true,
         error: null
@@ -174,15 +193,18 @@ describe("Private local model panel", () => {
       expect(screen.getByText(/desktop shell required/i)).toBeInTheDocument();
     });
     expect(mocks.loadProviderStatus).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /desktop app required/i })).toBeDisabled();
+    const desktopOnlyButtons = screen.getAllByRole("button", { name: /desktop app required/i });
+    expect(desktopOnlyButtons.every((button) => button.hasAttribute("disabled"))).toBe(true);
     expect(mocks.runPrivateProviderSmoke).not.toHaveBeenCalled();
+    expect(desktopOnlyButtons.length).toBeGreaterThan(1);
+    expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
   });
 
   it("requires fresh approval and exposes no prompt textbox", async () => {
     render(<PrivateLocalModelPanel />);
     const runButton = await screen.findByRole("button", { name: /run provider smoke/i });
     expect(runButton).toBeDisabled();
-    expect(screen.queryByRole("textbox", { name: /prompt/i })).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("provider-smoke-card")).queryByRole("textbox")).not.toBeInTheDocument();
     expect(mocks.runPrivateProviderSmoke).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
@@ -262,6 +284,95 @@ describe("Private local model panel", () => {
     expect(screen.getAllByText(/^NOT CONFIGURED$/).length).toBeGreaterThan(0);
     expect(screen.getByText(/\[not_configured\]/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/untrusted provider response preview/i)).not.toBeInTheDocument();
+  });
+
+  it("requires approval before sending bounded sandbox text", async () => {
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    const send = screen.getByRole("button", { name: /send approved text/i });
+    expect(send).toBeDisabled();
+
+    fireEvent.change(textarea, { target: { value: "One local request" } });
+    expect(send).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    expect(send).toBeEnabled();
+    fireEvent.click(send);
+
+    await waitFor(() => {
+      expect(mocks.runPrivateProviderChatSandbox).toHaveBeenCalledWith({
+        prompt: "One local request",
+        approvalAcknowledged: true
+      });
+    });
+    expect(await screen.findByTestId("chat-sandbox-result")).toBeInTheDocument();
+    expect(screen.getByLabelText(/untrusted private chat sandbox response/i)).toHaveTextContent("Bounded response");
+    expect(screen.getAllByText("LOCAL UNTRUSTED").length).toBeGreaterThan(0);
+    expect(send).toBeDisabled();
+  });
+
+  it("caps sandbox prompt and response text", async () => {
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        status: "pass",
+        input_length: 2000,
+        duration_ms: 48,
+        response: "R".repeat(5000),
+        response_truncated: false,
+        untrusted_output: true,
+        error: null
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    fireEvent.change(textarea, { target: { value: "P".repeat(2200) } });
+    expect(textarea).toHaveValue("P".repeat(2000));
+    expect(screen.getByText(/2,000 \/ 2,000 characters/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+
+    const response = await screen.findByLabelText(/untrusted private chat sandbox response/i);
+    expect(response.textContent).toHaveLength(4096);
+    expect(screen.getByText("TRUNCATED")).toBeInTheDocument();
+  });
+
+  it("does not render extra private fields and clears all sandbox content", async () => {
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        status: "pass",
+        input_length: 5,
+        duration_ms: 48,
+        response: "Visible response",
+        response_truncated: false,
+        untrusted_output: true,
+        error: null,
+        api_key: "not-visible-key-value",
+        model: "hidden-local-identity",
+        model_path: "/hidden/model/location"
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
+    fireEvent.change(textarea, { target: { value: "Hello" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
+    fireEvent.click(screen.getByRole("button", { name: /send approved text/i }));
+    expect(await screen.findByText("Visible response")).toBeInTheDocument();
+    expect(screen.queryByText(/not-visible-key-value/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hidden-local-identity/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hidden\/model\/location/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /clear sandbox/i }));
+    expect(textarea).toHaveValue("");
+    expect(screen.queryByTestId("chat-sandbox-result")).not.toBeInTheDocument();
   });
 
   it("does not use fetch", async () => {

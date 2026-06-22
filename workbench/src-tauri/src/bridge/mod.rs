@@ -8,6 +8,7 @@ mod approval;
 mod approval_audit_store;
 mod health;
 mod private_provider_config;
+mod provider_chat_sandbox;
 mod provider_smoke;
 mod real_files;
 mod resolve_python;
@@ -29,6 +30,10 @@ use private_provider_config::{
     load_private_local_provider_config as read_private_provider_config, ProviderStatusReport,
 };
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
+use provider_chat_sandbox::{
+    run_private_provider_chat_sandbox as spawn_private_provider_chat_sandbox,
+    ProviderChatSandboxInput, ProviderChatSandboxResult,
+};
 use provider_smoke::{
     run_private_provider_smoke as spawn_private_provider_smoke, ProviderSmokeInput,
     ProviderSmokeResult,
@@ -267,6 +272,13 @@ pub fn load_private_local_provider_config() -> ProviderStatusReport {
 #[tauri::command(rename_all = "camelCase")]
 pub fn run_private_provider_smoke(input: ProviderSmokeInput) -> ProviderSmokeResult {
     spawn_private_provider_smoke(input)
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn run_private_provider_chat_sandbox(
+    input: ProviderChatSandboxInput,
+) -> ProviderChatSandboxResult {
+    spawn_private_provider_chat_sandbox(input)
 }
 
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {

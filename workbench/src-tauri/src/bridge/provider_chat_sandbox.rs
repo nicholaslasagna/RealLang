@@ -1,0 +1,584 @@
+//! Approval-gated private chat sandbox bridge for Workbench 0.26.
+//!
+//! The frontend can submit only a bounded prompt and acknowledgement boolean.
+//! Rust owns the executable and argv; the prompt is written only to child stdin.
+
+use super::resolve_python::resolve_python;
+use super::types::BridgeError;
+use super::workspace::{get_workspace_resolution, WorkspaceResolutionStatus};
+use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitStatus, Stdio};
+use std::thread;
+use std::time::{Duration, Instant};
+
+pub const CHAT_SANDBOX_MAX_PROMPT_CHARS: usize = 2_000;
+pub const CHAT_SANDBOX_MAX_PROMPT_BYTES: usize = 8 * 1024;
+pub const CHAT_SANDBOX_MAX_RESPONSE_CHARS: usize = 4_096;
+pub const CHAT_SANDBOX_TIMEOUT_MS: u64 = 25_000;
+pub const CHAT_SANDBOX_MAX_STDOUT_BYTES: usize = 32 * 1024;
+pub const CHAT_SANDBOX_MAX_STDERR_BYTES: usize = 8 * 1024;
+pub const CHAT_SANDBOX_PYTHON_MODULE: &str = "realforge.cli";
+pub const CHAT_SANDBOX_ARGV: &[&str] = &["provider", "chat-sandbox", "--stdin", "--json"];
+
+const PASSTHROUGH_ENV: &[&str] = &[
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "SYSTEMROOT",
+    "WINDIR",
+    "TEMP",
+    "TMP",
+];
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProviderChatSandboxInput {
+    pub prompt: String,
+    pub approval_acknowledged: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct CliChatSandboxError {
+    code: String,
+    #[allow(dead_code)]
+    message: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct CliChatSandboxReport {
+    ok: bool,
+    attempted: bool,
+    configured: bool,
+    provider_kind: Option<String>,
+    status: String,
+    input_length: usize,
+    duration_ms: u64,
+    response: Option<String>,
+    response_truncated: bool,
+    #[allow(dead_code)]
+    untrusted_output: bool,
+    error: Option<CliChatSandboxError>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct ProviderChatSandboxError {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct ProviderChatSandboxReport {
+    pub ok: bool,
+    pub attempted: bool,
+    pub configured: bool,
+    pub provider_kind: Option<String>,
+    pub status: String,
+    pub input_length: usize,
+    pub duration_ms: u64,
+    pub response: Option<String>,
+    pub response_truncated: bool,
+    pub untrusted_output: bool,
+    pub error: Option<ProviderChatSandboxError>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderChatSandboxResult {
+    pub ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<ProviderChatSandboxReport>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<BridgeError>,
+}
+
+impl ProviderChatSandboxResult {
+    fn success(data: ProviderChatSandboxReport) -> Self {
+        Self {
+            ok: true,
+            data: Some(data),
+            error: None,
+        }
+    }
+
+    fn failure(code: &str, message: impl Into<String>) -> Self {
+        Self {
+            ok: false,
+            data: None,
+            error: Some(BridgeError {
+                code: code.to_string(),
+                message: message.into(),
+            }),
+        }
+    }
+}
+
+pub fn run_private_provider_chat_sandbox(
+    input: ProviderChatSandboxInput,
+) -> ProviderChatSandboxResult {
+    if !input.approval_acknowledged {
+        return ProviderChatSandboxResult::failure(
+            "approval_required",
+            "Explicit approval is required before sending sandbox text.",
+        );
+    }
+    let prompt = match validate_prompt(&input.prompt) {
+        Ok(prompt) => prompt,
+        Err(error) => {
+            return ProviderChatSandboxResult::failure(&error.code, error.message);
+        }
+    };
+
+    let resolution = get_workspace_resolution();
+    if resolution.status != WorkspaceResolutionStatus::Ready {
+        return ProviderChatSandboxResult::failure(
+            "workspace_not_ready",
+            "The RealForge workspace and Python runtime must be ready before using private chat sandbox.",
+        );
+    }
+    let Some(repo_root) = resolution.repo_root.map(PathBuf::from) else {
+        return ProviderChatSandboxResult::failure(
+            "workspace_not_ready",
+            "The RealForge workspace is unavailable.",
+        );
+    };
+    let python = match resolve_python(&repo_root) {
+        Ok(path) => path,
+        Err(_) => {
+            return ProviderChatSandboxResult::failure(
+                "executable_not_found",
+                "The configured RealForge Python runtime is unavailable.",
+            );
+        }
+    };
+    if python.components().count() > 1 && !python.is_file() {
+        return ProviderChatSandboxResult::failure(
+            "executable_not_found",
+            "The configured RealForge Python runtime is unavailable.",
+        );
+    }
+
+    match run_fixed_chat(
+        &python,
+        &repo_root,
+        &prompt,
+        CHAT_SANDBOX_TIMEOUT_MS,
+        CHAT_SANDBOX_MAX_STDOUT_BYTES,
+        CHAT_SANDBOX_MAX_STDERR_BYTES,
+    ) {
+        Ok(report) => ProviderChatSandboxResult::success(report),
+        Err(error) => ProviderChatSandboxResult::failure(&error.code, error.message),
+    }
+}
+
+fn validate_prompt(prompt: &str) -> Result<String, BridgeError> {
+    if prompt.chars().count() > CHAT_SANDBOX_MAX_PROMPT_CHARS {
+        return Err(BridgeError {
+            code: "input_too_long".to_string(),
+            message: format!(
+                "Chat sandbox input exceeds {CHAT_SANDBOX_MAX_PROMPT_CHARS} characters."
+            ),
+        });
+    }
+    if prompt.len() > CHAT_SANDBOX_MAX_PROMPT_BYTES {
+        return Err(BridgeError {
+            code: "input_too_large".to_string(),
+            message: "Chat sandbox input exceeds the byte limit.".to_string(),
+        });
+    }
+    if prompt
+        .chars()
+        .any(|character| character.is_control() && !matches!(character, '\n' | '\r' | '\t'))
+    {
+        return Err(BridgeError {
+            code: "invalid_input".to_string(),
+            message: "Chat sandbox input contains unsupported control characters.".to_string(),
+        });
+    }
+    let trimmed = prompt.trim();
+    if trimmed.is_empty() {
+        return Err(BridgeError {
+            code: "empty_input".to_string(),
+            message: "Chat sandbox input must not be empty.".to_string(),
+        });
+    }
+    Ok(trimmed.to_string())
+}
+
+fn run_fixed_chat(
+    python: &Path,
+    repo_root: &Path,
+    prompt: &str,
+    timeout_ms: u64,
+    max_stdout_bytes: usize,
+    max_stderr_bytes: usize,
+) -> Result<ProviderChatSandboxReport, BridgeError> {
+    let mut command = Command::new(python);
+    command
+        .env_clear()
+        .arg("-m")
+        .arg(CHAT_SANDBOX_PYTHON_MODULE)
+        .args(CHAT_SANDBOX_ARGV)
+        .current_dir(repo_root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env("PYTHONPATH", repo_root.join("src"))
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .env("PYTHONNOUSERSITE", "1")
+        .env("PYTHONUTF8", "1")
+        .env("LANG", "C.UTF-8");
+    for name in PASSTHROUGH_ENV {
+        if let Some(value) = std::env::var_os(name) {
+            command.env(name, value);
+        }
+    }
+
+    let mut child = command.spawn().map_err(|_| BridgeError {
+        code: "spawn_failed".to_string(),
+        message: "Could not start the fixed private chat sandbox command.".to_string(),
+    })?;
+    let mut stdin = child.stdin.take().ok_or_else(|| BridgeError {
+        code: "spawn_failed".to_string(),
+        message: "Private chat sandbox stdin was unavailable.".to_string(),
+    })?;
+    if stdin.write_all(prompt.as_bytes()).is_err() {
+        let _ = child.kill();
+        let _ = child.wait();
+        return Err(BridgeError {
+            code: "input_failed".to_string(),
+            message: "Private chat sandbox input could not be delivered.".to_string(),
+        });
+    }
+    drop(stdin);
+
+    let stdout = child.stdout.take().ok_or_else(|| BridgeError {
+        code: "spawn_failed".to_string(),
+        message: "Private chat sandbox stdout was unavailable.".to_string(),
+    })?;
+    let stderr = child.stderr.take().ok_or_else(|| BridgeError {
+        code: "spawn_failed".to_string(),
+        message: "Private chat sandbox stderr was unavailable.".to_string(),
+    })?;
+    let stdout_reader = thread::spawn(move || read_capped(stdout, max_stdout_bytes));
+    let stderr_reader = thread::spawn(move || read_capped(stderr, max_stderr_bytes));
+    let timeout = Duration::from_millis(timeout_ms);
+    let started = Instant::now();
+
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if started.elapsed() >= timeout => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = stdout_reader.join();
+                let _ = stderr_reader.join();
+                return Err(BridgeError {
+                    code: "timeout".to_string(),
+                    message: "Private chat sandbox timed out before returning a result."
+                        .to_string(),
+                });
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(25)),
+            Err(_) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = stdout_reader.join();
+                let _ = stderr_reader.join();
+                return Err(BridgeError {
+                    code: "spawn_failed".to_string(),
+                    message: "Private chat sandbox process monitoring failed.".to_string(),
+                });
+            }
+        }
+    };
+
+    let stdout = join_capped_output(stdout_reader, "stdout", max_stdout_bytes)?;
+    let _stderr = join_capped_output(stderr_reader, "stderr", max_stderr_bytes)?;
+    parse_chat_output(&stdout, status)
+}
+
+fn parse_chat_output(
+    stdout: &str,
+    status: ExitStatus,
+) -> Result<ProviderChatSandboxReport, BridgeError> {
+    let parsed = serde_json::from_str::<CliChatSandboxReport>(stdout).map_err(|_| BridgeError {
+        code: if status.success() {
+            "invalid_json".to_string()
+        } else {
+            "chat_failed".to_string()
+        },
+        message: "Private chat sandbox did not return the expected sanitized JSON report."
+            .to_string(),
+    })?;
+    Ok(sanitize_report(parsed))
+}
+
+fn sanitize_report(report: CliChatSandboxReport) -> ProviderChatSandboxReport {
+    let (response, response_truncated) = sanitize_response(report.response);
+    let status = match report.status.as_str() {
+        "pass" => "pass",
+        "not_configured" => "not_configured",
+        "rejected" => "rejected",
+        _ => "fail",
+    };
+    ProviderChatSandboxReport {
+        ok: report.ok && status == "pass",
+        attempted: report.attempted,
+        configured: report.configured,
+        provider_kind: match report.provider_kind.as_deref() {
+            Some("openai_compatible_local") => Some("openai_compatible_local".to_string()),
+            _ => None,
+        },
+        status: status.to_string(),
+        input_length: report.input_length.min(CHAT_SANDBOX_MAX_PROMPT_CHARS),
+        duration_ms: report.duration_ms.min(CHAT_SANDBOX_TIMEOUT_MS),
+        response,
+        response_truncated: report.response_truncated || response_truncated,
+        untrusted_output: true,
+        error: sanitize_error(report.error, status),
+    }
+}
+
+fn sanitize_error(
+    error: Option<CliChatSandboxError>,
+    status: &str,
+) -> Option<ProviderChatSandboxError> {
+    if status == "pass" {
+        return None;
+    }
+    let code = error
+        .as_ref()
+        .map(|value| value.code.as_str())
+        .unwrap_or("provider_error");
+    let (code, message) = match code {
+        "empty_input" => ("empty_input", "Chat sandbox input must not be empty."),
+        "input_too_long" => (
+            "input_too_long",
+            "Chat sandbox input exceeds the character limit.",
+        ),
+        "input_too_large" => (
+            "input_too_large",
+            "Chat sandbox input exceeds the byte limit.",
+        ),
+        "invalid_input" => (
+            "invalid_input",
+            "Chat sandbox input contains unsupported characters.",
+        ),
+        "not_configured" => (
+            "not_configured",
+            "Private local provider is not configured.",
+        ),
+        "unsupported_provider" => (
+            "unsupported_provider",
+            "Private chat sandbox supports only the OpenAI-compatible local provider.",
+        ),
+        "connection_failed" => ("connection_failed", "Local provider connection failed."),
+        "timeout" => ("timeout", "Local provider chat request timed out."),
+        "http_error" => ("http_error", "Local provider returned an HTTP error."),
+        "invalid_json" => ("invalid_json", "Local provider returned invalid JSON."),
+        "invalid_response" => (
+            "invalid_response",
+            "Local provider returned an unsupported response.",
+        ),
+        "response_too_large" => (
+            "response_too_large",
+            "Local provider response exceeded the sandbox limit.",
+        ),
+        "invalid_config" => (
+            "invalid_config",
+            "Private local provider configuration is invalid.",
+        ),
+        _ => ("provider_error", "Local provider chat request failed."),
+    };
+    Some(ProviderChatSandboxError {
+        code: code.to_string(),
+        message: message.to_string(),
+    })
+}
+
+fn sanitize_response(value: Option<String>) -> (Option<String>, bool) {
+    let Some(value) = value else {
+        return (None, false);
+    };
+    let safe = value
+        .chars()
+        .map(|character| {
+            if character.is_control() && !matches!(character, '\n' | '\t') {
+                ' '
+            } else {
+                character
+            }
+        })
+        .collect::<String>();
+    let truncated = safe.chars().count() > CHAT_SANDBOX_MAX_RESPONSE_CHARS;
+    let response = safe
+        .chars()
+        .take(CHAT_SANDBOX_MAX_RESPONSE_CHARS)
+        .collect::<String>();
+    if response.is_empty() {
+        (None, truncated)
+    } else {
+        (Some(response), truncated)
+    }
+}
+
+#[derive(Debug)]
+struct CappedOutput {
+    bytes: Vec<u8>,
+    exceeded: bool,
+}
+
+fn read_capped(mut reader: impl Read, max_bytes: usize) -> Result<CappedOutput, std::io::Error> {
+    let mut bytes = Vec::new();
+    let mut exceeded = false;
+    let mut buffer = [0u8; 4096];
+    loop {
+        let read = reader.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        let remaining = max_bytes.saturating_sub(bytes.len());
+        let retained = read.min(remaining);
+        bytes.extend_from_slice(&buffer[..retained]);
+        exceeded |= retained < read;
+    }
+    Ok(CappedOutput { bytes, exceeded })
+}
+
+fn join_capped_output(
+    reader: thread::JoinHandle<Result<CappedOutput, std::io::Error>>,
+    stream: &str,
+    max_bytes: usize,
+) -> Result<String, BridgeError> {
+    let output = reader
+        .join()
+        .map_err(|_| BridgeError {
+            code: "read_failed".to_string(),
+            message: format!("Private chat sandbox {stream} reader failed."),
+        })?
+        .map_err(|_| BridgeError {
+            code: "read_failed".to_string(),
+            message: format!("Private chat sandbox {stream} could not be read."),
+        })?;
+    if output.exceeded {
+        return Err(BridgeError {
+            code: "output_too_large".to_string(),
+            message: format!(
+                "Private chat sandbox {stream} exceeded the {max_bytes}-byte limit."
+            ),
+        });
+    }
+    String::from_utf8(output.bytes).map_err(|_| BridgeError {
+        code: "invalid_output".to_string(),
+        message: format!("Private chat sandbox {stream} was not valid UTF-8."),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cli_report() -> CliChatSandboxReport {
+        CliChatSandboxReport {
+            ok: true,
+            attempted: true,
+            configured: true,
+            provider_kind: Some("openai_compatible_local".to_string()),
+            status: "pass".to_string(),
+            input_length: 5,
+            duration_ms: 42,
+            response: Some("Hello".to_string()),
+            response_truncated: false,
+            untrusted_output: false,
+            error: None,
+        }
+    }
+
+    #[test]
+    fn input_accepts_only_prompt_and_approval() {
+        let parsed = serde_json::from_str::<ProviderChatSandboxInput>(
+            r#"{"prompt":"Hello","approvalAcknowledged":true}"#,
+        )
+        .unwrap();
+        assert_eq!(parsed.prompt, "Hello");
+        assert!(parsed.approval_acknowledged);
+        for extra in ["args", "path", "tools", "model", "endpoint"] {
+            let payload = format!(
+                r#"{{"prompt":"Hello","approvalAcknowledged":true,"{extra}":"blocked"}}"#
+            );
+            assert!(serde_json::from_str::<ProviderChatSandboxInput>(&payload).is_err());
+        }
+    }
+
+    #[test]
+    fn command_shape_is_fixed_and_stdin_only() {
+        assert_eq!(CHAT_SANDBOX_PYTHON_MODULE, "realforge.cli");
+        assert_eq!(
+            CHAT_SANDBOX_ARGV,
+            &["provider", "chat-sandbox", "--stdin", "--json"]
+        );
+    }
+
+    #[test]
+    fn prompt_validation_is_bounded() {
+        assert_eq!(validate_prompt("  Hello  ").unwrap(), "Hello");
+        assert_eq!(validate_prompt("").unwrap_err().code, "empty_input");
+        assert_eq!(
+            validate_prompt(&"X".repeat(CHAT_SANDBOX_MAX_PROMPT_CHARS + 1))
+                .unwrap_err()
+                .code,
+            "input_too_long"
+        );
+        assert_eq!(
+            validate_prompt("Hello\0world").unwrap_err().code,
+            "invalid_input"
+        );
+    }
+
+    #[test]
+    fn sanitizer_forces_untrusted_and_caps_response() {
+        let mut source = cli_report();
+        source.response = Some("R".repeat(CHAT_SANDBOX_MAX_RESPONSE_CHARS + 20));
+        let report = sanitize_report(source);
+        assert!(report.untrusted_output);
+        assert!(report.response_truncated);
+        assert_eq!(
+            report.response.unwrap().chars().count(),
+            CHAT_SANDBOX_MAX_RESPONSE_CHARS
+        );
+    }
+
+    #[test]
+    fn sanitizer_drops_unknown_identity_and_raw_error() {
+        let mut source = cli_report();
+        source.ok = false;
+        source.status = "fail".to_string();
+        source.provider_kind = Some("hidden-identity".to_string());
+        source.error = Some(CliChatSandboxError {
+            code: "unknown-private-code".to_string(),
+            message: "private transport detail".to_string(),
+        });
+        let report = sanitize_report(source);
+        let serialized = serde_json::to_string(&report).unwrap();
+        assert_eq!(report.provider_kind, None);
+        assert!(!serialized.contains("hidden-identity"));
+        assert!(!serialized.contains("private transport detail"));
+        assert_eq!(report.error.unwrap().code, "provider_error");
+    }
+
+    #[test]
+    fn serialized_report_has_no_prompt_or_private_fields() {
+        let report = sanitize_report(cli_report());
+        let serialized = serde_json::to_value(report).unwrap();
+        let object = serialized.as_object().unwrap();
+        assert!(!object.contains_key("prompt"));
+        assert!(!object.contains_key("api_key"));
+        assert!(!object.contains_key("model"));
+        assert!(!object.contains_key("model_path"));
+        assert!(!object.contains_key("endpoint"));
+    }
+}

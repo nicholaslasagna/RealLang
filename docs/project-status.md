@@ -89,6 +89,7 @@ single-purpose coding or game-design tool. As of RealForge 2.7:
 - `capabilities` reports general capability domains, safety levels, commands, and staff/network/write requirements (2.2)
 - `slash` defines a future interaction grammar without starting a shell or executing commands (2.2)
 - `settings` and `settings doctor` provide read-only human/JSON configuration and safety reports (2.2)
+- `provider status`, fixed `provider smoke`, and stdin-only `provider chat-sandbox` expose redacted local-provider diagnostics and one bounded untrusted text exchange without workspace context, tools, or persistence
 - `multimodal capabilities` reports optional provider support without making model/network calls (2.3)
 - `vision analyze` produces untrusted, capability-gated reports from bounded image inputs (2.3)
 - `image prompt` produces untrusted prompt specifications only; no binary generation exists (2.3)

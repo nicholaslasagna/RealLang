@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.25)
+# RealForge Workbench - Tauri desktop shell (0.6-0.26)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -27,6 +27,9 @@ It adds no command execution, shell, network, workspace write, or general file A
 `realforge provider smoke --json`. Rust owns every argument, re-sanitizes the CLI
 JSON, caps output, and returns no private identity or secret. It is not a general
 provider or command bridge.
+**0.26** adds one approval-gated, single-turn private chat sandbox. User text is
+bounded, written only to a fixed CLI command's stdin, and never combined with
+workspace context, files, tools, history, or persistence. Output remains untrusted.
 
 ## What 0.16 includes (version metadata)
 
@@ -174,6 +177,7 @@ workbench/
     approval.rs                  → two approved no-write validation actions
     approval_audit_store.rs      → fixed app-config metadata persistence
     provider_smoke.rs            → fixed approval-gated provider reachability check
+    provider_chat_sandbox.rs     → bounded stdin-only single-turn provider request
     allowlist.rs                 → Rust-side source IDs + fixed argv
     workspace.rs                 → repo discovery, validation, session override
     health.rs                    → bridge health + optional probe
@@ -262,6 +266,7 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `save_approval_audit_log` | Replace the fixed file with validated metadata entries |
 | `clear_approval_audit_log` | Remove only the fixed app-config audit file |
 | `run_private_provider_smoke` | Run fixed provider smoke after acknowledgement; sanitized response only |
+| `run_private_provider_chat_sandbox` | Send one bounded approved stdin request; sanitized response only |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -298,6 +303,7 @@ import {
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
   runPrivateProviderSmoke,
+  runPrivateProviderChatSandbox,
   loadApprovalAuditLog,
   saveApprovalAuditLog,
   clearApprovalAuditLog
@@ -338,6 +344,9 @@ dev bridge.
 - Provider smoke accepts only `approvalAcknowledged`; Rust owns fixed
   `provider smoke --json` arguments, timeout, caps, and result sanitization
 - Provider smoke output remains component-local and is not written to approval history
+- Private chat sandbox accepts only bounded `prompt` plus `approvalAcknowledged`;
+  Rust owns fixed `provider chat-sandbox --stdin --json` arguments
+- Chat prompt and response stay in component memory and never enter approval history
 - Health probe uses the same allowlisted `capabilities --json` path as report load
 
 ## Future milestones

@@ -9,6 +9,7 @@ import {
 } from "../providers";
 import type { ProviderConfigStatus } from "../providers";
 import { Badge, Button, Icon } from "./primitives";
+import { PrivateChatSandboxCard } from "./PrivateChatSandboxCard";
 import { ProviderSmokeCard } from "./ProviderSmokeCard";
 
 const HOME_CONFIG_LABEL = "~/.realforge.local.toml";
@@ -201,6 +202,7 @@ export function PrivateLocalModelPanel() {
         <span className="private-local-model__hint">Secrets and model names are never returned over IPC</span>
       </footer>
       <ProviderSmokeCard />
+      <PrivateChatSandboxCard />
       <section
         className="private-local-model private-local-model--image"
         data-testid="private-local-image-model-panel"

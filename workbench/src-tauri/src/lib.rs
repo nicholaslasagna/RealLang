@@ -6,7 +6,7 @@ use bridge::{
     get_workspace_paths, get_workspace_resolution, init_app_config_dir,
     list_readonly_report_sources, list_real_files, list_security_scan_sources,
     load_approval_audit_log, load_private_local_provider_config, load_readonly_report_source, run_approved_dry_run_action,
-    run_private_provider_smoke, run_security_scan_source, save_approval_audit_log, save_workspace_selection,
+    run_private_provider_chat_sandbox, run_private_provider_smoke, run_security_scan_source, save_approval_audit_log, save_workspace_selection,
     select_workspace_directory,
 };
 
@@ -37,6 +37,7 @@ pub fn run() {
             clear_approval_audit_log,
             load_private_local_provider_config,
             run_private_provider_smoke,
+            run_private_provider_chat_sandbox,
         ])
         .setup(|app| {
             init_app_config_dir(app.handle());

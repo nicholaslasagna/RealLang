@@ -92,6 +92,22 @@ only sanitized status fields plus a capped **UNTRUSTED** preview, and does not p
 the response. Web preview cannot run it. See the
 [Workbench smoke threat model](../workbench/docs/provider-smoke-threat-model.md).
 
+### Private chat sandbox (single turn)
+
+Workbench 0.26 and the CLI expose a bounded single-turn sandbox:
+
+```bash
+printf '%s' '<user text>' | realforge provider chat-sandbox --stdin --json
+```
+
+The command reads user text from stdin only. It applies input, output, token, and
+timeout caps; sends no workspace context, files, tools, memory, or chat history; and
+does not persist either body. Output is **LOCAL UNTRUSTED** and must be reviewed.
+Workbench requires a fresh acknowledgement for every send, keeps the exchange in
+component memory only, and refuses execution in web mode. This is not an agent or
+image-generation interface. See the
+[chat sandbox threat model](../workbench/docs/private-chat-sandbox-threat-model.md).
+
 ### Ollama
 
 ```toml

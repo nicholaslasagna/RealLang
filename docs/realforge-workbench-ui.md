@@ -38,11 +38,14 @@ signing/notarization.
 - Workbench 0.23: Settings provider panel matches `realforge provider status --json`
 - RealForge 0.24: CLI adds the fixed `realforge provider smoke --json` reachability check
 - Workbench 0.25: desktop Settings can run that fixed smoke check after explicit approval; no prompt input, browser request, private identity, or response persistence
+- Workbench 0.26: desktop Settings adds one approval-gated private chat sandbox; user text only, no workspace/files/tools/history, session memory only
 - Provider status remains a sanitized boolean/host shape, with CLI guidance for full env/repo precedence
 
 See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
 The desktop boundary is documented in the
 [provider smoke threat model](../workbench/docs/provider-smoke-threat-model.md).
+The single-turn text boundary is documented in the
+[private chat sandbox threat model](../workbench/docs/private-chat-sandbox-threat-model.md).
 
 ## Workbench 0.18 - controlled workspace-relative .real file check
 
@@ -334,6 +337,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 12. **Session-only approval audit log** (0.19) - sanitized transparency, no persistence or new authority
 13. **App-config approval history** (0.20) - fixed sanitized metadata file, confirmed clear, web session-only
 14. **Provider smoke display** (0.25) - fixed desktop command, fresh approval, sanitized untrusted session result
-15. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+15. **Private chat sandbox** (0.26) - bounded stdin-only text, fresh approval, no context/tools/history/persistence
+16. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

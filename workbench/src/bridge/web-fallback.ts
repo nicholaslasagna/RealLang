@@ -17,6 +17,8 @@ import type {
   SecurityScanResult,
   SecurityScanSourceMeta,
   ProviderStatus,
+  ProviderChatSandboxInput,
+  ProviderChatSandboxResult,
   ProviderSmokeInput,
   ProviderSmokeResult,
   UpdateCheckResult,
@@ -85,6 +87,18 @@ export function webRunPrivateProviderSmoke(_input: ProviderSmokeInput): Provider
     error: {
       code: "unsupported_web",
       message: "Provider smoke is available in the desktop shell only. Web mode never executes provider checks."
+    }
+  };
+}
+
+export function webRunPrivateProviderChatSandbox(
+  _input: ProviderChatSandboxInput
+): ProviderChatSandboxResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Private chat sandbox is available in the desktop shell only. Web mode never contacts providers."
     }
   };
 }

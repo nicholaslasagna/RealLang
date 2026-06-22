@@ -20,6 +20,8 @@ import type {
   WorkspacePaths,
   WorkspaceResolution,
   ProviderStatus,
+  ProviderChatSandboxInput,
+  ProviderChatSandboxResult,
   ProviderSmokeInput,
   ProviderSmokeResult
 } from "./types";
@@ -35,6 +37,7 @@ import {
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webRunPrivateProviderChatSandbox,
   webRunPrivateProviderSmoke,
   webRunSecurityScanSource,
   webRuntimeInfo,
@@ -297,6 +300,27 @@ export async function runPrivateProviderSmoke(input: ProviderSmokeInput): Promis
       error: {
         code: "ipc_failed",
         message: "The provider smoke bridge could not return a sanitized result."
+      }
+    };
+  }
+}
+
+/**
+ * Run one approval-gated, bounded, user-only provider request (desktop only).
+ * Rust accepts no path, argv, tools, file content, or persistence option.
+ */
+export async function runPrivateProviderChatSandbox(
+  input: ProviderChatSandboxInput
+): Promise<ProviderChatSandboxResult> {
+  if (!isDesktopRuntime()) return webRunPrivateProviderChatSandbox(input);
+  try {
+    return await invokeDesktop<ProviderChatSandboxResult>("run_private_provider_chat_sandbox", { input });
+  } catch {
+    return {
+      ok: false,
+      error: {
+        code: "ipc_failed",
+        message: "The private chat sandbox bridge could not return a sanitized result."
       }
     };
   }

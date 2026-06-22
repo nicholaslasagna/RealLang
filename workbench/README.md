@@ -98,6 +98,14 @@ only. Web mode cannot run smoke. This does not add chat, image execution, a gene
 command bridge, workspace writes, or audit persistence. See the
 [provider smoke threat model](docs/provider-smoke-threat-model.md).
 
+**0.26** adds an approval-gated **Private Chat Sandbox** under Settings →
+Provider / Local Model. It is one bounded user-only request, delivered through stdin
+to a fixed CLI command. No workspace context, files, tools, history, memory, image
+request, or automatic follow-up is included. Prompt and capped **LOCAL UNTRUSTED**
+response stay in component memory only and can be cleared explicitly. Web mode
+cannot run it. This is not an agent, general command bridge, or persistence feature.
+See the [private chat sandbox threat model](docs/private-chat-sandbox-threat-model.md).
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -133,6 +141,7 @@ Historical milestones:
 - **0.19** Session-only approval audit log and sanitized execution transparency (no persistence, no new IPC or execution power)
 - **0.20** App-config-only sanitized approval history (fixed file, confirmed clear, web remains session-only)
 - **0.25** Approval-gated fixed provider smoke display (desktop only; no arbitrary prompt, identity exposure, or persistence)
+- **0.26** Approval-gated private chat sandbox (single turn, stdin-only, no context/tools/history/persistence)
 
 ## Toolchain and dependency security
 

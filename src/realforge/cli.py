@@ -41,6 +41,12 @@ from realforge.provider_smoke import (
     format_provider_smoke_json,
     run_private_provider_smoke,
 )
+from realforge.provider_chat_sandbox import (
+    CHAT_SANDBOX_MAX_PROMPT_CHARS,
+    format_provider_chat_sandbox,
+    format_provider_chat_sandbox_json,
+    run_private_provider_chat_sandbox,
+)
 from realforge.providers import resolve_provider
 from realforge.errors import ProviderPlanError
 from realforge.report import format_check_fail, format_check_pass
@@ -280,6 +286,21 @@ def main(argv: list[str] | None = None) -> int:
         "--json",
         action="store_true",
         help="emit machine-readable sanitized provider smoke JSON",
+    )
+    provider_chat = provider_sub.add_parser(
+        "chat-sandbox",
+        help="run one bounded user-only request against the configured local provider",
+    )
+    provider_chat.add_argument(
+        "--stdin",
+        action="store_true",
+        required=True,
+        help="read bounded user text from stdin only",
+    )
+    provider_chat.add_argument(
+        "--json",
+        action="store_true",
+        help="emit machine-readable sanitized private chat sandbox JSON",
     )
 
     index = sub.add_parser("index", help="scan workspace and list tracked project files")
@@ -1306,6 +1327,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.provider_command == "smoke":
             report = run_private_provider_smoke()
             print(format_provider_smoke_json(report) if args.json else format_provider_smoke(report))
+            return 0 if report.ok else 1
+        if args.provider_command == "chat-sandbox":
+            prompt = sys.stdin.read(CHAT_SANDBOX_MAX_PROMPT_CHARS + 1)
+            report = run_private_provider_chat_sandbox(prompt)
+            print(
+                format_provider_chat_sandbox_json(report)
+                if args.json
+                else format_provider_chat_sandbox(report)
+            )
             return 0 if report.ok else 1
         return 1
 

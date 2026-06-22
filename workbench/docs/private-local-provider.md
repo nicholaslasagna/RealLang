@@ -64,6 +64,21 @@ including **LOCAL UNTRUSTED** badges and a hint to run `realforge provider statu
 The provider smoke card is a fixed reachability check, not chat or general provider
 execution.
 
+Workbench 0.26 adds a separate **Private Chat Sandbox**. It sends one bounded
+user-written text value only after a fresh approval acknowledgement. The runtime
+receives no workspace context, files, tools, history, image request, or automatic
+follow-up. The capped response remains **LOCAL UNTRUSTED** and stays in component
+memory until Clear, reload, or application exit.
+
+The corresponding CLI command reads text from stdin only:
+
+```text
+realforge provider chat-sandbox --stdin --json
+```
+
+The sandbox is not an agent and does not persist prompts or responses. See the
+[private chat sandbox threat model](private-chat-sandbox-threat-model.md).
+
 ## RealForge CLI
 
 The Python RealForge CLI/runtime loads the same fixed home config file with precedence:
@@ -86,4 +101,5 @@ execution is not enabled.
 
 - Wire image provider execution behind explicit staff gates
 - Review any future provider-smoke audit metadata under a separate privacy/schema change
+- Review any future chat audit metadata under a separate privacy/schema change
 - Never commit private model names, weights, or secrets to the public repo

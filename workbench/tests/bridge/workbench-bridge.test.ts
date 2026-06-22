@@ -10,6 +10,7 @@ import {
   loadApprovalAuditLog,
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
+  runPrivateProviderChatSandbox,
   runPrivateProviderSmoke,
   runtimeModeLabel,
   saveApprovalAuditLog
@@ -21,6 +22,7 @@ import {
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webRunPrivateProviderChatSandbox,
   webRunPrivateProviderSmoke,
   webRuntimeInfo,
   webSaveApprovalAuditLog
@@ -66,6 +68,18 @@ describe("workbench bridge client (web mode)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("unsupported_web");
     expect(webRunPrivateProviderSmoke({ approvalAcknowledged: true }).ok).toBe(false);
+  });
+
+  it("refuses private chat sandbox in web mode", async () => {
+    const result = await runPrivateProviderChatSandbox({
+      prompt: "Hello",
+      approvalAcknowledged: true
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("unsupported_web");
+    expect(
+      webRunPrivateProviderChatSandbox({ prompt: "Hello", approvalAcknowledged: true }).ok
+    ).toBe(false);
   });
 
   it("keeps approval history session-only in web mode", async () => {
