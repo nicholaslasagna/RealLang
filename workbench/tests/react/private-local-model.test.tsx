@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PrivateLocalModelPanel } from "../../src/components/PrivateLocalModelPanel";
 import { PRIVATE_LOCAL_IMAGE_MODEL_PROFILE, PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
 import type { ProviderStatus } from "../../src/bridge";
 
 const mocks = vi.hoisted(() => ({
   loadProviderStatus: vi.fn(),
+  runPrivateProviderSmoke: vi.fn(),
   isDesktopRuntime: vi.fn(() => true)
 }));
 
@@ -15,6 +16,7 @@ vi.mock("../../src/bridge", async (importOriginal) => {
     ...actual,
     loadProviderStatus: mocks.loadProviderStatus,
     loadPrivateLocalProviderConfig: mocks.loadProviderStatus,
+    runPrivateProviderSmoke: mocks.runPrivateProviderSmoke,
     isDesktopRuntime: mocks.isDesktopRuntime
   };
 });
@@ -61,6 +63,26 @@ describe("Private local model panel", () => {
     mocks.isDesktopRuntime.mockReturnValue(true);
     mocks.loadProviderStatus.mockReset();
     mocks.loadProviderStatus.mockResolvedValue(defaultsStatus);
+    mocks.runPrivateProviderSmoke.mockReset();
+    mocks.runPrivateProviderSmoke.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        endpoint_configured: true,
+        endpoint_host: "http://localhost:8000",
+        model_configured: true,
+        api_key_configured: true,
+        status: "pass",
+        duration_ms: 37,
+        response_preview: "OK",
+        response_truncated: false,
+        untrusted_output: true,
+        error: null
+      }
+    });
   });
 
   afterEach(() => {
@@ -89,7 +111,7 @@ describe("Private local model panel", () => {
     expect(screen.getByText("http://localhost:8000")).toBeInTheDocument();
     expect(screen.getByText(/api key configured/i)).toBeInTheDocument();
     expect(screen.getByText(/realforge provider status --json/i)).toBeInTheDocument();
-    expect(screen.getByText(/realforge provider smoke --json/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/realforge provider smoke --json/i).length).toBeGreaterThan(0);
   });
 
   it("does not expose API key value or exact model name", async () => {
@@ -152,6 +174,94 @@ describe("Private local model panel", () => {
       expect(screen.getByText(/desktop shell required/i)).toBeInTheDocument();
     });
     expect(mocks.loadProviderStatus).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /desktop app required/i })).toBeDisabled();
+    expect(mocks.runPrivateProviderSmoke).not.toHaveBeenCalled();
+  });
+
+  it("requires fresh approval and exposes no prompt textbox", async () => {
+    render(<PrivateLocalModelPanel />);
+    const runButton = await screen.findByRole("button", { name: /run provider smoke/i });
+    expect(runButton).toBeDisabled();
+    expect(screen.queryByRole("textbox", { name: /prompt/i })).not.toBeInTheDocument();
+    expect(mocks.runPrivateProviderSmoke).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
+    expect(runButton).toBeEnabled();
+    fireEvent.click(runButton);
+
+    await waitFor(() => {
+      expect(mocks.runPrivateProviderSmoke).toHaveBeenCalledWith({ approvalAcknowledged: true });
+    });
+    expect(await screen.findByTestId("provider-smoke-result")).toBeInTheDocument();
+    expect(screen.getByLabelText(/untrusted provider response preview/i)).toHaveTextContent("OK");
+    expect(screen.getAllByText(/^UNTRUSTED$/).length).toBeGreaterThan(0);
+    expect(runButton).toBeDisabled();
+  });
+
+  it("caps the displayed preview and ignores extra private response fields", async () => {
+    const fullResponse = "X".repeat(400);
+    mocks.runPrivateProviderSmoke.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: true,
+        attempted: true,
+        configured: true,
+        provider_kind: "openai_compatible_local",
+        endpoint_configured: true,
+        endpoint_host: "http://localhost:8000",
+        model_configured: true,
+        api_key_configured: true,
+        status: "pass",
+        duration_ms: 37,
+        response_preview: fullResponse,
+        response_truncated: false,
+        untrusted_output: true,
+        error: null,
+        api_key: "not-visible-secret-value",
+        model: "hidden-local-identity",
+        model_path: "/private/model/location"
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    fireEvent.click(await screen.findByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
+    fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
+
+    const preview = await screen.findByLabelText(/untrusted provider response preview/i);
+    expect(preview.textContent).toHaveLength(160);
+    expect(screen.getByText("TRUNCATED")).toBeInTheDocument();
+    expect(screen.queryByText(/not-visible-secret-value/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/hidden-local-identity/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/private\/model\/location/i)).not.toBeInTheDocument();
+  });
+
+  it("renders structured not-configured results without a response preview", async () => {
+    mocks.runPrivateProviderSmoke.mockResolvedValue({
+      ok: true,
+      data: {
+        ok: false,
+        attempted: false,
+        configured: false,
+        provider_kind: null,
+        endpoint_configured: false,
+        endpoint_host: null,
+        model_configured: false,
+        api_key_configured: false,
+        status: "not_configured",
+        duration_ms: 2,
+        response_preview: null,
+        response_truncated: false,
+        untrusted_output: true,
+        error: { code: "not_configured", message: "Private local provider is not configured." }
+      }
+    });
+    render(<PrivateLocalModelPanel />);
+    fireEvent.click(await screen.findByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
+    fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
+
+    expect(await screen.findByTestId("provider-smoke-result")).toBeInTheDocument();
+    expect(screen.getAllByText(/^NOT CONFIGURED$/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/\[not_configured\]/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/untrusted provider response preview/i)).not.toBeInTheDocument();
   });
 
   it("does not use fetch", async () => {

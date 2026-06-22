@@ -17,6 +17,8 @@ import type {
   SecurityScanResult,
   SecurityScanSourceMeta,
   ProviderStatus,
+  ProviderSmokeInput,
+  ProviderSmokeResult,
   UpdateCheckResult,
   UpdateConfiguration,
   UpdateStatus,
@@ -73,6 +75,16 @@ export function webRunApprovedDryRunAction(
     error: {
       code: "unsupported_web",
       message: "Approved local checks are available in the desktop shell only. Web mode never executes commands."
+    }
+  };
+}
+
+export function webRunPrivateProviderSmoke(_input: ProviderSmokeInput): ProviderSmokeResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Provider smoke is available in the desktop shell only. Web mode never executes provider checks."
     }
   };
 }

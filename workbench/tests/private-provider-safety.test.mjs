@@ -8,12 +8,9 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const workbenchRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (root, path) => readFile(join(root, path), "utf8");
 
-const FORBIDDEN_IDENTITY = [
-  /\bqwen\b/i,
-  /\baeon\b/i,
-  /\bdroyd\b/i,
-  /\bflux\b/i
-];
+const FORBIDDEN_IDENTITY = ["qw" + "en", "ae" + "on", "dr" + "oyd", "fl" + "ux"].map(
+  (term) => new RegExp(`\\b${term}\\b`, "i")
+);
 
 const WEIGHT_EXTENSIONS = [
   /\.safetensors\b/,

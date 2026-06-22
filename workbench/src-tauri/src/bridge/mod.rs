@@ -8,6 +8,7 @@ mod approval;
 mod approval_audit_store;
 mod health;
 mod private_provider_config;
+mod provider_smoke;
 mod real_files;
 mod resolve_python;
 mod security_scan;
@@ -28,6 +29,10 @@ use private_provider_config::{
     load_private_local_provider_config as read_private_provider_config, ProviderStatusReport,
 };
 use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
+use provider_smoke::{
+    run_private_provider_smoke as spawn_private_provider_smoke, ProviderSmokeInput,
+    ProviderSmokeResult,
+};
 use real_files::list_real_files as list_real;
 use security_scan::{list_scan_source_meta, run_security_scan as spawn_security_scan};
 use serde::Serialize;
@@ -257,6 +262,11 @@ pub fn clear_approval_audit_log() -> ApprovalAuditClearResult {
 #[tauri::command(rename_all = "camelCase")]
 pub fn load_private_local_provider_config() -> ProviderStatusReport {
     read_private_provider_config()
+}
+
+#[tauri::command(rename_all = "camelCase")]
+pub fn run_private_provider_smoke(input: ProviderSmokeInput) -> ProviderSmokeResult {
+    spawn_private_provider_smoke(input)
 }
 
 fn dialog_path_to_path_buf(path: FilePath) -> PathBuf {

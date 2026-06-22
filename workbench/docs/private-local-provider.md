@@ -42,18 +42,27 @@ Fields align with `realforge provider status --json`:
 | `errors` | Structured `{ code, message }` entries |
 
 Run `realforge provider status --json` in a terminal for full precedence
-(env / home / repo / defaults). Workbench does not execute the CLI.
+(env / home / repo / defaults). The Workbench status card uses its fixed redacted
+config reader rather than executing that status command.
 
 Run `realforge provider smoke --json` in a terminal to verify local runtime
-reachability with a fixed minimal prompt. The command reads only the fixed private
-home config, caps output, and treats the response as untrusted. Workbench does not
-execute smoke yet.
+reachability with a fixed minimal request. The command caps output and treats the
+response as untrusted.
+
+Workbench 0.25 can run that same fixed smoke command from Settings after a fresh
+approval acknowledgement. The desktop bridge accepts no prompt, path, endpoint,
+model identity, or arbitrary arguments. It returns a second sanitized report with
+booleans, safe loopback host metadata, duration, structured errors, and a capped
+**UNTRUSTED** preview. Web mode cannot run smoke, and the result is not persisted.
+See the [provider smoke threat model](provider-smoke-threat-model.md).
 
 ## Settings UI
 
 Settings → **Provider / Local Model** shows **Private Local Model** and
 **Private Local Image Model** cards using only the sanitized fields above,
 including **LOCAL UNTRUSTED** badges and a hint to run `realforge provider status --json`.
+The provider smoke card is a fixed reachability check, not chat or general provider
+execution.
 
 ## RealForge CLI
 
@@ -76,4 +85,5 @@ execution is not enabled.
 ## Future work
 
 - Wire image provider execution behind explicit staff gates
+- Review any future provider-smoke audit metadata under a separate privacy/schema change
 - Never commit private model names, weights, or secrets to the public repo

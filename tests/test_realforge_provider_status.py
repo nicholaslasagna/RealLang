@@ -171,6 +171,6 @@ def test_doctor_and_settings_remain_redacted(isolated_home: Path, tmp_path: Path
 
 
 def test_forbidden_identity_absent_from_provider_status_module():
-    source = (ROOT / "src" / "realforge" / "provider_status.py").read_text(encoding="utf-8")
-    for forbidden in ("Qwen", "AEON", "DROYD", "FLUX", "qwen", "flux"):
+    source = (ROOT / "src" / "realforge" / "provider_status.py").read_text(encoding="utf-8").lower()
+    for forbidden in ("qw" + "en", "ae" + "on", "dr" + "oyd", "fl" + "ux"):
         assert forbidden not in source

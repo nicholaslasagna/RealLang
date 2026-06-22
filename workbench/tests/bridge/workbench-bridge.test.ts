@@ -10,6 +10,7 @@ import {
   loadApprovalAuditLog,
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
+  runPrivateProviderSmoke,
   runtimeModeLabel,
   saveApprovalAuditLog
 } from "../../src/bridge/workbench-bridge";
@@ -20,6 +21,7 @@ import {
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webRunPrivateProviderSmoke,
   webRuntimeInfo,
   webSaveApprovalAuditLog
 } from "../../src/bridge/web-fallback";
@@ -57,6 +59,13 @@ describe("workbench bridge client (web mode)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe("unsupported_web");
     expect(webRunApprovedDryRunAction("realc-check-hello-example", { approvalAcknowledged: true }).ok).toBe(false);
+  });
+
+  it("refuses provider smoke in web mode", async () => {
+    const result = await runPrivateProviderSmoke({ approvalAcknowledged: true });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("unsupported_web");
+    expect(webRunPrivateProviderSmoke({ approvalAcknowledged: true }).ok).toBe(false);
   });
 
   it("keeps approval history session-only in web mode", async () => {

@@ -314,3 +314,35 @@ export interface MultimodalPrivateLocalProviderStatus
 
 export type ProviderStatus = MultimodalPrivateLocalProviderStatus;
 export type PrivateLocalProviderConfig = ProviderStatus;
+
+/** The only frontend-controlled value accepted by the fixed provider smoke IPC. */
+export interface ProviderSmokeInput {
+  approvalAcknowledged: boolean;
+}
+
+export interface ProviderSmokeError {
+  code: string;
+  message: string;
+}
+
+/** Sanitized CLI-parity provider smoke report. Exact identity and secrets are absent by design. */
+export interface ProviderSmokeReport {
+  ok: boolean;
+  attempted: boolean;
+  configured: boolean;
+  provider_kind: string | null;
+  endpoint_configured: boolean;
+  endpoint_host: string | null;
+  model_configured: boolean;
+  api_key_configured: boolean;
+  status: "pass" | "fail" | "not_configured";
+  duration_ms: number;
+  response_preview: string | null;
+  response_truncated: boolean;
+  untrusted_output: true;
+  error: ProviderSmokeError | null;
+}
+
+export type ProviderSmokeResult =
+  | { ok: true; data: ProviderSmokeReport }
+  | { ok: false; error: BridgeError };

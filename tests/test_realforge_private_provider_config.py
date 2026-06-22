@@ -154,8 +154,8 @@ def test_parse_local_endpoint_accepts_loopback_hosts():
 
 def test_forbidden_identity_strings_not_in_loader_source():
     root = Path(__file__).resolve().parents[1]
-    source = (root / "src" / "realforge" / "private_provider_config.py").read_text(encoding="utf-8")
-    for forbidden in ("Qwen", "AEON", "DROYD", "FLUX", "qwen", "flux"):
+    source = (root / "src" / "realforge" / "private_provider_config.py").read_text(encoding="utf-8").lower()
+    for forbidden in ("qw" + "en", "ae" + "on", "dr" + "oyd", "fl" + "ux"):
         assert forbidden not in source
 
 

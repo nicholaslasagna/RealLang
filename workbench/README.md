@@ -88,6 +88,16 @@ history** action. Web preview remains session-only. This adds no command, shell,
 network, patch, update-install, Git, or workspace-write authority. See the
 [persistence threat model](docs/approval-audit-persistence-threat-model.md).
 
+**0.25** adds an approval-gated **Provider Smoke Test** card under Settings →
+Provider / Local Model. Desktop mode can run only the fixed
+`realforge provider smoke --json` command; Rust owns the executable and arguments,
+uses a short timeout and stream caps, parses and re-sanitizes JSON, and returns no
+API key, exact model identity, model path, private request, or full response. The UI
+has no prompt field and keeps the capped **UNTRUSTED** preview in component memory
+only. Web mode cannot run smoke. This does not add chat, image execution, a general
+command bridge, workspace writes, or audit persistence. See the
+[provider smoke threat model](docs/provider-smoke-threat-model.md).
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -122,6 +132,7 @@ Historical milestones:
 - **0.18** Controlled workspace-relative `.real` file check (validated picker; still dry-run/check-only, no write bridge, no arbitrary argv)
 - **0.19** Session-only approval audit log and sanitized execution transparency (no persistence, no new IPC or execution power)
 - **0.20** App-config-only sanitized approval history (fixed file, confirmed clear, web remains session-only)
+- **0.25** Approval-gated fixed provider smoke display (desktop only; no arbitrary prompt, identity exposure, or persistence)
 
 ## Toolchain and dependency security
 

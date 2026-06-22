@@ -86,7 +86,11 @@ Smoke behavior:
 
 Never prints API keys, exact private model names, model paths, or the full response when long.
 
-Workbench does not execute smoke tests yet — run the CLI command in your terminal.
+Workbench 0.25 can run the same fixed smoke command from Settings in desktop mode
+after explicit acknowledgement. It accepts no arbitrary prompt or arguments, returns
+only sanitized status fields plus a capped **UNTRUSTED** preview, and does not persist
+the response. Web preview cannot run it. See the
+[Workbench smoke threat model](../workbench/docs/provider-smoke-threat-model.md).
 
 ### Ollama
 

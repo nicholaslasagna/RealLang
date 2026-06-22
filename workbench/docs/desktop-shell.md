@@ -1,4 +1,4 @@
-# RealForge Workbench - Tauri desktop shell (0.6-0.20)
+# RealForge Workbench - Tauri desktop shell (0.6-0.25)
 
 Workbench **0.6** added a **Tauri 2** desktop shell around the React + Vite app.
 **0.7** adds **allowlisted read-only CLI IPC** in desktop mode only.
@@ -23,6 +23,10 @@ action). Still dry-run/check-only — no write bridge, no arbitrary argv, no she
 checks. It adds no Tauri command, filesystem write, persistence, or execution power.
 **0.20** adds a fixed-file, app-config-only store for sanitized approval metadata.
 It adds no command execution, shell, network, workspace write, or general file API.
+**0.25** adds one approval-gated provider reachability check equivalent to
+`realforge provider smoke --json`. Rust owns every argument, re-sanitizes the CLI
+JSON, caps output, and returns no private identity or secret. It is not a general
+provider or command bridge.
 
 ## What 0.16 includes (version metadata)
 
@@ -169,6 +173,7 @@ workbench/
   src-tauri/src/bridge/
     approval.rs                  → two approved no-write validation actions
     approval_audit_store.rs      → fixed app-config metadata persistence
+    provider_smoke.rs            → fixed approval-gated provider reachability check
     allowlist.rs                 → Rust-side source IDs + fixed argv
     workspace.rs                 → repo discovery, validation, session override
     health.rs                    → bridge health + optional probe
@@ -256,6 +261,7 @@ export REALFORGE_REPO_ROOT=/path/to/RealLang
 | `load_approval_audit_log` | Load the fixed sanitized app-config audit file |
 | `save_approval_audit_log` | Replace the fixed file with validated metadata entries |
 | `clear_approval_audit_log` | Remove only the fixed app-config audit file |
+| `run_private_provider_smoke` | Run fixed provider smoke after acknowledgement; sanitized response only |
 
 `load_readonly_report_source` accepts **only** `sourceId` (camelCase). Rust validates
 against the allowlist and builds `python -m realforge.cli <fixed argv>`.
@@ -291,6 +297,7 @@ import {
   checkForUpdate,
   loadReadOnlyReportSource,
   runApprovedDryRunAction,
+  runPrivateProviderSmoke,
   loadApprovalAuditLog,
   saveApprovalAuditLog,
   clearApprovalAuditLog
@@ -328,6 +335,9 @@ dev bridge.
 - Composer live loads are restricted to the unchanged three-source allowlist
 - Approved actions accept a fixed ID, `approvalAcknowledged`, and only the validated
   relative path slot for the workspace-file action; Rust owns the module and flags
+- Provider smoke accepts only `approvalAcknowledged`; Rust owns fixed
+  `provider smoke --json` arguments, timeout, caps, and result sanitization
+- Provider smoke output remains component-local and is not written to approval history
 - Health probe uses the same allowlisted `capabilities --json` path as report load
 
 ## Future milestones

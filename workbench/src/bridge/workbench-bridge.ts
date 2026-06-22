@@ -19,7 +19,9 @@ import type {
   UpdateStatus,
   WorkspacePaths,
   WorkspaceResolution,
-  ProviderStatus
+  ProviderStatus,
+  ProviderSmokeInput,
+  ProviderSmokeResult
 } from "./types";
 import type { PersistedApprovalAuditEntry } from "./types";
 import {
@@ -33,6 +35,7 @@ import {
   webLoadReadOnlyReportSource,
   webReadOnlyReportSources,
   webRunApprovedDryRunAction,
+  webRunPrivateProviderSmoke,
   webRunSecurityScanSource,
   webRuntimeInfo,
   webSaveApprovalAuditLog,
@@ -276,6 +279,25 @@ export async function loadProviderStatus(): Promise<ProviderStatus> {
       image_provider_execution_enabled: false,
       warnings: [],
       errors: [{ code: "ipc_failed", message }]
+    };
+  }
+}
+
+/**
+ * Run the fixed, approval-gated provider reachability check (desktop only).
+ * The only input is acknowledgement; Rust owns the executable and all argv.
+ */
+export async function runPrivateProviderSmoke(input: ProviderSmokeInput): Promise<ProviderSmokeResult> {
+  if (!isDesktopRuntime()) return webRunPrivateProviderSmoke(input);
+  try {
+    return await invokeDesktop<ProviderSmokeResult>("run_private_provider_smoke", { input });
+  } catch {
+    return {
+      ok: false,
+      error: {
+        code: "ipc_failed",
+        message: "The provider smoke bridge could not return a sanitized result."
+      }
     };
   }
 }

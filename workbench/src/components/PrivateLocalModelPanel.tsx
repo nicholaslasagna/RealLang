@@ -9,6 +9,7 @@ import {
 } from "../providers";
 import type { ProviderConfigStatus } from "../providers";
 import { Badge, Button, Icon } from "./primitives";
+import { ProviderSmokeCard } from "./ProviderSmokeCard";
 
 const HOME_CONFIG_LABEL = "~/.realforge.local.toml";
 const CLI_STATUS_HINT = "realforge provider status --json";
@@ -177,7 +178,7 @@ export function PrivateLocalModelPanel() {
           </li>
           <li>
             <Icon name="wifi-off" />
-            Workbench does not execute CLI commands, probe endpoints, or call the network.
+            Workbench can run only the separately approved fixed smoke check; it has no arbitrary provider command path.
           </li>
           <li>
             <Icon name="shield-check" />
@@ -199,6 +200,7 @@ export function PrivateLocalModelPanel() {
         )}
         <span className="private-local-model__hint">Secrets and model names are never returned over IPC</span>
       </footer>
+      <ProviderSmokeCard />
       <section
         className="private-local-model private-local-model--image"
         data-testid="private-local-image-model-panel"

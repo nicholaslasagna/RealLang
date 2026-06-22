@@ -114,6 +114,27 @@ async function run() {
               };
             }
             if (command === "clear_approval_audit_log") return { ok: true };
+            if (command === "load_private_local_provider_config") {
+              return {
+                ok: true, configured: true, source: "home_private", provider_kind: "openai_compatible_local",
+                trust: "local_untrusted", endpoint_configured: true, endpoint_host: "http://localhost:8000",
+                model_configured: true, api_key_configured: true, image_provider_configured: false,
+                image_provider_kind: null, image_endpoint_host: null, image_provider_execution_enabled: false,
+                warnings: [], errors: []
+              };
+            }
+            if (command === "run_private_provider_smoke") {
+              if (args.input?.approvalAcknowledged !== true) throw new Error("approval required");
+              return {
+                ok: true,
+                data: {
+                  ok: true, attempted: true, configured: true, provider_kind: "openai_compatible_local",
+                  endpoint_configured: true, endpoint_host: "http://localhost:8000", model_configured: true,
+                  api_key_configured: true, status: "pass", duration_ms: 24, response_preview: "OK",
+                  response_truncated: false, untrusted_output: true, error: null
+                }
+              };
+            }
             throw new Error(`visual mock does not implement ${command}`);
           }
         };
@@ -145,6 +166,15 @@ async function run() {
         await page.waitForSelector(selector);
         if (await overflows()) throw new Error(`${navName} horizontal overflow detected at ${width}px`);
       }
+
+      await page.getByRole("button", { name: "Provider / Local Model", exact: true }).click();
+      await page.waitForSelector('[data-testid="provider-smoke-card"]');
+      const smokeButton = page.getByRole("button", { name: "Run provider smoke", exact: true });
+      if (await smokeButton.isEnabled()) throw new Error(`Provider smoke started enabled at ${width}px`);
+      await page.getByRole("checkbox", { name: /Approve one fixed provider smoke check/i }).check();
+      await smokeButton.click();
+      await page.waitForSelector('[data-testid="provider-smoke-result"]');
+      if (await overflows()) throw new Error(`Provider smoke horizontal overflow detected at ${width}px`);
 
       await page.getByRole("button", { name: "Workbench", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');

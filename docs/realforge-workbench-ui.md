@@ -36,10 +36,13 @@ signing/notarization.
 - No model weights, private names, API keys, or paths in the public repo
 - No browser fetch/network; RealForge CLI uses local ignored config when wired
 - Workbench 0.23: Settings provider panel matches `realforge provider status --json`
-- RealForge 0.24: Settings links to the CLI-only `realforge provider smoke --json`; no smoke IPC or browser request was added
-  shape (sanitized booleans only; CLI hint for full env/repo precedence)
+- RealForge 0.24: CLI adds the fixed `realforge provider smoke --json` reachability check
+- Workbench 0.25: desktop Settings can run that fixed smoke check after explicit approval; no prompt input, browser request, private identity, or response persistence
+- Provider status remains a sanitized boolean/host shape, with CLI guidance for full env/repo precedence
 
 See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
+The desktop boundary is documented in the
+[provider smoke threat model](../workbench/docs/provider-smoke-threat-model.md).
 
 ## Workbench 0.18 - controlled workspace-relative .real file check
 
@@ -330,6 +333,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 11. **Controlled workspace `.real` path input** (0.18) - validated relative picker, no arbitrary argv
 12. **Session-only approval audit log** (0.19) - sanitized transparency, no persistence or new authority
 13. **App-config approval history** (0.20) - fixed sanitized metadata file, confirmed clear, web session-only
-14. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+14. **Provider smoke display** (0.25) - fixed desktop command, fresh approval, sanitized untrusted session result
+15. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).
