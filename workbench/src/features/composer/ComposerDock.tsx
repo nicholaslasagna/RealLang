@@ -98,6 +98,13 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
         </button>
       </div>
 
+      {!desktop ? (
+        <p className="composer-mode__webnote" data-testid="composer-web-note">
+          <Icon name="lock-keyhole" /> Local model chat runs in the desktop app only. Web preview never contacts a
+          provider — use Safe preview to compose actions.
+        </p>
+      ) : null}
+
       {askMode ? (
         <label className="composer-approval" data-testid="composer-ask-approval">
           <input

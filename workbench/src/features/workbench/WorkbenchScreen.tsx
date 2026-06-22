@@ -187,6 +187,11 @@ export function WorkbenchScreen() {
                 result={chatResult}
                 running={chatRunning}
                 onClear={clearChat}
+                onRetry={() => askLocalModel(chatPrompt)}
+                onConfigureProvider={() => {
+                  setSettingsSection("provider");
+                  navigate("settings");
+                }}
               />
             ) : null}
             {stagedTask ? (
