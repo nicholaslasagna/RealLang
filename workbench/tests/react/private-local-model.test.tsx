@@ -122,9 +122,9 @@ describe("Private local model panel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("private-local-model-panel")).toBeInTheDocument();
     });
-    expect(screen.getByText(PRIVATE_LOCAL_MODEL_PROFILE.displayName.toUpperCase())).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: PRIVATE_LOCAL_MODEL_PROFILE.displayName })).toBeInTheDocument();
     expect(screen.getAllByText(/local untrusted/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/~\/\.realforge\.local\.toml/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/exact identity and secrets never cross/i)).toBeInTheDocument();
   });
 
   it("renders CLI-parity provider status fields", async () => {
@@ -133,7 +133,7 @@ describe("Private local model panel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("provider-status-grid")).toBeInTheDocument();
     });
-    expect(screen.getByText(/home private config/i)).toBeInTheDocument();
+    expect(screen.getByText(/private home config/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^YES$/).length).toBeGreaterThan(0);
     expect(screen.getByText("http://localhost:8000")).toBeInTheDocument();
     expect(screen.getAllByText(/api key configured/i).length).toBeGreaterThan(0);
@@ -158,8 +158,8 @@ describe("Private local model panel", () => {
     await waitFor(() => {
       expect(screen.getByTestId("private-local-image-model-panel")).toBeInTheDocument();
     });
-    expect(screen.getByText(PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.displayName.toUpperCase())).toBeInTheDocument();
-    expect(screen.getByText(/image execution enabled/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.displayName })).toBeInTheDocument();
+    expect(screen.getByText(/^Image execution$/i)).toBeInTheDocument();
     expect(screen.getByText("http://localhost:8188")).toBeInTheDocument();
     expect(screen.getByText(/^DISABLED$/)).toBeInTheDocument();
   });
@@ -174,9 +174,10 @@ describe("Private local model panel", () => {
     expect(within(dashboard).getByText("Fixed smoke check")).toBeInTheDocument();
     expect(within(dashboard).getByText("Private chat sandbox")).toBeInTheDocument();
     expect(within(dashboard).getByText("Image provider")).toBeInTheDocument();
-    expect(within(dashboard).getAllByText("OFF")).toHaveLength(7);
+    const safety = screen.getByTestId("provider-safety-boundary");
+    expect(within(safety).getAllByText("OFF")).toHaveLength(7);
     for (const label of ["Workspace context", "File access", "Tools", "Shell", "Memory", "Persistence", "Image generation"]) {
-      expect(within(dashboard).getByText(label)).toBeInTheDocument();
+      expect(within(safety).getByText(label)).toBeInTheDocument();
     }
     expect(within(dashboard).getByText("CONFIGURED")).toBeInTheDocument();
     expect(within(dashboard).getByText("METADATA ONLY")).toBeInTheDocument();
@@ -212,6 +213,16 @@ describe("Private local model panel", () => {
     expect(screen.queryByText(/super-secret/i)).not.toBeInTheDocument();
   });
 
+  it("renders each sanitized provider warning once", async () => {
+    mocks.loadProviderStatus.mockResolvedValue({
+      ...configuredStatus,
+      warnings: ["Sanitized provider warning."]
+    });
+    render(<PrivateLocalModelPanel />);
+    await screen.findByTestId("provider-status-warnings");
+    expect(screen.getAllByText("Sanitized provider warning.")).toHaveLength(1);
+  });
+
   it("does not hardcode private model names", () => {
     const source = [
       PRIVATE_LOCAL_MODEL_PROFILE.displayName,
@@ -231,7 +242,7 @@ describe("Private local model panel", () => {
     mocks.loadProviderStatus.mockClear();
     render(<PrivateLocalModelPanel />);
     await waitFor(() => {
-      expect(screen.getByText(/desktop shell required/i)).toBeInTheDocument();
+      expect(screen.getByText(/desktop status unavailable/i)).toBeInTheDocument();
     });
     expect(mocks.loadProviderStatus).not.toHaveBeenCalled();
     const desktopOnlyButtons = screen.getAllByRole("button", { name: /desktop app required/i });

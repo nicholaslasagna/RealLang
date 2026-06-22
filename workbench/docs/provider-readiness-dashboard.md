@@ -1,4 +1,4 @@
-# Private provider readiness dashboard (Workbench 0.28)
+# Private provider console and readiness dashboard (Workbench 0.28-0.29)
 
 Workbench 0.28 adds a frontend-only readiness summary for the user-configured local
 provider. It derives its state from the existing sanitized provider status report
@@ -34,3 +34,24 @@ even when image-provider metadata is configured. Web preview remains execution-f
 desktop-only smoke and chat controls retain their existing approval gates.
 
 Provider output remains untrusted and must be reviewed by the user.
+
+## Provider console organization
+
+Workbench 0.29 keeps the 0.28 readiness model and reorganizes the surrounding
+Settings surface into one provider console:
+
+1. readiness lifecycle and next safe actions;
+2. sanitized chat-provider status;
+3. the fixed approval-gated smoke test;
+4. the approval-gated single-turn chat sandbox;
+5. image-provider metadata with execution disabled;
+6. the explicit disconnected-capability boundary.
+
+The console avoids repeating configuration fields and safety warnings across
+cards. Smoke and chat remain separate operations with separate approval. Image
+generation remains unavailable. Workspace context, files, tools, shell, memory,
+and persistence remain disconnected. Private identity stays local-only, and all
+provider output remains `local_untrusted`.
+
+This consolidation is frontend-only. It adds no IPC command, provider request,
+storage, transcript, browser network request, or execution authority.

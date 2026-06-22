@@ -81,6 +81,9 @@ test("private local model UI sources avoid forbidden identity strings", async ()
     read(workbenchRoot, "src/providers/model-profiles.ts"),
     read(workbenchRoot, "src/providers/provider-readiness.ts"),
     read(workbenchRoot, "src/components/ProviderReadinessDashboard.tsx"),
+    read(workbenchRoot, "src/components/ProviderStatusSummary.tsx"),
+    read(workbenchRoot, "src/components/PrivateImageProviderCard.tsx"),
+    read(workbenchRoot, "src/components/ProviderSafetyBoundary.tsx"),
     read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx")
   ]);
   const combined = sources.join("\n");
@@ -89,14 +92,17 @@ test("private local model UI sources avoid forbidden identity strings", async ()
   }
 });
 
-test("provider readiness is frontend-only sanitized derivation with no persistence", async () => {
-  const [model, dashboard, panel, smoke] = await Promise.all([
+test("provider console is frontend-only sanitized derivation with no persistence", async () => {
+  const [model, dashboard, statusSummary, image, safety, panel, smoke] = await Promise.all([
     read(workbenchRoot, "src/providers/provider-readiness.ts"),
     read(workbenchRoot, "src/components/ProviderReadinessDashboard.tsx"),
+    read(workbenchRoot, "src/components/ProviderStatusSummary.tsx"),
+    read(workbenchRoot, "src/components/PrivateImageProviderCard.tsx"),
+    read(workbenchRoot, "src/components/ProviderSafetyBoundary.tsx"),
     read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx"),
     read(workbenchRoot, "src/components/ProviderSmokeCard.tsx")
   ]);
-  const combined = `${model}\n${dashboard}\n${panel}\n${smoke}`;
+  const combined = `${model}\n${dashboard}\n${statusSummary}\n${image}\n${safety}\n${panel}\n${smoke}`;
   assert.match(model, /derivePrivateProviderReadiness/);
   assert.match(model, /imageProviderExecutionEnabled: false/);
   assert.match(model, /workspaceContextEnabled: false/);
@@ -105,7 +111,8 @@ test("provider readiness is frontend-only sanitized derivation with no persisten
   assert.match(model, /memoryEnabled: false/);
   assert.match(model, /persistenceEnabled: false/);
   assert.match(dashboard, /LOCAL UNTRUSTED/);
-  assert.match(dashboard, /Disconnected by design/);
+  assert.match(safety, /Disconnected by design/);
+  assert.match(image, /EXECUTION OFF/);
   assert.match(smoke, /onSessionStatusChange/);
   assert.doesNotMatch(combined, /localStorage|sessionStorage|indexedDB/);
   assert.doesNotMatch(combined, /\bfetch\s*\(|XMLHttpRequest/);
@@ -114,27 +121,29 @@ test("provider readiness is frontend-only sanitized derivation with no persisten
 });
 
 test("private local image model scaffold stays generic and inert", async () => {
-  const panel = await read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx");
+  const image = await read(workbenchRoot, "src/components/PrivateImageProviderCard.tsx");
   const profiles = await read(workbenchRoot, "src/providers/model-profiles.ts");
-  assert.match(panel, /private-local-image-model-panel/);
+  assert.match(image, /private-local-image-model-panel/);
   assert.match(profiles, /Private Local Image Model/);
-  assert.match(panel, /FUTURE/);
-  assert.match(panel, /DISABLED/);
-  assert.match(panel, /api key configured/i);
+  assert.match(image, /EXECUTION OFF/);
+  assert.match(image, /DISABLED/);
+  assert.match(image, /Image generation/);
   assert.match(profiles, /private-local-image/);
   assert.match(profiles, /local_image_provider/);
-  assert.doesNotMatch(panel, /\bfetch\s*\(/);
+  assert.doesNotMatch(image, /\bfetch\s*\(/);
 });
 
 test("private local model panel does not use fetch or XMLHttpRequest", async () => {
   const panel = await read(workbenchRoot, "src/components/PrivateLocalModelPanel.tsx");
+  const statusSummary = await read(workbenchRoot, "src/components/ProviderStatusSummary.tsx");
+  const smoke = await read(workbenchRoot, "src/components/ProviderSmokeCard.tsx");
   const bridge = await read(workbenchRoot, "src/bridge/workbench-bridge.ts");
   const loader = await read(workbenchRoot, "src-tauri/src/bridge/private_provider_config.rs");
   assert.doesNotMatch(panel, /\bfetch\s*\(/);
   assert.doesNotMatch(panel, /XMLHttpRequest/);
   assert.doesNotMatch(bridge, /\bfetch\s*\(/);
-  assert.match(panel, /realforge provider status/);
-  assert.match(panel, /realforge provider smoke/);
+  assert.match(statusSummary, /realforge provider status/);
+  assert.match(smoke, /realforge provider smoke/);
   assert.doesNotMatch(panel, /invokeDesktop.*provider status/);
   assert.match(loader, /load_private_local_provider_config/);
   assert.match(loader, /CONFIG_FILE_NAME/);

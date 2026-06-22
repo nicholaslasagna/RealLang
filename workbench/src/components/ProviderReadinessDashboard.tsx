@@ -12,14 +12,6 @@ interface ProviderReadinessDashboardProps {
   onRefreshStatus: () => void;
 }
 
-function yesNo(value: boolean): string {
-  return value ? "YES" : "NO";
-}
-
-function enabledLabel(value: boolean): string {
-  return value ? "ON" : "OFF";
-}
-
 function smokeStatusLabel(value: ProviderSmokeSessionStatus): string {
   const labels: Record<ProviderSmokeSessionStatus, string> = {
     not_run: "NOT RUN",
@@ -81,16 +73,6 @@ export function ProviderReadinessDashboard({
     }
   ];
 
-  const disconnected = [
-    ["Workspace context", readiness.workspaceContextEnabled],
-    ["File access", readiness.fileAccessEnabled],
-    ["Tools", readiness.toolsEnabled],
-    ["Shell", readiness.shellEnabled],
-    ["Memory", readiness.memoryEnabled],
-    ["Persistence", readiness.persistenceEnabled],
-    ["Image generation", readiness.imageGenerationEnabled]
-  ] as const;
-
   return (
     <section
       className="provider-readiness"
@@ -103,7 +85,7 @@ export function ProviderReadinessDashboard({
           <p className="eyebrow">PRIVATE PROVIDER LIFECYCLE</p>
           <h2 id="provider-readiness-title">Provider Readiness</h2>
           <p>
-            Sanitized local readiness only. Provider output remains untrusted, and no workspace, files, tools, or memory are connected.
+            One view of local configuration, reachability, and the bounded provider surfaces available in this session.
           </p>
         </div>
         <div className="provider-readiness__badges">
@@ -124,33 +106,6 @@ export function ProviderReadinessDashboard({
           </li>
         ))}
       </ol>
-
-      <div className="provider-readiness__body">
-        <section aria-labelledby="provider-readiness-config-title">
-          <h3 id="provider-readiness-config-title">Sanitized configuration</h3>
-          <dl className="provider-readiness__metrics">
-            <div><dt>Config detected</dt><dd>{yesNo(readiness.configDetected)}</dd></div>
-            <div><dt>Endpoint configured</dt><dd>{yesNo(readiness.endpointConfigured)}</dd></div>
-            <div><dt>Model configured</dt><dd>{yesNo(readiness.modelConfigured)}</dd></div>
-            <div><dt>API key configured</dt><dd>{yesNo(readiness.apiKeyConfigured)}</dd></div>
-            <div><dt>Smoke session</dt><dd>{smokeStatusLabel(readiness.smokeLastStatus)}</dd></div>
-            <div><dt>Chat limit</dt><dd>{readiness.chatSandboxLimits.maxPromptChars.toLocaleString()} CHARS</dd></div>
-          </dl>
-        </section>
-
-        <section aria-labelledby="provider-readiness-boundary-title">
-          <h3 id="provider-readiness-boundary-title">Disconnected by design</h3>
-          <div className="provider-readiness__boundaries">
-            {disconnected.map(([label, enabled]) => (
-              <span key={label}>
-                <Icon name={enabled ? "circle-check" : "lock-keyhole"} />
-                <b>{label}</b>
-                <small>{enabledLabel(enabled)}</small>
-              </span>
-            ))}
-          </div>
-        </section>
-      </div>
 
       <footer className="provider-readiness__actions">
         <div>

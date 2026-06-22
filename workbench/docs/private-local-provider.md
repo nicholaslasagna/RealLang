@@ -96,6 +96,14 @@ for workspace context, files, tools, shell, memory, persistence, and image
 generation. The trust boundary remains `local_untrusted`; private identity remains
 local-only. See [provider readiness dashboard](provider-readiness-dashboard.md).
 
+Workbench 0.29 consolidates the provider settings area into a single ordered
+console: readiness, sanitized status, smoke, chat sandbox, disabled image-provider
+metadata, and the disconnected-capability boundary. This removes duplicated copy
+without combining the smoke and chat approval flows. Output remains
+`local_untrusted`; private identity remains local-only; workspace, files, tools,
+shell, memory, persistence, and image execution remain off. No new IPC or provider
+authority is introduced.
+
 ## RealForge CLI
 
 The Python RealForge CLI/runtime loads the same fixed home config file with precedence:

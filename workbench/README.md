@@ -121,6 +121,13 @@ Workspace context, files, tools, shell, memory, persistence, and image generatio
 remain explicitly off. No new IPC, provider call, storage, or execution authority
 is added. See the [readiness dashboard documentation](docs/provider-readiness-dashboard.md).
 
+**0.29** consolidates those provider surfaces into one calm, ordered console:
+readiness, sanitized chat status, fixed smoke test, private chat sandbox,
+disabled image-provider metadata, and the disconnected-capability boundary. The
+smoke and chat approval gates are unchanged, output remains `local_untrusted`,
+and web preview remains execution-free. This is frontend organization only; it
+adds no IPC, provider request, storage, workspace access, or execution authority.
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -159,6 +166,7 @@ Historical milestones:
 - **0.26** Approval-gated private chat sandbox (single turn, stdin-only, no context/tools/history/persistence)
 - **0.27** Private chat sandbox hardening (single active request, desktop cancellation, redacted timeout/cancel states, safe visible-response copy)
 - **0.28** Private provider readiness dashboard (sanitized lifecycle, session-only smoke status, disconnected capabilities visible, no new authority)
+- **0.29** Provider area UX consolidation (ordered console, reduced duplication, unchanged approval and trust boundaries)
 
 ## Toolchain and dependency security
 
