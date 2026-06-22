@@ -168,6 +168,7 @@ Historical milestones:
 - **0.28** Private provider readiness dashboard (sanitized lifecycle, session-only smoke status, disconnected capabilities visible, no new authority)
 - **0.29** Provider area UX consolidation (ordered console, reduced duplication, unchanged approval and trust boundaries)
 - **0.31** Conversation flow polish (greeting → describe → preview → approve → result → reference; gated illustrative evidence, secondary audit, clearer result affordance; no new authority, IPC, or execution power)
+- **0.32** Main composer can use the existing private chat sandbox (explicit Ask-local mode, desktop-only, per-send approval, LOCAL UNTRUSTED single-turn output; reuses the existing IPC; no workspace/files/tools/memory/persistence, no new provider authority)
 
 ## Toolchain and dependency security
 

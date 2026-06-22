@@ -2,6 +2,8 @@ import { useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { runPrivateProviderChatSandbox } from "../../bridge";
+import type { ProviderChatSandboxResult } from "../../bridge";
 import { Badge, Icon } from "../../components/primitives";
 import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
@@ -10,6 +12,7 @@ import { ComposerDock } from "../composer/ComposerDock";
 import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
+import { WorkbenchChatTurn } from "./WorkbenchChatTurn";
 
 function PlanCard() {
   const steps = [
@@ -121,6 +124,11 @@ export function WorkbenchScreen() {
   const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  // Single-turn local-model exchange. Session-only React state — never persisted,
+  // never added to the approval audit, never accumulated into transcript memory.
+  const [chatPrompt, setChatPrompt] = useState<string | null>(null);
+  const [chatResult, setChatResult] = useState<ProviderChatSandboxResult | null>(null);
+  const [chatRunning, setChatRunning] = useState(false);
   const runtime = useComposerRuntime(staffPreview);
   const action = composeActionPlan(actionId, runtime);
   const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
@@ -128,6 +136,26 @@ export function WorkbenchScreen() {
   const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
     const loaded = await loadDesktopReport(sourceId);
     if (loaded) navigate("reports");
+  };
+
+  // Reuses the existing narrow chat-sandbox IPC. No workspace/files/tools/argv —
+  // only the bounded prompt + acknowledgement the Rust bridge already validates.
+  const askLocalModel = async (prompt: string) => {
+    setChatPrompt(prompt);
+    setChatResult(null);
+    setChatRunning(true);
+    try {
+      const response = await runPrivateProviderChatSandbox({ prompt, approvalAcknowledged: true });
+      setChatResult(response);
+    } finally {
+      setChatRunning(false);
+    }
+  };
+
+  const clearChat = () => {
+    if (chatRunning) return;
+    setChatPrompt(null);
+    setChatResult(null);
   };
 
   return (
@@ -152,7 +180,15 @@ export function WorkbenchScreen() {
         <div className="thread-scroll">
           <div className="thread">
             <WorkbenchGreeting />
-            {!stagedTask ? <WorkbenchFlowHint /> : null}
+            {!stagedTask && chatPrompt === null ? <WorkbenchFlowHint /> : null}
+            {chatPrompt !== null ? (
+              <WorkbenchChatTurn
+                prompt={chatPrompt}
+                result={chatResult}
+                running={chatRunning}
+                onClear={clearChat}
+              />
+            ) : null}
             {stagedTask ? (
               <div className="thread-message thread-message--user">
                 {stagedTask}
@@ -205,7 +241,7 @@ export function WorkbenchScreen() {
             </section>
           </div>
         </div>
-        <ComposerDock action={action} />
+        <ComposerDock action={action} onAskLocalModel={askLocalModel} chatRunning={chatRunning} />
       </section>
       {showDetails ? (
         <ActionInspector action={action} runtime={runtime.runtime} bridgeHealthy={runtime.bridgeHealthy} />

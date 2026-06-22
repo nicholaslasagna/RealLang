@@ -148,3 +148,25 @@ an abrupt dump. Illustrative planning evidence appears only after the user stage
 intent, and is labelled as untrusted, illustrative provider output. None of these
 changes alter the approval gates, dry-run-only behavior, untrusted output trust
 level, or the absence of workspace/tool/model autonomy.
+
+## Main composer local sandbox mode (0.32)
+
+The main composer has two explicit modes the user chooses between:
+
+1. **Safe preview** (default) — stages a structured, display-only action preview.
+   Unchanged: the `ActionPreviewCard`, approval flow, approved dry-run result,
+   audit reference, and display-only argv details all still work.
+2. **Ask local model** — sends one bounded request to the **existing** private
+   chat sandbox (`run_private_provider_chat_sandbox`) and renders the response in
+   the thread as a `LOCAL UNTRUSTED` assistant turn.
+
+Ask-local mode is **desktop only** (disabled and labelled in web mode), requires
+an explicit per-send approval, and never auto-sends while typing. The request
+carries only a bounded prompt plus an acknowledgement — no workspace, files,
+context, tools, shell, memory, history, or image generation. Output is
+`local_untrusted`, capped, and session-only; nothing is persisted or added to the
+approval audit. See
+[main-composer-chat-threat-model.md](./main-composer-chat-threat-model.md).
+
+This is not an autonomous agent and not image generation; the private model
+identity stays local-only and never appears in tracked files.
