@@ -126,6 +126,9 @@ describe("0.31 Workbench conversation flow", () => {
       within(wrap).getByRole("button", { name: /load capabilities report/i, hidden: true })
     ).toBeInTheDocument();
     fireEvent.click(screen.getByText("Suggestions"));
-    expect(within(wrap).getByRole("button", { name: /load capabilities report/i })).toBeVisible();
+    const intent = within(wrap).getByRole("button", { name: /load capabilities report/i });
+    expect(intent).toBeVisible();
+    fireEvent.click(intent);
+    expect(wrap).not.toHaveAttribute("open");
   });
 });

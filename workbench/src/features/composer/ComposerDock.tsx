@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import type { ComposedAction, CommandActionId } from "../../composer/action-model";
 import { commandActionDefinitions } from "../../composer/action-model";
 import { isDesktopRuntime } from "../../bridge";
@@ -34,6 +34,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
   const desktop = isDesktopRuntime();
   const [mode, setMode] = useState<ComposerMode>("preview");
   const [approved, setApproved] = useState(false);
+  const intentsRef = useRef<HTMLDetailsElement | null>(null);
   const askMode = mode === "ask-local";
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -71,6 +72,9 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
   };
 
   const sendDisabled = askMode && (!desktop || !approved || chatRunning);
+  const closeSuggestions = () => {
+    if (intentsRef.current) intentsRef.current.open = false;
+  };
 
   return (
     <form className="composer composer--safe" data-testid="safe-command-composer" onSubmit={onSubmit}>
@@ -124,7 +128,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
           </span>
         </label>
       ) : (
-        <details className="composer-intents-wrap" data-testid="composer-intents-wrap">
+        <details ref={intentsRef} className="composer-intents-wrap" data-testid="composer-intents-wrap">
           <summary className="composer-intents-summary">
             <Icon name="sparkles" />
             Suggestions
@@ -138,13 +142,19 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
                   key={actionId}
                   type="button"
                   className={definition.id === action.id ? "is-active" : ""}
-                  onClick={() => composeActionPreview(actionId)}
+                  onClick={() => {
+                    composeActionPreview(actionId);
+                    closeSuggestions();
+                  }}
                 >
                   {definition.title}
                 </button>
               );
             })}
-            <button type="button" onClick={() => openPalette()}>
+            <button type="button" onClick={() => {
+              closeSuggestions();
+              openPalette();
+            }}>
               All intents <Icon name="command" />
             </button>
           </div>
