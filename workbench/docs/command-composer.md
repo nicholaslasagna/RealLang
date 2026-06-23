@@ -170,3 +170,13 @@ approval audit. See
 
 This is not an autonomous agent and not image generation; the private model
 identity stays local-only and never appears in tracked files.
+
+## 0.38 real local chat interaction
+
+Ask-local mode now behaves like a real local chat surface: Enter sends, Shift+Enter adds a
+newline, and the thread shows a session-only back-and-forth. Each call is still one bounded
+request — previous turns are never sent to the provider, and nothing is persisted or added to
+the approval audit. A "Local model profile" selector is shown but informational/disabled
+("Configured local provider") until the sandbox supports profile selection; it exposes no
+model name, endpoint, key, or path. Safe preview and Ask local model are now fully separate
+surfaces — a typed chat prompt never renders as a fake command preview.

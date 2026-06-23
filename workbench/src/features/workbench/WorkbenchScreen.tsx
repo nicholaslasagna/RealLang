@@ -1,18 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
 import { runPrivateProviderChatSandbox } from "../../bridge";
-import type { ProviderChatSandboxResult } from "../../bridge";
 import { Badge, Icon } from "../../components/primitives";
 import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
 import { ApprovedDryRunPanel } from "../composer/ApprovedDryRunPanel";
-import { ComposerDock } from "../composer/ComposerDock";
+import { ComposerDock, type ComposerMode } from "../composer/ComposerDock";
 import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
-import { WorkbenchChatTurn } from "./WorkbenchChatTurn";
+import { WorkbenchChatThread, type ChatTurn } from "./WorkbenchChatThread";
 
 const DEFAULT_ACTION_ID = "repair-diagnostic-dry-run";
 
@@ -141,18 +140,25 @@ export function WorkbenchScreen() {
   const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
-  // Single-turn local-model exchange. Session-only React state — never persisted,
-  // never added to the approval audit, never accumulated into transcript memory.
-  const [chatPrompt, setChatPrompt] = useState<string | null>(null);
-  const [chatResult, setChatResult] = useState<ProviderChatSandboxResult | null>(null);
-  const [chatRunning, setChatRunning] = useState(false);
+  const [mode, setMode] = useState<ComposerMode>("preview");
+  // Session-only visible chat thread. Multiple turns may be shown, but each call
+  // to the provider is an independent bounded request (prior turns are NOT sent).
+  // Never persisted, never added to the approval audit, never hidden transcript memory.
+  const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
+  const turnIdRef = useRef(0);
   const runtime = useComposerRuntime(staffPreview);
   const action = composeActionPlan(actionId, runtime);
   const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
   const hasStagedTask = stagedTask.trim().length > 0;
+  const inAskLocal = mode === "ask-local";
   const hasActionIntent = hasStagedTask || approvalActionId === action.id || actionId !== DEFAULT_ACTION_ID;
-  const hasWorkbenchActivity = hasActionIntent || chatPrompt !== null;
-  const headerTitle = hasActionIntent ? action.title : "What do you want to work on?";
+  const previewEmpty = !inAskLocal && !hasActionIntent;
+  const chatRunning = chatTurns.some((turn) => turn.running);
+  const headerTitle = inAskLocal
+    ? "Local model chat"
+    : hasActionIntent
+      ? action.title
+      : "What do you want to work on?";
 
   const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
     const loaded = await loadDesktopReport(sourceId);
@@ -161,34 +167,36 @@ export function WorkbenchScreen() {
 
   // Reuses the existing narrow chat-sandbox IPC. No workspace/files/tools/argv —
   // only the bounded prompt + acknowledgement the Rust bridge already validates.
+  // Each send appends a visible turn; prior turns are never sent to the provider.
   const askLocalModel = async (prompt: string) => {
-    setChatPrompt(prompt);
-    setChatResult(null);
-    setChatRunning(true);
-    try {
-      const response = await runPrivateProviderChatSandbox({ prompt, approvalAcknowledged: true });
-      setChatResult(response);
-    } finally {
-      setChatRunning(false);
-    }
+    const id = (turnIdRef.current += 1);
+    setChatTurns((prev) => [...prev, { id, prompt, result: null, running: true }]);
+    const response = await runPrivateProviderChatSandbox({ prompt, approvalAcknowledged: true });
+    setChatTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, result: response, running: false } : turn)));
   };
 
   const clearChat = () => {
     if (chatRunning) return;
-    setChatPrompt(null);
-    setChatResult(null);
+    setChatTurns([]);
+  };
+
+  const openProviderSettings = () => {
+    setSettingsSection("provider");
+    navigate("settings");
   };
 
   return (
-    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"} ${hasWorkbenchActivity ? "" : "workbench-layout--empty"}`.trim()}>
-      <section className={`workbench-main ${hasWorkbenchActivity ? "" : "workbench-main--empty"}`.trim()}>
+    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"} ${previewEmpty ? "workbench-layout--empty" : ""}`.trim()}>
+      <section className={`workbench-main ${previewEmpty ? "workbench-main--empty" : ""}`.trim()}>
         <header className="workbench-header workbench-header--calm">
           <div>
             <h1>{headerTitle}</h1>
             <span>
-              {hasActionIntent
-                ? "Review the staged preview. Details stay inspectable, and execution still requires the existing approval gates."
-                : "Use the composer to ask a question or stage a safe preview. No writes by default; local output is untrusted."}
+              {inAskLocal
+                ? "Ask the user-configured local model. Output is LOCAL UNTRUSTED; the conversation is session-only and not saved."
+                : hasActionIntent
+                  ? "Review the staged preview. Details stay inspectable, and execution still requires the existing approval gates."
+                  : "Use the composer to ask a question or stage a safe preview. No writes by default; local output is untrusted."}
             </span>
           </div>
           <button
@@ -204,79 +212,78 @@ export function WorkbenchScreen() {
         <div className="thread-scroll">
           <div className="thread">
             <WorkbenchGreeting />
-            {!stagedTask && chatPrompt === null ? <WorkbenchFlowHint /> : null}
-            {!hasWorkbenchActivity ? <EmptyWorkbenchCard /> : null}
-            {chatPrompt !== null ? (
-              <WorkbenchChatTurn
-                prompt={chatPrompt}
-                result={chatResult}
-                running={chatRunning}
-                onClear={clearChat}
-                onRetry={() => askLocalModel(chatPrompt)}
-                onConfigureProvider={() => {
-                  setSettingsSection("provider");
-                  navigate("settings");
-                }}
-              />
-            ) : null}
-            {hasStagedTask ? (
-              <div className="thread-message thread-message--user">
-                {stagedTask}
-                <small>reviewed context · session only · not executed</small>
-              </div>
-            ) : null}
-            {hasActionIntent ? (
-              <ActionPreviewCard
-                action={action}
-                bridgeLoading={runtime.loading}
-                bridgeError={runtime.error}
-                loadStatus={loadStatus}
-                loadingSourceId={loadingSourceId}
-                onLoad={loadReadOnlyAction}
-                onOpenReports={() => navigate("reports")}
-                onRequestApproval={() => setApprovalActionId(action.id)}
-                onOpenSetup={() => setSettingsSection("workspace")}
-              />
-            ) : null}
-            {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
-              <ApprovedDryRunPanel
-                action={action}
-                workspacePath={runtime.workspacePath}
-                onClose={() => setApprovalActionId(null)}
-              />
-            ) : null}
-            {showsRepairEvidence && hasStagedTask ? (
+            {inAskLocal ? (
+              <WorkbenchChatThread turns={chatTurns} onClear={clearChat} onConfigureProvider={openProviderSettings} />
+            ) : (
               <>
-                <div className="agent-label">
-                  <span className="mini-mark" />
-                  <b>RealForge</b>
-                  <small>mock · illustrative plan</small>
-                  <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
-                </div>
-                <PlanCard />
-                <PatchCard />
-                <ValidationCard />
-              </>
-            ) : null}
-            <details className="thread-secondary" data-testid="workbench-secondary-details">
-              <summary>Boundaries &amp; reference</summary>
-              {!showsRepairEvidence ? (
-                <article className="composer-boundary-card">
-                  <Icon name="shield-check" />
-                  <div>
-                    <b>Composition boundary active</b>
-                    <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
+                {previewEmpty ? <WorkbenchFlowHint /> : null}
+                {previewEmpty ? <EmptyWorkbenchCard /> : null}
+                {hasStagedTask ? (
+                  <div className="thread-message thread-message--user">
+                    {stagedTask}
+                    <small>reviewed context · session only · not executed</small>
                   </div>
-                </article>
-              ) : null}
-              <section className="thread-reference" aria-label="Reference">
-                <p className="thread-reference__label">Reference</p>
-                <ApprovalAuditLog compact />
-              </section>
-            </details>
+                ) : null}
+                {hasActionIntent ? (
+                  <ActionPreviewCard
+                    action={action}
+                    bridgeLoading={runtime.loading}
+                    bridgeError={runtime.error}
+                    loadStatus={loadStatus}
+                    loadingSourceId={loadingSourceId}
+                    onLoad={loadReadOnlyAction}
+                    onOpenReports={() => navigate("reports")}
+                    onRequestApproval={() => setApprovalActionId(action.id)}
+                    onOpenSetup={() => setSettingsSection("workspace")}
+                  />
+                ) : null}
+                {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
+                  <ApprovedDryRunPanel
+                    action={action}
+                    workspacePath={runtime.workspacePath}
+                    onClose={() => setApprovalActionId(null)}
+                  />
+                ) : null}
+                {showsRepairEvidence && hasStagedTask ? (
+                  <>
+                    <div className="agent-label">
+                      <span className="mini-mark" />
+                      <b>RealForge</b>
+                      <small>mock · illustrative plan</small>
+                      <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
+                    </div>
+                    <PlanCard />
+                    <PatchCard />
+                    <ValidationCard />
+                  </>
+                ) : null}
+                <details className="thread-secondary" data-testid="workbench-secondary-details">
+                  <summary>Boundaries &amp; reference</summary>
+                  {!showsRepairEvidence ? (
+                    <article className="composer-boundary-card">
+                      <Icon name="shield-check" />
+                      <div>
+                        <b>Composition boundary active</b>
+                        <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
+                      </div>
+                    </article>
+                  ) : null}
+                  <section className="thread-reference" aria-label="Reference">
+                    <p className="thread-reference__label">Reference</p>
+                    <ApprovalAuditLog compact />
+                  </section>
+                </details>
+              </>
+            )}
           </div>
         </div>
-        <ComposerDock action={action} onAskLocalModel={askLocalModel} chatRunning={chatRunning} />
+        <ComposerDock
+          action={action}
+          mode={mode}
+          onModeChange={setMode}
+          onAskLocalModel={askLocalModel}
+          chatRunning={chatRunning}
+        />
       </section>
       {showDetails ? (
         <ActionInspector action={action} runtime={runtime.runtime} bridgeHealthy={runtime.bridgeHealthy} />

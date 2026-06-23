@@ -179,6 +179,7 @@ Historical milestones:
 - **0.31** Conversation flow polish (greeting → describe → preview → approve → result → reference; gated illustrative evidence, secondary audit, clearer result affordance; no new authority, IPC, or execution power)
 - **0.32** Main composer can use the existing private chat sandbox (explicit Ask-local mode, desktop-only, per-send approval, LOCAL UNTRUSTED single-turn output; reuses the existing IPC; no workspace/files/tools/memory/persistence, no new provider authority)
 - **0.36** Assistant-first Workbench declutter (prompt-first empty route, action/inspector/safety details on demand; no new authority)
+- **0.38** Real local chat interaction (Enter sends / Shift+Enter newline; session-only visible multi-turn thread with single-turn bounded calls — prior turns never sent; informational Local model profile selector; Safe preview and Ask local model fully separated; reuses existing IPC, no new authority/persistence/audit)
 
 ## Toolchain and dependency security
 

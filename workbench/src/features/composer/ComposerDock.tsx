@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { ComposedAction, CommandActionId } from "../../composer/action-model";
 import { commandActionDefinitions } from "../../composer/action-model";
 import { isDesktopRuntime } from "../../bridge";
@@ -16,62 +16,87 @@ const quickActionIds: readonly CommandActionId[] = [
   "skill-benchmark"
 ];
 
-type ComposerMode = "preview" | "ask-local";
+export type ComposerMode = "preview" | "ask-local";
 
 interface ComposerDockProps {
   action: ComposedAction;
+  mode: ComposerMode;
+  onModeChange: (mode: ComposerMode) => void;
   /** Send one bounded request to the existing private chat sandbox (desktop only). */
   onAskLocalModel?: (prompt: string) => void;
   chatRunning?: boolean;
 }
 
-export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: ComposerDockProps) {
+export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chatRunning = false }: ComposerDockProps) {
   const openPalette = useWorkbenchStore((state) => state.openPalette);
   const composeActionPreview = useWorkbenchStore((state) => state.composeActionPreview);
   const stageTask = useWorkbenchStore((state) => state.stageTask);
   const showToast = useWorkbenchStore((state) => state.showToast);
 
   const desktop = isDesktopRuntime();
-  const [mode, setMode] = useState<ComposerMode>("preview");
   const [approved, setApproved] = useState(false);
   const intentsRef = useRef<HTMLDetailsElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const askMode = mode === "ask-local";
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const input = (form.elements.namedItem("task-context") as HTMLTextAreaElement | null)?.value.trim() ?? "";
+  // A pending approval never carries across a mode switch.
+  useEffect(() => setApproved(false), [mode]);
+
+  const sendDisabled = askMode && (!desktop || !approved || chatRunning);
+
+  const sendAskLocal = () => {
+    const input = (textareaRef.current?.value ?? "").trim();
     if (!input) {
-      showToast(askMode ? "Enter text for the local model sandbox" : "Add reviewed context for the composed action", "warn");
+      showToast("Enter text for the local model sandbox", "warn");
       return;
     }
-    if (askMode) {
-      // No hidden auto-send: a desktop runtime, an explicit approval, and a
-      // deliberate submit are all required before any request leaves the UI.
-      if (!desktop) {
-        showToast("The local model sandbox runs in the desktop app only", "warn");
-        return;
-      }
-      if (!approved) {
-        showToast("Approve the local model request before sending", "warn");
-        return;
-      }
-      if (chatRunning) return;
-      onAskLocalModel?.(input);
-      setApproved(false);
-      form.reset();
+    // No hidden auto-send: a desktop runtime, an explicit approval, and a
+    // deliberate send (button or Enter) are all required before a request leaves the UI.
+    if (!desktop) {
+      showToast("The local model sandbox runs in the desktop app only", "warn");
+      return;
+    }
+    if (!approved) {
+      showToast("Approve the local model request before sending", "warn");
+      return;
+    }
+    if (chatRunning) return;
+    onAskLocalModel?.(input);
+    setApproved(false);
+    if (textareaRef.current) textareaRef.current.value = "";
+  };
+
+  const stagePreview = () => {
+    const input = (textareaRef.current?.value ?? "").trim();
+    if (!input) {
+      showToast("Add reviewed context for the composed action", "warn");
       return;
     }
     stageTask(input);
   };
 
-  const switchMode = (next: ComposerMode) => {
-    if (next === "ask-local" && !desktop) return;
-    setMode(next);
-    setApproved(false);
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (askMode) sendAskLocal();
+    else stagePreview();
   };
 
-  const sendDisabled = askMode && (!desktop || !approved || chatRunning);
+  // Standard chat keyboard behavior, in Ask-local mode only. Safe preview keeps
+  // the default textarea behavior (Enter inserts a newline; never sends/executes).
+  const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!askMode) return;
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return; // Shift+Enter → newline
+    // Enter, Cmd+Enter, or Ctrl+Enter → send (gates re-checked in sendAskLocal).
+    event.preventDefault();
+    sendAskLocal();
+  };
+
+  const switchMode = (next: ComposerMode) => {
+    if (next === "ask-local" && !desktop) return;
+    onModeChange(next);
+  };
+
   const closeSuggestions = () => {
     if (intentsRef.current) intentsRef.current.open = false;
   };
@@ -98,7 +123,9 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
           onClick={() => switchMode("ask-local")}
         >
           <Icon name="cpu" /> Ask local model
-          {desktop ? <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span> : (
+          {desktop ? (
+            <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span>
+          ) : (
             <span className="composer-mode__tag">desktop only</span>
           )}
         </button>
@@ -112,21 +139,34 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
       ) : null}
 
       {askMode ? (
-        <label className="composer-approval" data-testid="composer-ask-approval">
-          <input
-            type="checkbox"
-            checked={approved}
-            disabled={!desktop || chatRunning}
-            onChange={(event) => setApproved(event.currentTarget.checked)}
-          />
-          <span>
-            <b>Approve one local model request</b>
-            <small>
-              Your text is sent only to the user-configured local model sandbox. No files, workspace
-              context, tools, memory, or history are included. Output is LOCAL UNTRUSTED and is not persisted.
+        <>
+          <div className="composer-profile" data-testid="composer-profile">
+            <label htmlFor="local-model-profile">Local model profile</label>
+            <select id="local-model-profile" value="default" disabled aria-describedby="local-model-profile-note">
+              <option value="default">Configured local provider</option>
+            </select>
+            <small id="local-model-profile-note">
+              Uses your configured default local provider. Profile selection isn&rsquo;t available yet — no model
+              name, endpoint, or key is shown.
             </small>
-          </span>
-        </label>
+          </div>
+
+          <label className="composer-approval" data-testid="composer-ask-approval">
+            <input
+              type="checkbox"
+              checked={approved}
+              disabled={!desktop || chatRunning}
+              onChange={(event) => setApproved(event.currentTarget.checked)}
+            />
+            <span>
+              <b>Approve one local model request</b>
+              <small>
+                Your text is sent only to the user-configured local model sandbox. No files, workspace
+                context, tools, memory, or history are included. Output is LOCAL UNTRUSTED and is not persisted.
+              </small>
+            </span>
+          </label>
+        </>
       ) : (
         <details ref={intentsRef} className="composer-intents-wrap" data-testid="composer-intents-wrap">
           <summary className="composer-intents-summary">
@@ -169,10 +209,12 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
         <textarea
           id="task-context"
           name="task-context"
+          ref={textareaRef}
           rows={4}
           maxLength={2000}
           disabled={askMode && chatRunning}
-          placeholder={askMode ? "Ask one bounded local-model question..." : "What do you want to work on?"}
+          placeholder={askMode ? "Ask one bounded local-model question... (Enter to send, Shift+Enter for a newline)" : "What do you want to work on?"}
+          onKeyDown={onKeyDown}
         />
         <button
           className="send-button"
@@ -186,7 +228,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
 
       <p className="composer-hint">
         {askMode
-          ? "One bounded request to your local model · LOCAL UNTRUSTED · no files, tools, or memory · nothing persisted."
+          ? "Enter sends · Shift+Enter adds a newline · LOCAL UNTRUSTED · no files, tools, or memory · nothing persisted."
           : "Approval-first · no writes by default · local output is untrusted."}
       </p>
     </form>

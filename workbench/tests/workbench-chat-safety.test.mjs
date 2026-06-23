@@ -11,9 +11,10 @@ const FORBIDDEN_IDENTITY = ["qw" + "en", "ae" + "on", "dr" + "oyd", "fl" + "ux"]
   (term) => new RegExp(`\\b${term}\\b`, "i")
 );
 
-// New / changed 0.32 main-composer chat files.
+// Main-composer local chat files (0.32 → 0.38).
 const CHAT_FILES = [
   "src/features/workbench/WorkbenchChatTurn.tsx",
+  "src/features/workbench/WorkbenchChatThread.tsx",
   "src/features/composer/ComposerDock.tsx",
   "src/features/workbench/WorkbenchScreen.tsx"
 ];

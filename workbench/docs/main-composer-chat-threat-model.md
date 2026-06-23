@@ -61,3 +61,22 @@ The composer is explicitly two distinct modes the user chooses between:
 This is **not** an autonomous agent, not image generation, and not connected to
 the workspace. The private model's identity remains local-only and is never
 written to tracked files.
+
+## 0.38 — visible session thread, keyboard, and profile selector
+
+- **Visible multi-turn thread, single-turn calls.** The UI now shows a back-and-forth
+  conversation for the session, but each provider call remains one bounded request:
+  **prior turns are NOT sent**. The thread is labelled "session view only."
+- **Session-only, still not persisted.** Turns live in React state only — never written
+  to disk/app-config, never added to the approval audit, never kept as hidden transcript
+  memory. "Clear chat" drops the visible turns.
+- **Keyboard.** In Ask-local mode, Enter (and Cmd/Ctrl+Enter) sends; Shift+Enter inserts a
+  newline. Enter re-checks the same gates (desktop, explicit approval, non-empty, not
+  running) — it never bypasses approval. Safe-preview keeps the default newline behavior and
+  never calls the model.
+- **Mode separation.** Ask-local renders only the chat thread (no staged action preview);
+  Safe-preview renders only the preview surface (no model call).
+- **Profile selector.** A "Local model profile" selector is shown but **informational and
+  disabled** ("Configured local provider" / "uses your configured default local provider")
+  because the sandbox IPC selects no profile. It exposes no model name, endpoint, key, or
+  path. No new fields are sent across IPC — the request stays `{ prompt, approvalAcknowledged }`.
