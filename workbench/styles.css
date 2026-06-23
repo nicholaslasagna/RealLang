@@ -1911,6 +1911,43 @@ textarea:focus-visible,
 }
 .composer-mode__webnote .icon { width: 13px; height: 13px; flex: 0 0 auto; }
 
+.chat-provider-readiness {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(var(--reading-width), 100%);
+  margin: 0 auto;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-2);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.chat-provider-readiness__icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.chat-provider-readiness__icon .icon { width: 14px; height: 14px; color: var(--cyan); }
+.chat-provider-readiness--ready .chat-provider-readiness__icon .icon { color: var(--green); }
+.chat-provider-readiness--blocked .chat-provider-readiness__icon .icon { color: var(--amber); }
+
+.chat-provider-readiness__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-provider-readiness__copy b { color: var(--text-2); font-size: 12px; }
+.chat-provider-readiness__copy small { color: var(--text-3); font-size: 10px; line-height: 1.35; }
+
 .chat-turn__error {
   display: flex;
   align-items: flex-start;
@@ -3241,6 +3278,34 @@ textarea:focus-visible,
   gap: 8px;
   margin: 12px 0 10px;
 }
+
+.provider-readiness__diagnosis {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 11px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.provider-readiness__diagnosis .icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--cyan);
+}
+
+.provider-readiness__diagnosis span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.provider-readiness__diagnosis b { color: var(--text-2); font-size: 11px; }
+.provider-readiness__diagnosis small { color: var(--text-3); font-size: 10px; line-height: 1.45; }
 
 .provider-readiness__checklist {
   margin: 0 0 10px;

@@ -38,8 +38,8 @@ export function Topbar() {
         </span>
         <span className="context-chip context-chip--provider">
           <Icon name="cpu" />
-          <b>mock</b>
-          <small>deterministic</small>
+          <b>Preview runtime</b>
+          <small>mock · chat uses local provider</small>
         </span>
       </div>
       <div className="top-spacer" />

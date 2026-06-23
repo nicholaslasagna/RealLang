@@ -29,12 +29,44 @@ function readinessTone(value: PrivateProviderReadiness["overallReadiness"]): str
   return "amber";
 }
 
+function diagnosis(readiness: PrivateProviderReadiness, desktop: boolean): { title: string; detail: string } {
+  if (!desktop) {
+    return {
+      title: "Desktop only",
+      detail: "Open the desktop app to read sanitized local-provider status or run smoke/chat checks."
+    };
+  }
+  if (readiness.overallReadiness === "sandbox_ready" || readiness.overallReadiness === "reachable") {
+    return {
+      title: "Ready for local chat",
+      detail: "Smoke passed in this session. Chat remains approval-gated and local_untrusted."
+    };
+  }
+  if (readiness.overallReadiness === "configured") {
+    return {
+      title: "Configured, not verified",
+      detail: "Run the fixed smoke check. If it fails, start your local OpenAI-compatible server and try again."
+    };
+  }
+  if (readiness.overallReadiness === "error") {
+    return {
+      title: "Reachability failed",
+      detail: "Review sanitized status, start the local provider if needed, then run a smoke check."
+    };
+  }
+  return {
+    title: "Not configured",
+    detail: "Create private local provider config outside the repo. RealForge will not store secrets here."
+  };
+}
+
 export function ProviderReadinessDashboard({
   readiness,
   loading,
   desktop,
   onRefreshStatus
 }: ProviderReadinessDashboardProps) {
+  const currentDiagnosis = diagnosis(readiness, desktop);
   const lifecycle = [
     {
       id: "config",
@@ -95,6 +127,14 @@ export function ProviderReadinessDashboard({
         <Badge label={readiness.configDetected ? "Config detected" : "Not configured"} tone={readiness.configDetected ? "green" : "amber"} />
         <Badge label={readiness.chatSandboxAvailable ? "Sandbox ready" : "Sandbox locked"} tone={readiness.chatSandboxAvailable ? "cyan" : "amber"} />
         <Badge label="Image execution off" tone="neutral" />
+      </div>
+
+      <div className="provider-readiness__diagnosis" data-testid="provider-readiness-diagnosis">
+        <Icon name={readiness.overallReadiness === "error" ? "triangle-alert" : "activity"} />
+        <span>
+          <b>{currentDiagnosis.title}</b>
+          <small>{currentDiagnosis.detail}</small>
+        </span>
       </div>
 
       <details className="settings-disclosure provider-readiness__checklist">

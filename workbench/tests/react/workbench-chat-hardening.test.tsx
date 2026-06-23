@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: vi.fn(() => true),
   checkBridgeHealth: vi.fn(),
   listReadOnlyReportSources: vi.fn(),
+  loadProviderStatus: vi.fn(),
   runPrivateProviderChatSandbox: vi.fn()
 }));
 
@@ -51,6 +52,24 @@ const baseReport = {
   error: null
 };
 
+const configuredStatus = {
+  ok: true,
+  configured: true,
+  source: "home_private",
+  provider_kind: "openai_compatible_local",
+  trust: "local_untrusted",
+  endpoint_configured: true,
+  endpoint_host: "http://localhost:8000",
+  model_configured: true,
+  api_key_configured: true,
+  image_provider_configured: false,
+  image_provider_kind: null,
+  image_endpoint_host: null,
+  image_provider_execution_enabled: false,
+  warnings: [],
+  errors: []
+};
+
 const textarea = () => screen.getByLabelText("Local model request");
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
 const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
@@ -68,6 +87,8 @@ beforeEach(() => {
   mocks.isDesktopRuntime.mockReturnValue(true);
   mocks.listReadOnlyReportSources.mockResolvedValue([]);
   mocks.checkBridgeHealth.mockResolvedValue({ healthy: true, resolution: { bridgeMode: "read-only", repoRoot: "C:\\RealLang" } });
+  mocks.loadProviderStatus.mockReset();
+  mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
   mocks.runPrivateProviderChatSandbox.mockReset();
   mocks.runPrivateProviderChatSandbox.mockResolvedValue({ ok: true, data: baseReport });
   resetStore();
@@ -198,6 +219,33 @@ describe("0.38 real local chat — visible thread", () => {
 });
 
 describe("0.38 real local chat — errors and provider", () => {
+  it("shows a compact provider readiness row before chat sends", async () => {
+    render(<WorkbenchScreen />);
+    askLocal();
+    const readiness = await screen.findByTestId("chat-provider-readiness");
+    expect(readiness).toHaveTextContent("Local provider configured, not verified");
+    expect(readiness).toHaveTextContent("Preview runtime is mock; Chat uses the configured local provider.");
+    expect(readiness).toHaveTextContent("loopback host");
+    expect(readiness.textContent ?? "").not.toMatch(/http:\/\/localhost:8000|sk-/i);
+  });
+
+  it("shows local provider ready after a successful chat result", async () => {
+    render(<WorkbenchScreen />);
+    askLocal();
+    type("ready check");
+    approve();
+    fireEvent.click(sendButton());
+    await screen.findByTestId("chat-turn-response");
+    expect(screen.getByTestId("chat-provider-readiness")).toHaveTextContent("Local provider ready");
+  });
+
+  it("shows not configured when sanitized status says provider config is absent", async () => {
+    mocks.loadProviderStatus.mockResolvedValue({ ...configuredStatus, configured: false, endpoint_host: null });
+    render(<WorkbenchScreen />);
+    askLocal();
+    expect(await screen.findByTestId("chat-provider-readiness")).toHaveTextContent("Local provider not configured");
+  });
+
   it("renders a redacted timeout error with a next-step and no endpoint leak", async () => {
     mocks.runPrivateProviderChatSandbox.mockResolvedValue({ ok: false, error: { code: "timeout", message: "Local provider request timed out." } });
     render(<WorkbenchScreen />);
@@ -207,7 +255,9 @@ describe("0.38 real local chat — errors and provider", () => {
     fireEvent.click(sendButton());
     const error = await screen.findByTestId("chat-turn-error");
     expect(error).toHaveTextContent("timed out");
-    expect(error).toHaveTextContent(/Ask again/i);
+    expect(error).toHaveTextContent(/Open Settings → Local model/i);
+    expect(error).toHaveTextContent(/OpenAI-compatible server/i);
+    expect(error).toHaveTextContent(/smoke check/i);
     expect(error.textContent ?? "").not.toMatch(/sk-|http:\/\/|127\.0\.0\.1|localhost/);
   });
 
@@ -240,7 +290,9 @@ describe("0.38 real local chat — errors and provider", () => {
     fireEvent.click(sendButton());
     const error = await screen.findByTestId("chat-turn-error");
     expect(error).toHaveTextContent("Local provider connection failed");
-    expect(error).toHaveTextContent(/Settings → Local model/i);
+    expect(error).toHaveTextContent(/Open Settings → Local model/i);
+    expect(error).toHaveTextContent(/OpenAI-compatible server/i);
+    expect(error).toHaveTextContent(/smoke check/i);
     expect(error.textContent ?? "").not.toMatch(/sk-|http:\/\/|127\.0\.0\.1|localhost/);
   });
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
-import { isDesktopRuntime, runPrivateProviderChatSandbox } from "../../bridge";
+import { isDesktopRuntime, loadProviderStatus, runPrivateProviderChatSandbox, type ProviderStatus } from "../../bridge";
 import { Badge, Icon } from "../../components/primitives";
 import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
@@ -12,6 +12,7 @@ import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
 import { WorkbenchChatThread, type ChatTurn } from "./WorkbenchChatThread";
+import { WorkbenchProviderReadiness } from "./WorkbenchProviderReadiness";
 import { availableContextTurnCount, buildContextPreview, composeVisibleChatContext } from "./chat-context";
 
 const DEFAULT_ACTION_ID = "repair-diagnostic-dry-run";
@@ -148,6 +149,8 @@ export function WorkbenchScreen() {
   // to the provider is an independent bounded request (prior turns are NOT sent).
   // Never persisted, never added to the approval audit, never hidden transcript memory.
   const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
+  const [providerStatusLoading, setProviderStatusLoading] = useState(false);
   const turnIdRef = useRef(0);
   const runtime = useComposerRuntime(staffPreview);
   const action = composeActionPlan(actionId, runtime);
@@ -173,6 +176,28 @@ export function WorkbenchScreen() {
     return () => setWorkbenchMode("default");
   }, [inAskLocal, setWorkbenchMode]);
 
+  useEffect(() => {
+    if (!inAskLocal || !desktop) {
+      setProviderStatus(null);
+      setProviderStatusLoading(false);
+      return;
+    }
+
+    let active = true;
+    setProviderStatusLoading(true);
+    void loadProviderStatus()
+      .then((nextStatus) => {
+        if (active) setProviderStatus(nextStatus);
+      })
+      .finally(() => {
+        if (active) setProviderStatusLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [desktop, inAskLocal]);
+
   const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
     const loaded = await loadDesktopReport(sourceId);
     if (loaded) navigate("reports");
@@ -196,6 +221,8 @@ export function WorkbenchScreen() {
     if (chatRunning) return;
     setChatTurns([]);
   };
+
+  const lastChatResult = chatTurns.length ? chatTurns[chatTurns.length - 1].result : null;
 
   const openProviderSettings = () => {
     setSettingsSection("provider");
@@ -238,7 +265,16 @@ export function WorkbenchScreen() {
           <div className="thread">
             {!inAskLocal ? <WorkbenchGreeting /> : null}
             {inAskLocal ? (
-              <WorkbenchChatThread turns={chatTurns} onClear={clearChat} onConfigureProvider={openProviderSettings} />
+              <>
+                <WorkbenchProviderReadiness
+                  desktop={desktop}
+                  loading={providerStatusLoading}
+                  status={providerStatus}
+                  lastResult={lastChatResult}
+                  onOpenSettings={openProviderSettings}
+                />
+                <WorkbenchChatThread turns={chatTurns} onClear={clearChat} onConfigureProvider={openProviderSettings} />
+              </>
             ) : (
               <>
                 {previewEmpty ? <WorkbenchFlowHint /> : null}

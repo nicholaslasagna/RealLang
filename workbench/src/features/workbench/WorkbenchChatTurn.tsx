@@ -4,6 +4,8 @@ import { Badge, Button, Icon } from "../../components/primitives";
 // Visible-output cap mirrors the Rust/backend response cap. Defense in depth:
 // the bridge already truncates; the UI never renders more than this.
 const MAX_RESPONSE_CHARS = 4_096;
+const PROVIDER_CONNECTION_GUIDANCE =
+  "Open Settings → Local model to check provider status. Make sure your local OpenAI-compatible server is running. Then run a smoke check.";
 
 function clampCharacters(value: string, limit: number): string {
   return Array.from(value).slice(0, limit).join("");
@@ -26,16 +28,16 @@ function bridgeErrorTitle(error: BridgeError): string {
 
 function bridgeErrorNext(error: BridgeError): string {
   if (error.code === "unsupported_web") return "Open the desktop app to use the local model.";
-  if (error.code === "timeout") return "It timed out automatically. Ask again to try once more.";
+  if (error.code === "timeout") return PROVIDER_CONNECTION_GUIDANCE;
   if (error.code === "request_in_progress") return "Wait for the current request to finish, then ask again.";
   if (error.code === "cancelled") return "Ask again to send the prompt once more.";
-  return "Check Settings → Local model or start your local provider.";
+  return PROVIDER_CONNECTION_GUIDANCE;
 }
 
 function statusNext(status: string): string | null {
-  if (status === "not_configured") return "Check Settings → Local model or start your local provider.";
+  if (status === "not_configured") return "Open Settings → Local model to check provider status.";
   if (status === "rejected") return "The request was rejected before it reached the provider. Adjust the text and ask again.";
-  if (status === "fail") return "Check Settings → Local model or start your local provider.";
+  if (status === "fail") return PROVIDER_CONNECTION_GUIDANCE;
   return null;
 }
 

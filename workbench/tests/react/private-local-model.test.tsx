@@ -144,7 +144,8 @@ describe("Private local model panel", () => {
     });
     expect(screen.getByText(/private home config/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^YES$/).length).toBeGreaterThan(0);
-    expect(screen.getByText("http://localhost:8000")).toBeInTheDocument();
+    expect(screen.getAllByText("loopback host").length).toBeGreaterThan(0);
+    expect(screen.queryByText("http://localhost:8000")).not.toBeInTheDocument();
     expect(screen.getAllByText(/api key configured/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/realforge provider status --json/i)).toBeInTheDocument();
     expect(screen.getAllByText(/realforge provider smoke --json/i).length).toBeGreaterThan(0);
@@ -170,7 +171,8 @@ describe("Private local model panel", () => {
     });
     expect(screen.getByRole("heading", { name: PRIVATE_LOCAL_IMAGE_MODEL_PROFILE.displayName })).toBeInTheDocument();
     expect(screen.getByText(/^Image execution$/i)).toBeInTheDocument();
-    expect(screen.getByText("http://localhost:8188")).toBeInTheDocument();
+    expect(screen.getAllByText("loopback host").length).toBeGreaterThan(0);
+    expect(screen.queryByText("http://localhost:8188")).not.toBeInTheDocument();
     expect(screen.getByText(/^DISABLED$/)).toBeInTheDocument();
   });
 
@@ -193,6 +195,7 @@ describe("Private local model panel", () => {
     }
     expect(within(dashboard).getByText("Config detected")).toBeInTheDocument();
     expect(within(dashboard).getByText("METADATA ONLY")).toBeInTheDocument();
+    expect(within(dashboard).getByTestId("provider-readiness-diagnosis")).toHaveTextContent(/Configured, not verified/i);
   });
 
   it("advances readiness from configured to sandbox ready after a session smoke pass", async () => {
@@ -284,6 +287,8 @@ describe("Private local model panel", () => {
       expect(mocks.runPrivateProviderSmoke).toHaveBeenCalledWith({ approvalAcknowledged: true });
     });
     expect(await screen.findByTestId("provider-smoke-result")).toBeInTheDocument();
+    expect(screen.getAllByText("loopback host").length).toBeGreaterThan(0);
+    expect(screen.queryByText("http://localhost:8000")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/untrusted provider response preview/i)).toHaveTextContent("OK");
     expect(screen.getAllByText(/^UNTRUSTED$/).length).toBeGreaterThan(0);
     expect(runButton).toBeDisabled();

@@ -24,6 +24,15 @@ function resultLabel(status: string): string {
   return "FAILED";
 }
 
+function safeEndpointLabel(value: string | null | undefined): string {
+  if (!value) return "(not configured)";
+  const lower = value.toLowerCase();
+  if (lower.includes("localhost") || lower.includes("127.0.0.1") || lower.includes("[::1]")) {
+    return "loopback host";
+  }
+  return "endpoint host configured";
+}
+
 interface ProviderSmokeCardProps {
   onSessionStatusChange?: (status: ProviderSmokeSessionStatus) => void;
 }
@@ -130,7 +139,7 @@ export function ProviderSmokeCard({ onSessionStatusChange }: ProviderSmokeCardPr
             <div><dt>Attempted</dt><dd>{yesNo(report.attempted)}</dd></div>
             <div><dt>Configured</dt><dd>{yesNo(report.configured)}</dd></div>
             <div><dt>Endpoint configured</dt><dd>{yesNo(report.endpoint_configured)}</dd></div>
-            <div><dt>Endpoint host</dt><dd>{report.endpoint_host ?? "(not configured)"}</dd></div>
+            <div><dt>Endpoint host</dt><dd>{safeEndpointLabel(report.endpoint_host)}</dd></div>
             <div><dt>Model configured</dt><dd>{yesNo(report.model_configured)}</dd></div>
             <div><dt>API key configured</dt><dd>{yesNo(report.api_key_configured)}</dd></div>
             <div><dt>Duration</dt><dd>{report.duration_ms} ms</dd></div>

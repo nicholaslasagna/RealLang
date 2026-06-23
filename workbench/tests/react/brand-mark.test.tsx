@@ -17,4 +17,13 @@ describe("RealForge brand mark", () => {
     expect(screen.getByText("REALFORGE")).toBeInTheDocument();
     expect(screen.getByText("AI ENGINEERING WORKBENCH")).toBeInTheDocument();
   });
+
+  it("labels mock as the preview runtime, not local chat", () => {
+    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false });
+    render(<Topbar />);
+
+    expect(screen.getByText("Preview runtime")).toBeInTheDocument();
+    expect(screen.getByText(/chat uses local provider/i)).toBeInTheDocument();
+    expect(screen.queryByText("deterministic")).not.toBeInTheDocument();
+  });
 });

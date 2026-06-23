@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: vi.fn(() => true),
   checkBridgeHealth: vi.fn(),
   listReadOnlyReportSources: vi.fn(),
+  loadProviderStatus: vi.fn(),
   runPrivateProviderChatSandbox: vi.fn()
 }));
 
@@ -47,6 +48,24 @@ const passReport = {
   }
 };
 
+const configuredStatus = {
+  ok: true,
+  configured: true,
+  source: "home_private",
+  provider_kind: "openai_compatible_local",
+  trust: "local_untrusted",
+  endpoint_configured: true,
+  endpoint_host: "http://localhost:8000",
+  model_configured: true,
+  api_key_configured: true,
+  image_provider_configured: false,
+  image_provider_kind: null,
+  image_endpoint_host: null,
+  image_provider_execution_enabled: false,
+  warnings: [],
+  errors: []
+};
+
 const safePreviewInput = () => screen.getByLabelText("Reviewed context for this action");
 const composer = () => screen.getByTestId("safe-command-composer");
 const openChatOptions = () => {
@@ -58,6 +77,8 @@ beforeEach(() => {
   mocks.isDesktopRuntime.mockReturnValue(true);
   mocks.listReadOnlyReportSources.mockResolvedValue([]);
   mocks.checkBridgeHealth.mockResolvedValue({ healthy: true, resolution: { bridgeMode: "read-only", repoRoot: "C:\\RealLang" } });
+  mocks.loadProviderStatus.mockReset();
+  mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
   mocks.runPrivateProviderChatSandbox.mockReset();
   mocks.runPrivateProviderChatSandbox.mockResolvedValue(passReport);
   resetStore();

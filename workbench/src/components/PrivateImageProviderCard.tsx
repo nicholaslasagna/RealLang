@@ -11,6 +11,15 @@ function providerKindLabel(value: string | null | undefined): string {
   return value === "local_image_provider" ? "Local image provider" : "Not configured";
 }
 
+function safeEndpointLabel(value: string | null | undefined): string {
+  if (!value) return "NOT CONFIGURED";
+  const lower = value.toLowerCase();
+  if (lower.includes("localhost") || lower.includes("127.0.0.1") || lower.includes("[::1]")) {
+    return "loopback host";
+  }
+  return "endpoint host configured";
+}
+
 export function PrivateImageProviderCard({ status, desktop }: PrivateImageProviderCardProps) {
   const profile = PRIVATE_LOCAL_IMAGE_MODEL_PROFILE;
   const configured = Boolean(status?.image_provider_configured);
@@ -50,7 +59,7 @@ export function PrivateImageProviderCard({ status, desktop }: PrivateImageProvid
       <dl className="provider-status-summary__grid provider-status-summary__grid--image">
         <div><dt>Metadata configured</dt><dd>{configured ? "YES" : "NO"}</dd></div>
         <div><dt>Provider kind</dt><dd>{providerKindLabel(status?.image_provider_kind)}</dd></div>
-        <div><dt>Local endpoint</dt><dd>{status?.image_endpoint_host ?? "NOT CONFIGURED"}</dd></div>
+        <div><dt>Local endpoint</dt><dd>{safeEndpointLabel(status?.image_endpoint_host)}</dd></div>
         <div><dt>Image execution</dt><dd>DISABLED</dd></div>
         <div><dt>Image generation</dt><dd>OFF</dd></div>
         <div><dt>Output trust</dt><dd>LOCAL UNTRUSTED</dd></div>
