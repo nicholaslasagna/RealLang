@@ -117,7 +117,11 @@ export function ComposerDock({
   };
 
   return (
-    <form className="composer composer--safe" data-testid="safe-command-composer" onSubmit={onSubmit}>
+    <form
+      className={`composer composer--safe ${askMode ? "composer--chat" : ""}`.trim()}
+      data-testid="safe-command-composer"
+      onSubmit={onSubmit}
+    >
       <div className="composer-mode" role="group" aria-label="Composer mode">
         <button
           type="button"
@@ -153,81 +157,7 @@ export function ComposerDock({
         </p>
       ) : null}
 
-      {askMode ? (
-        <>
-          <div className="composer-profile" data-testid="composer-profile">
-            <label htmlFor="local-model-profile">Local model profile</label>
-            <select id="local-model-profile" value="default" disabled aria-describedby="local-model-profile-note">
-              <option value="default">Configured local provider</option>
-            </select>
-            <small id="local-model-profile-note">
-              Uses your configured default local provider. Profile selection isn&rsquo;t available yet — no model
-              name, endpoint, or key is shown.
-            </small>
-          </div>
-
-          <label className="composer-context-toggle" data-testid="composer-context-toggle">
-            <input
-              type="checkbox"
-              checked={includeContext}
-              disabled={chatRunning}
-              onChange={(event) => setIncludeContext(event.currentTarget.checked)}
-            />
-            <span>
-              <b>Include recent visible chat</b>
-              <small>Sends the last few visible turns with this prompt. No files, tools, or memory.</small>
-            </span>
-          </label>
-
-          {includeContext ? (
-            <div className="composer-context-preview" data-testid="composer-context-preview">
-              <p className="composer-context-disclosure" data-testid="composer-context-disclosure">
-                <Icon name="shield-check" />
-                {contextPreview && contextPreview.includedTurns > 0
-                  ? `Including up to ${contextPreview.includedTurns} visible turn${
-                      contextPreview.includedTurns === 1 ? "" : "s"
-                    } · ~${contextPreview.approxChars} chars${contextPreview.truncated ? " · capped" : ""} · visible chat only`
-                  : "No prior visible turns to include yet — only this prompt is sent."}
-              </p>
-              {contextPreview && contextPreview.includedTurns > 0 ? (
-                <details className="composer-context-details" data-testid="composer-context-details">
-                  <summary>Preview context</summary>
-                  <p className="composer-context-note">
-                    Only the visible chat text below is added. No files, tools, workspace, memory, or hidden context.
-                  </p>
-                  <div className="composer-context-entries" data-testid="composer-context-entries">
-                    {contextPreview.entries.map((entry, index) => (
-                      <div className="composer-context-entry" key={index}>
-                        <p><b>You</b> {entry.prompt}</p>
-                        <p><b>Local model</b> {entry.responseText}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {contextPreview.truncated ? (
-                    <p className="composer-context-note">Older turns and long text are trimmed to stay within the cap.</p>
-                  ) : null}
-                </details>
-              ) : null}
-            </div>
-          ) : null}
-
-          <label className="composer-approval" data-testid="composer-ask-approval">
-            <input
-              type="checkbox"
-              checked={approved}
-              disabled={!desktop || chatRunning}
-              onChange={(event) => setApproved(event.currentTarget.checked)}
-            />
-            <span>
-              <b>Approve one local model request</b>
-              <small>
-                Your text is sent only to the user-configured local model sandbox. No files, workspace
-                context, tools, memory, or history are included. Output is LOCAL UNTRUSTED and is not persisted.
-              </small>
-            </span>
-          </label>
-        </>
-      ) : (
+      {!askMode ? (
         <details ref={intentsRef} className="composer-intents-wrap" data-testid="composer-intents-wrap">
           <summary className="composer-intents-summary">
             <Icon name="sparkles" />
@@ -259,10 +189,10 @@ export function ComposerDock({
             </button>
           </div>
         </details>
-      )}
+      ) : null}
 
       <div className="composer-box composer-box--prominent">
-        <Button label="Commands" iconName="slash" variant="slash" onClick={() => openPalette()} />
+        {!askMode ? <Button label="Commands" iconName="slash" variant="slash" onClick={() => openPalette()} /> : null}
         <label className="sr-only" htmlFor="task-context">
           {askMode ? "Local model request" : "Reviewed context for this action"}
         </label>
@@ -287,9 +217,92 @@ export function ComposerDock({
 
       <p className="composer-hint">
         {askMode
-          ? "Enter sends · Shift+Enter for newline · local_untrusted"
+          ? "LOCAL UNTRUSTED · session-only · no files, tools, memory, or workspace context"
           : "Stages a dry-run preview only · no model chat · no writes"}
       </p>
+
+      {askMode ? (
+        <details className="composer-chat-options" data-testid="composer-chat-options">
+          <summary className="composer-chat-options__summary">
+            <Icon name="sliders-horizontal" />
+            <span>Chat options</span>
+            <small>{approved ? "approved for next send" : "approval required"}</small>
+          </summary>
+          <div className="composer-chat-options__content">
+            <div className="composer-profile" data-testid="composer-profile">
+              <label htmlFor="local-model-profile">Local model profile</label>
+              <select id="local-model-profile" value="default" disabled aria-describedby="local-model-profile-note">
+                <option value="default">Configured local provider</option>
+              </select>
+              <small id="local-model-profile-note">
+                Uses your configured default local provider. Profile selection isn&rsquo;t available yet — no model
+                name, endpoint, or key is shown.
+              </small>
+            </div>
+
+            <label className="composer-context-toggle" data-testid="composer-context-toggle">
+              <input
+                type="checkbox"
+                checked={includeContext}
+                disabled={chatRunning}
+                onChange={(event) => setIncludeContext(event.currentTarget.checked)}
+              />
+              <span>
+                <b>Include recent visible chat</b>
+                <small>Sends the last few visible turns with this prompt. No files, tools, or memory.</small>
+              </span>
+            </label>
+
+            {includeContext ? (
+              <div className="composer-context-preview" data-testid="composer-context-preview">
+                <p className="composer-context-disclosure" data-testid="composer-context-disclosure">
+                  <Icon name="shield-check" />
+                  {contextPreview && contextPreview.includedTurns > 0
+                    ? `Including up to ${contextPreview.includedTurns} visible turn${
+                        contextPreview.includedTurns === 1 ? "" : "s"
+                      } · ~${contextPreview.approxChars} chars${contextPreview.truncated ? " · capped" : ""} · visible chat only`
+                    : "No prior visible turns to include yet — only this prompt is sent."}
+                </p>
+                {contextPreview && contextPreview.includedTurns > 0 ? (
+                  <details className="composer-context-details" data-testid="composer-context-details">
+                    <summary>Preview context</summary>
+                    <p className="composer-context-note">
+                      Only the visible chat text below is added. No files, tools, workspace, memory, or hidden context.
+                    </p>
+                    <div className="composer-context-entries" data-testid="composer-context-entries">
+                      {contextPreview.entries.map((entry, index) => (
+                        <div className="composer-context-entry" key={index}>
+                          <p><b>You</b> {entry.prompt}</p>
+                          <p><b>Local model</b> {entry.responseText}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {contextPreview.truncated ? (
+                      <p className="composer-context-note">Older turns and long text are trimmed to stay within the cap.</p>
+                    ) : null}
+                  </details>
+                ) : null}
+              </div>
+            ) : null}
+
+            <label className="composer-approval" data-testid="composer-ask-approval">
+              <input
+                type="checkbox"
+                checked={approved}
+                disabled={!desktop || chatRunning}
+                onChange={(event) => setApproved(event.currentTarget.checked)}
+              />
+              <span>
+                <b>Approve one local model request</b>
+                <small>
+                  Your text is sent only to the user-configured local model sandbox. No files, workspace
+                  context, tools, memory, or history are included. Output is LOCAL UNTRUSTED and is not persisted.
+                </small>
+              </span>
+            </label>
+          </div>
+        </details>
+      ) : null}
     </form>
   );
 }

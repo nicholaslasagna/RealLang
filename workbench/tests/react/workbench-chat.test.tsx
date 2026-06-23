@@ -60,6 +60,16 @@ function enterDesktop() {
   mocks.checkBridgeHealth.mockResolvedValue({ healthy: true, resolution: { bridgeMode: "read-only", repoRoot: "C:\\RealLang" } });
 }
 
+function openChatOptions() {
+  const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+  if (!options.open) fireEvent.click(within(options).getByText("Chat options"));
+}
+
+function approveLocalRequest() {
+  openChatOptions();
+  fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+}
+
 beforeEach(() => {
   mocks.isDesktopRuntime.mockReturnValue(false);
   mocks.listReadOnlyReportSources.mockResolvedValue([]);
@@ -88,12 +98,13 @@ describe("0.32 main composer → private chat sandbox", () => {
     enterDesktop();
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
-    expect(screen.getByTestId("composer-ask-approval")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
     const send = screen.getByRole("button", { name: "Ask local model", exact: true });
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "ping" } });
     // Still disabled while typing, before approval.
     expect(send).toBeDisabled();
-    fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+    approveLocalRequest();
     expect(send).toBeEnabled();
   });
 
@@ -114,7 +125,7 @@ describe("0.32 main composer → private chat sandbox", () => {
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "summarize this" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+    approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
 
     // Exactly one bounded request, with only prompt + acknowledgement (no context/tools/path).
@@ -143,7 +154,7 @@ describe("0.32 main composer → private chat sandbox", () => {
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "long please" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+    approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
 
     const response = await screen.findByTestId("chat-turn-response");
@@ -161,7 +172,7 @@ describe("0.32 main composer → private chat sandbox", () => {
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "slow" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+    approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
     expect(await screen.findByTestId("chat-turn-error")).toHaveTextContent("timeout");
     expect(useWorkbenchStore.getState().approvalAuditEntries).toEqual([]);

@@ -59,8 +59,18 @@ const textarea = () => screen.getByLabelText("Local model request") as HTMLTextA
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
 const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
 const type = (value: string) => fireEvent.change(textarea(), { target: { value } });
-const approve = () => fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
-const contextToggle = () => screen.getByRole("checkbox", { name: /Include recent visible chat/i });
+const openChatOptions = () => {
+  const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+  if (!options.open) fireEvent.click(within(options).getByText("Chat options"));
+};
+const approve = () => {
+  openChatOptions();
+  fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+};
+const contextToggle = () => {
+  openChatOptions();
+  return screen.getByRole("checkbox", { name: /Include recent visible chat/i });
+};
 const lastCallPrompt = () => {
   const calls = mocks.runPrivateProviderChatSandbox.mock.calls;
   return calls[calls.length - 1][0].prompt as string;

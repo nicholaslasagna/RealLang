@@ -55,7 +55,14 @@ const textarea = () => screen.getByLabelText("Local model request");
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
 const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
 const type = (value: string) => fireEvent.change(textarea(), { target: { value } });
-const approve = () => fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+const openChatOptions = () => {
+  const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+  if (!options.open) fireEvent.click(within(options).getByText("Chat options"));
+};
+const approve = () => {
+  openChatOptions();
+  fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+};
 
 beforeEach(() => {
   mocks.isDesktopRuntime.mockReturnValue(true);
@@ -224,6 +231,7 @@ describe("0.38 real local chat — errors and provider", () => {
   it("shows an informational profile selector that leaks no private identity", () => {
     render(<WorkbenchScreen />);
     askLocal();
+    openChatOptions();
     const profile = screen.getByTestId("composer-profile");
     expect(profile).toHaveTextContent(/Local model profile/i);
     expect(profile).toHaveTextContent(/Configured local provider/i);

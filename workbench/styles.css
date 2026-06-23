@@ -4448,6 +4448,209 @@ textarea:focus-visible,
   font-size: 10px;
 }
 
+.workbench-layout--chat {
+  background:
+    radial-gradient(ellipse 54% 34% at 50% 100%, rgba(227, 38, 54, 0.04), transparent 72%),
+    radial-gradient(ellipse 62% 38% at 50% 4%, rgba(49, 216, 208, 0.035), transparent 76%);
+}
+
+.workbench-main--chat .workbench-header {
+  min-height: 96px;
+  padding: var(--space-4) var(--space-7);
+  background: transparent;
+}
+
+.workbench-main--chat .workbench-header h1 {
+  font-size: 25px;
+}
+
+.workbench-main--chat .thread-scroll {
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  background: transparent;
+}
+
+.workbench-main--chat .thread {
+  width: min(880px, 100%);
+  gap: var(--space-4);
+}
+
+.workbench-main--chat .chat-thread {
+  min-height: min(34vh, 320px);
+}
+
+.workbench-main--chat .chat-thread__empty {
+  min-height: 132px;
+  justify-content: center;
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.012);
+  text-align: center;
+}
+
+.composer--chat {
+  width: min(920px, 100%);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-4);
+  background: linear-gradient(180deg, transparent, rgba(7, 8, 11, 0.66) 34%);
+  gap: var(--space-2);
+}
+
+.composer--chat .composer-mode {
+  margin-bottom: 0;
+}
+
+.composer--chat .composer-box--prominent {
+  min-height: 116px;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(13, 15, 21, 0.94);
+  box-shadow:
+    0 20px 54px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(227, 38, 54, 0.035) inset;
+}
+
+.composer--chat .composer-box--prominent textarea {
+  min-height: 86px;
+}
+
+.composer--chat .composer-hint {
+  margin-top: 0;
+  color: var(--text-3);
+}
+
+.composer-chat-options {
+  width: min(860px, 100%);
+  margin: 0 auto;
+  border: 0;
+}
+
+.composer-chat-options__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.014);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.composer-chat-options__summary::-webkit-details-marker {
+  display: none;
+}
+
+.composer-chat-options__summary:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.composer-chat-options__summary .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.composer-chat-options__summary small {
+  color: var(--amber);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.composer-chat-options__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-3);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.composer-chat-options .composer-profile,
+.composer-chat-options .composer-context-toggle,
+.composer-chat-options .composer-context-preview,
+.composer-chat-options .composer-approval {
+  width: 100%;
+  margin: 0;
+}
+
+.composer-chat-options .composer-profile {
+  gap: 5px;
+}
+
+.composer-chat-options .composer-context-toggle,
+.composer-chat-options .composer-approval {
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.composer-chat-options .composer-context-toggle small,
+.composer-chat-options .composer-approval small,
+.composer-chat-options .composer-profile small {
+  font-size: 10px;
+}
+
+.app-shell[data-screen="workbench"] {
+  --rail: 26px;
+}
+
+.app-shell[data-screen="workbench"] .topbar {
+  background: rgba(8, 9, 12, 0.86);
+}
+
+.app-shell[data-screen="workbench"] .status-rail {
+  padding: 0 14px;
+  opacity: 0.78;
+  background: rgba(8, 9, 12, 0.58);
+}
+
+.app-shell[data-screen="workbench"] .rail-details > summary,
+.app-shell[data-screen="workbench"] .rail-safety-compact,
+.app-shell[data-screen="workbench"] .rail-state {
+  font-size: 9px;
+}
+
+@media (max-width: 1220px) and (min-width: 981px) {
+  .app-shell[data-screen="workbench"] {
+    --sidebar: 176px;
+  }
+
+  .app-shell[data-screen="workbench"] .sidebar {
+    background: rgba(9, 10, 14, 0.82);
+  }
+
+  .app-shell[data-screen="workbench"] .sidebar-scroll {
+    padding-inline: 8px;
+  }
+
+  .app-shell[data-screen="workbench"] .nav-item {
+    min-height: 34px;
+    padding-inline: 8px;
+  }
+
+  .app-shell[data-screen="workbench"] .nav-item span {
+    font-size: 12px;
+  }
+
+  .workbench-main--chat .workbench-header {
+    min-height: 86px;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .workbench-main--chat .thread-scroll {
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  .composer--chat {
+    padding-inline: var(--space-4);
+  }
+}
+
 .composer-mode__tag--quiet {
   font-size: 8px;
   letter-spacing: 0.04em;

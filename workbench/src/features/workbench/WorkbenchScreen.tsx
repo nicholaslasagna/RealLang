@@ -197,8 +197,16 @@ export function WorkbenchScreen() {
   };
 
   return (
-    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"} ${previewEmpty ? "workbench-layout--empty" : ""}`.trim()}>
-      <section className={`workbench-main ${previewEmpty ? "workbench-main--empty" : ""}`.trim()}>
+    <div
+      className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"} ${
+        previewEmpty ? "workbench-layout--empty" : ""
+      } ${inAskLocal ? "workbench-layout--chat" : ""}`.trim()}
+    >
+      <section
+        className={`workbench-main ${previewEmpty ? "workbench-main--empty" : ""} ${
+          inAskLocal ? "workbench-main--chat" : ""
+        }`.trim()}
+      >
         <header className="workbench-header workbench-header--calm">
           <div>
             <h1>{headerTitle}</h1>
@@ -222,7 +230,7 @@ export function WorkbenchScreen() {
         </header>
         <div className="thread-scroll">
           <div className="thread">
-            <WorkbenchGreeting />
+            {!inAskLocal ? <WorkbenchGreeting /> : null}
             {inAskLocal ? (
               <WorkbenchChatThread turns={chatTurns} onClear={clearChat} onConfigureProvider={openProviderSettings} />
             ) : (

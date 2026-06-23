@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -58,7 +58,14 @@ const textarea = () => screen.getByLabelText("Local model request") as HTMLTextA
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
 const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
 const type = (value: string) => fireEvent.change(textarea(), { target: { value } });
-const approve = () => fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+const openChatOptions = () => {
+  const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+  if (!options.open) fireEvent.click(within(options).getByText("Chat options"));
+};
+const approve = () => {
+  openChatOptions();
+  fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
+};
 
 let scrollSpy: ReturnType<typeof vi.fn>;
 
@@ -135,6 +142,7 @@ describe("0.39 local chat usability polish", () => {
     expect(screen.queryByTestId("workbench-chat-turn")).toBeNull();
     expect(screen.getByTestId("chat-thread-empty")).toBeInTheDocument();
     // Still in Ask-local mode and able to send again.
+    openChatOptions();
     expect(screen.getByTestId("composer-ask-approval")).toBeInTheDocument();
     type("two");
     approve();

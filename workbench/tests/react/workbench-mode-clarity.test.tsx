@@ -48,6 +48,10 @@ const passReport = {
 
 const safePreviewInput = () => screen.getByLabelText("Reviewed context for this action");
 const composer = () => screen.getByTestId("safe-command-composer");
+const openChatOptions = () => {
+  const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+  if (!options.open) fireEvent.click(within(options).getByText("Chat options"));
+};
 
 beforeEach(() => {
   mocks.isDesktopRuntime.mockReturnValue(true);
@@ -66,6 +70,23 @@ describe("0.42 chat vs safe-preview clarity", () => {
     const chat = screen.getByTestId("mode-ask-local");
     expect(chat).toBeEnabled();
     expect(chat).toHaveTextContent(/Chat/);
+  });
+
+  it("Chat mode starts with collapsed options and no Commands button", () => {
+    render(<WorkbenchScreen />);
+    fireEvent.click(screen.getByTestId("mode-ask-local"));
+
+    const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
+    expect(options.open).toBe(false);
+    expect(screen.queryByRole("button", { name: "Commands", exact: true })).toBeNull();
+    expect(screen.getByLabelText("Local model request")).toHaveAttribute("placeholder", "Ask your local model…");
+    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
+    expect(screen.getByTestId("composer-profile")).not.toBeVisible();
+
+    openChatOptions();
+    expect(options.open).toBe(true);
+    expect(screen.getByRole("checkbox", { name: /Approve one local model request/i })).toBeInTheDocument();
+    expect(screen.getByTestId("composer-context-toggle")).toBeVisible();
   });
 
   it("does NOT turn conversational text into a repair dry-run in Safe preview", () => {
@@ -87,7 +108,8 @@ describe("0.42 chat vs safe-preview clarity", () => {
     fireEvent.submit(composer());
     fireEvent.click(screen.getByTestId("chat-nudge-switch"));
     expect(screen.getByTestId("workbench-chat-thread")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-ask-approval")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
+    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
   });
@@ -107,6 +129,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
     fireEvent.click(screen.getByTestId("mode-ask-local"));
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
     expect(screen.getByTestId("workbench-chat-thread")).toBeInTheDocument();
+    openChatOptions();
     expect(screen.getByTestId("composer-context-toggle")).toBeInTheDocument();
   });
 
@@ -125,6 +148,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
     fireEvent.submit(composer());
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
 
+    openChatOptions();
     fireEvent.click(screen.getByRole("checkbox", { name: /Approve one local model request/i }));
     fireEvent.click(send);
     await waitFor(() => expect(mocks.runPrivateProviderChatSandbox).toHaveBeenCalledTimes(1));
