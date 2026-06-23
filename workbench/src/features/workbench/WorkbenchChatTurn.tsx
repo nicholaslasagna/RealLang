@@ -21,7 +21,7 @@ function bridgeErrorTitle(error: BridgeError): string {
   if (error.code === "timeout") return "Request timed out";
   if (error.code === "cancelled") return "Request cancelled";
   if (error.code === "request_in_progress") return "Request already running";
-  return "Local model sandbox unavailable";
+  return "Local provider connection failed";
 }
 
 function bridgeErrorNext(error: BridgeError): string {
@@ -29,13 +29,13 @@ function bridgeErrorNext(error: BridgeError): string {
   if (error.code === "timeout") return "It timed out automatically. Ask again to try once more.";
   if (error.code === "request_in_progress") return "Wait for the current request to finish, then ask again.";
   if (error.code === "cancelled") return "Ask again to send the prompt once more.";
-  return "Check the local provider in Settings → Provider / Local Model, then ask again.";
+  return "Check Settings → Local model or start your local provider.";
 }
 
 function statusNext(status: string): string | null {
-  if (status === "not_configured") return "Configure a local provider in Settings → Provider / Local Model.";
+  if (status === "not_configured") return "Check Settings → Local model or start your local provider.";
   if (status === "rejected") return "The request was rejected before it reached the provider. Adjust the text and ask again.";
-  if (status === "fail") return "The local provider returned a failure. Ask again, or check the provider.";
+  if (status === "fail") return "Check Settings → Local model or start your local provider.";
   return null;
 }
 
@@ -133,12 +133,15 @@ export function WorkbenchChatTurn({ prompt, result, running, contextIncluded, on
               ) : report.status === "pass" ? (
                 <p className="chat-turn__status">No response text returned.</p>
               ) : null}
-              <dl className="chat-turn__meta">
-                <div><dt>Status</dt><dd>{statusLabel(report.status)}</dd></div>
-                <div><dt>Duration</dt><dd>{report.duration_ms} ms</dd></div>
-                <div><dt>Input</dt><dd>{report.input_length} chars</dd></div>
-                <div><dt>Saved</dt><dd>NEVER</dd></div>
-              </dl>
+              <details className="chat-turn__meta-details" data-testid="chat-turn-meta-details">
+                <summary>Response details</summary>
+                <dl className="chat-turn__meta">
+                  <div><dt>Status</dt><dd>{statusLabel(report.status)}</dd></div>
+                  <div><dt>Duration</dt><dd>{report.duration_ms} ms</dd></div>
+                  <div><dt>Input</dt><dd>{report.input_length} chars</dd></div>
+                  <div><dt>Saved</dt><dd>NEVER</dd></div>
+                </dl>
+              </details>
               {notConfigured && onConfigureProvider ? (
                 <Button
                   label="Configure local provider"

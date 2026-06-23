@@ -10,6 +10,7 @@ import { bindGlobalShortcuts } from "./platform/shortcuts";
 
 export default function App() {
   const screen = useWorkbenchStore((s) => s.screen);
+  const workbenchMode = useWorkbenchStore((s) => s.workbenchMode);
   const sidebarOpen = useWorkbenchStore((s) => s.sidebarOpen);
   const openPalette = useWorkbenchStore((s) => s.openPalette);
   const initializeApprovalAuditHistory = useWorkbenchStore((s) => s.initializeApprovalAuditHistory);
@@ -38,7 +39,12 @@ export default function App() {
 
   return (
     <>
-      <div id="app" className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`} data-screen={screen}>
+      <div
+        id="app"
+        className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`}
+        data-screen={screen}
+        data-workbench-mode={screen === "workbench" ? workbenchMode : "default"}
+      >
         <header id="topbar" className="topbar" aria-label="Environment status">
           <Topbar />
         </header>

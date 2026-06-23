@@ -15,10 +15,11 @@ import {
 } from "../bridge";
 import { getActionDefinition, getActionForSlashCommand, type CommandActionId } from "../composer/action-model";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
-import type { ImportPreview, WorkbenchScreen, WorkbenchState } from "./types";
+import type { ImportPreview, WorkbenchLayoutMode, WorkbenchScreen, WorkbenchState } from "./types";
 
 type WorkbenchActions = {
   navigate: (screen: WorkbenchScreen) => void;
+  setWorkbenchMode: (mode: WorkbenchLayoutMode) => void;
   setSettingsSection: (section: string) => void;
   toggleSidebar: () => void;
   toggleStaffPreview: () => void;
@@ -50,6 +51,7 @@ type WorkbenchActions = {
 
 const initialState: WorkbenchState = {
   screen: "home",
+  workbenchMode: "default",
   settingsSection: "general",
   staffPreview: false,
   commandQuery: "",
@@ -101,9 +103,11 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
   navigate: (screen) => {
     const data = getWorkbenchData();
     if (!data.navigation.some((item) => item.id === screen)) return;
-    set({ screen, sidebarOpen: false });
+    set({ screen, sidebarOpen: false, workbenchMode: screen === "workbench" ? get().workbenchMode : "default" });
     document.title = `RealForge · ${data.navigation.find((item) => item.id === screen)?.label || "Workbench"}`;
   },
+
+  setWorkbenchMode: (mode) => set({ workbenchMode: mode }),
 
   setSettingsSection: (section) => set({ settingsSection: section, screen: "settings" }),
 

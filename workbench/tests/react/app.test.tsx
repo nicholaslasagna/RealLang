@@ -10,6 +10,7 @@ afterEach(() => {
 function resetStore() {
   useWorkbenchStore.setState({
     screen: "home",
+    workbenchMode: "default",
     settingsSection: "general",
     staffPreview: false,
     commandQuery: "",

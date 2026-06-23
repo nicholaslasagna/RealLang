@@ -19,6 +19,7 @@ import { useWorkbenchStore } from "../../src/state/workbench-store";
 function resetStore() {
   useWorkbenchStore.setState({
     screen: "workbench",
+    workbenchMode: "default",
     settingsSection: "general",
     staffPreview: false,
     commandQuery: "",
@@ -76,17 +77,21 @@ describe("0.42 chat vs safe-preview clarity", () => {
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
 
+    expect(useWorkbenchStore.getState().workbenchMode).toBe("chat");
+    expect(screen.getByTestId("workbench-chat-thread").closest(".workbench-layout")).toHaveClass("workbench-layout--chat");
     const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
     expect(options.open).toBe(false);
     expect(screen.queryByRole("button", { name: "Commands", exact: true })).toBeNull();
     expect(screen.getByLabelText("Local model request")).toHaveAttribute("placeholder", "Ask your local model…");
-    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
+    expect(screen.getByTestId("composer-ask-approval")).toBeVisible();
     expect(screen.getByTestId("composer-profile")).not.toBeVisible();
 
     openChatOptions();
     expect(options.open).toBe(true);
-    expect(screen.getByRole("checkbox", { name: /Approve one local model request/i })).toBeInTheDocument();
     expect(screen.getByTestId("composer-context-toggle")).toBeVisible();
+
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
+    expect(useWorkbenchStore.getState().workbenchMode).toBe("default");
   });
 
   it("does NOT turn conversational text into a repair dry-run in Safe preview", () => {
@@ -109,7 +114,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
     fireEvent.click(screen.getByTestId("chat-nudge-switch"));
     expect(screen.getByTestId("workbench-chat-thread")).toBeInTheDocument();
     expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
+    expect(screen.getByTestId("composer-ask-approval")).toBeVisible();
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
   });

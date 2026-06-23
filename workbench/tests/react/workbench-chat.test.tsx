@@ -99,7 +99,7 @@ describe("0.32 main composer → private chat sandbox", () => {
     render(<WorkbenchScreen />);
     fireEvent.click(screen.getByTestId("mode-ask-local"));
     expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
-    expect(screen.getByTestId("composer-ask-approval")).not.toBeVisible();
+    expect(screen.getByTestId("composer-ask-approval")).toBeVisible();
     const send = screen.getByRole("button", { name: "Ask local model", exact: true });
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "ping" } });
     // Still disabled while typing, before approval.

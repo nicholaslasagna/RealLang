@@ -222,10 +222,41 @@ describe("0.38 real local chat — errors and provider", () => {
     approve();
     fireEvent.click(sendButton());
     const structured = await screen.findByTestId("chat-turn-structured-error");
-    expect(structured).toHaveTextContent(/Settings → Provider \/ Local Model/i);
+    expect(structured).toHaveTextContent(/Settings → Local model/i);
     fireEvent.click(screen.getByRole("button", { name: /Configure local provider/i }));
     expect(useWorkbenchStore.getState().screen).toBe("settings");
     expect(useWorkbenchStore.getState().settingsSection).toBe("provider");
+  });
+
+  it("renders a compact connection failure with local-model guidance", async () => {
+    mocks.runPrivateProviderChatSandbox.mockResolvedValue({
+      ok: false,
+      error: { code: "connection_failed", message: "Local provider connection failed." }
+    });
+    render(<WorkbenchScreen />);
+    askLocal();
+    type("connect");
+    approve();
+    fireEvent.click(sendButton());
+    const error = await screen.findByTestId("chat-turn-error");
+    expect(error).toHaveTextContent("Local provider connection failed");
+    expect(error).toHaveTextContent(/Settings → Local model/i);
+    expect(error.textContent ?? "").not.toMatch(/sk-|http:\/\/|127\.0\.0\.1|localhost/);
+  });
+
+  it("keeps response metadata behind an inspectable disclosure", async () => {
+    render(<WorkbenchScreen />);
+    askLocal();
+    type("metadata");
+    approve();
+    fireEvent.click(sendButton());
+    await screen.findByTestId("chat-turn-response");
+    const details = screen.getByTestId("chat-turn-meta-details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    fireEvent.click(within(details).getByText("Response details"));
+    expect(details.open).toBe(true);
+    expect(details).toHaveTextContent("Duration");
+    expect(details).toHaveTextContent("Saved");
   });
 
   it("shows an informational profile selector that leaks no private identity", () => {

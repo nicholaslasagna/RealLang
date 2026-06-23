@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
@@ -139,6 +139,7 @@ export function WorkbenchScreen() {
   const loadDesktopReport = useWorkbenchStore((s) => s.loadDesktopReport);
   const navigate = useWorkbenchStore((s) => s.navigate);
   const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
+  const setWorkbenchMode = useWorkbenchStore((s) => s.setWorkbenchMode);
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const desktop = isDesktopRuntime();
@@ -166,6 +167,11 @@ export function WorkbenchScreen() {
     : hasExplicitAction
       ? action.title
       : "What do you want to work on?";
+
+  useEffect(() => {
+    setWorkbenchMode(inAskLocal ? "chat" : "default");
+    return () => setWorkbenchMode("default");
+  }, [inAskLocal, setWorkbenchMode]);
 
   const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
     const loaded = await loadDesktopReport(sourceId);

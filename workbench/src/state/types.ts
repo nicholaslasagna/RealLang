@@ -68,6 +68,7 @@ export interface ImportField {
 
 export type DesktopLoadStatus = "idle" | "loading" | "error";
 export type ApprovalAuditStorageStatus = "idle" | "loading" | "persisted" | "session_only" | "error";
+export type WorkbenchLayoutMode = "default" | "chat";
 
 export interface PrivateLocalModelSession {
   endpoint: string;
@@ -77,6 +78,7 @@ export interface PrivateLocalModelSession {
 
 export interface WorkbenchState {
   screen: WorkbenchScreen;
+  workbenchMode: WorkbenchLayoutMode;
   settingsSection: string;
   staffPreview: boolean;
   commandQuery: string;

@@ -205,14 +205,38 @@ export function ComposerDock({
           placeholder={askMode ? "Ask your local model…" : "Describe an action to preview safely…"}
           onKeyDown={onKeyDown}
         />
-        <button
-          className="send-button"
-          type="submit"
-          aria-label={askMode ? "Ask local model" : "Stage action context"}
-          disabled={sendDisabled}
-        >
-          <Icon name="arrow-up" />
-        </button>
+        {askMode ? (
+          <div className="composer-send-stack">
+            <label className="composer-inline-approval" data-testid="composer-ask-approval">
+              <input
+                type="checkbox"
+                checked={approved}
+                disabled={!desktop || chatRunning}
+                onChange={(event) => setApproved(event.currentTarget.checked)}
+              />
+              <span>
+                <b>Approve one local model request</b>
+                <small>no files/tools/memory</small>
+              </span>
+            </label>
+            <button
+              className="send-button"
+              type="submit"
+              aria-label="Ask local model"
+              disabled={sendDisabled}
+            >
+              <Icon name="arrow-up" />
+            </button>
+          </div>
+        ) : (
+          <button
+            className="send-button"
+            type="submit"
+            aria-label="Stage action context"
+          >
+            <Icon name="arrow-up" />
+          </button>
+        )}
       </div>
 
       <p className="composer-hint">
@@ -226,7 +250,9 @@ export function ComposerDock({
           <summary className="composer-chat-options__summary">
             <Icon name="sliders-horizontal" />
             <span>Chat options</span>
-            <small>{approved ? "approved for next send" : "approval required"}</small>
+            <small>
+              {approved ? "approved" : "approval required"} · {includeContext ? "context on" : "context off"}
+            </small>
           </summary>
           <div className="composer-chat-options__content">
             <div className="composer-profile" data-testid="composer-profile">
@@ -284,22 +310,6 @@ export function ComposerDock({
                 ) : null}
               </div>
             ) : null}
-
-            <label className="composer-approval" data-testid="composer-ask-approval">
-              <input
-                type="checkbox"
-                checked={approved}
-                disabled={!desktop || chatRunning}
-                onChange={(event) => setApproved(event.currentTarget.checked)}
-              />
-              <span>
-                <b>Approve one local model request</b>
-                <small>
-                  Your text is sent only to the user-configured local model sandbox. No files, workspace
-                  context, tools, memory, or history are included. Output is LOCAL UNTRUSTED and is not persisted.
-                </small>
-              </span>
-            </label>
           </div>
         </details>
       ) : null}

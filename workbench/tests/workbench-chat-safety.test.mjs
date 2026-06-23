@@ -90,7 +90,21 @@ test("the composer requires explicit desktop + approval before any send", async 
   const dock = await read("src/features/composer/ComposerDock.tsx");
   assert.match(dock, /if \(!desktop\)/);
   assert.match(dock, /if \(!approved\)/);
+  assert.match(dock, /composer-inline-approval/);
   // The dock never calls a provider itself — it only invokes the parent callback.
   assert.match(dock, /onAskLocalModel\?\.\(/);
   assert.doesNotMatch(dock, /runPrivateProviderChatSandbox/);
+});
+
+test("0.44 focused chat layout hides rail and compacts navigation without adding authority", async () => {
+  const app = await read("src/App.tsx");
+  const store = await read("src/state/workbench-store.ts");
+  const styles = await read("styles.css");
+  assert.match(app, /data-workbench-mode/);
+  assert.match(store, /workbenchMode: "default"/);
+  assert.match(styles, /data-workbench-mode="chat"/);
+  assert.match(styles, /--sidebar:\s*64px/);
+  assert.match(styles, /--rail:\s*0px/);
+  assert.match(styles, /\.status-rail\s*\{\s*display:\s*none;/);
+  assert.match(styles, /composer-chat-options:not\(\[open\]\) \.composer-chat-options__content/);
 });
