@@ -41,14 +41,19 @@ export function HomeScreen() {
 
   const readiness = derivePrivateProviderReadiness(status, desktop);
   const nextStep = homeNextStepMessage(readiness, desktop, loading);
+  const localModelSummary = loading
+    ? "Checking your local model setup..."
+    : !desktop
+      ? "Open the desktop app to use a local provider."
+      : status?.configured
+        ? "Configured locally. Run a smoke check if chat cannot connect."
+        : "Not configured yet. Add a private local provider when you are ready.";
 
   const openWorkbench = () => navigate("workbench");
   const openProvider = () => {
     setSettingsSection("provider");
     navigate("settings");
   };
-  const openSecurity = () => navigate("security");
-
   const statusRows: Array<{ label: string; value: string; ok: boolean }> = [
     {
       label: "Local provider",
@@ -86,7 +91,7 @@ export function HomeScreen() {
       <div className="home-launchpad__inner">
         <header className="home-launchpad__hero">
           <h1>What do you want to work on?</h1>
-          <p>Plan in plain language, preview exactly what would run, and approve only bounded local steps.</p>
+          <p>Start with a plain-language request. RealForge can chat locally or stage a safe preview before anything runs.</p>
           <div className="home-launchpad__primary">
             <Button
               label="Open Workbench"
@@ -94,55 +99,61 @@ export function HomeScreen() {
               variant="primary"
               onClick={openWorkbench}
             />
+            <button type="button" className="home-secondary-action" onClick={openProvider}>
+              Check local model
+            </button>
           </div>
         </header>
 
-        <section className="home-launchpad__secondary" aria-label="Quick links">
-          <button type="button" className="home-link-card" onClick={openWorkbench}>
-            <Icon name="cpu" />
-            <span>
-              <b>Ask local model</b>
-              <small>Desktop sandbox · single turn · approval required</small>
-            </span>
-          </button>
-          <button type="button" className="home-link-card" onClick={openProvider}>
-            <Icon name="activity" />
-            <span>
-              <b>Run provider smoke check</b>
-              <small>Fixed minimal prompt · Settings → Provider</small>
-            </span>
-          </button>
-          <button type="button" className="home-link-card" onClick={openProvider}>
-            <Icon name="gauge" />
-            <span>
-              <b>Check provider readiness</b>
-              <small>Sanitized status only · no secrets</small>
-            </span>
-          </button>
-          <button type="button" className="home-link-card" onClick={openSecurity}>
-            <Icon name="shield-alert" />
-            <span>
-              <b>Review safety center</b>
-              <small>Findings · scans · policy boundaries</small>
-            </span>
-          </button>
-        </section>
+        <details className="home-launchpad__shortcuts">
+          <summary>
+            <Icon name="sparkles" />
+            More quick starts
+          </summary>
+          <section className="home-launchpad__secondary" aria-label="Quick links">
+            <button type="button" className="home-link-card" onClick={openWorkbench}>
+              <Icon name="cpu" />
+              <span>
+                <b>Start local chat</b>
+                <small>You approve each request · no files or tools</small>
+              </span>
+            </button>
+            <button type="button" className="home-link-card" onClick={openProvider}>
+              <Icon name="activity" />
+              <span>
+                <b>Run smoke check</b>
+                <small>Verify your local model server</small>
+              </span>
+            </button>
+            <button type="button" className="home-link-card" onClick={() => navigate("security")}>
+              <Icon name="shield-alert" />
+              <span>
+                <b>Review safety</b>
+                <small>Scans and policy boundaries</small>
+              </span>
+            </button>
+          </section>
+        </details>
 
         <section className="home-launchpad__status" data-testid="home-status-summary" aria-label="Status summary">
           <div className="home-launchpad__status-head">
-            <h2>Status</h2>
+            <h2>Local model</h2>
             <Badge label={providerReadinessLabel(readiness.overallReadiness)} tone={statusTone(readiness.overallReadiness !== "not_configured" && readiness.overallReadiness !== "error")} />
           </div>
-          <dl className="home-status-grid">
-            {statusRows.map((row) => (
-              <div key={row.label}>
-                <dt>{row.label}</dt>
-                <dd>
-                  <Badge label={row.value} tone={row.ok ? "green" : "amber"} />
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <p className="home-status-summary-line">{localModelSummary}</p>
+          <details className="home-status-details">
+            <summary>Status details</summary>
+            <dl className="home-status-grid">
+              {statusRows.map((row) => (
+                <div key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>
+                    <Badge label={row.value} tone={row.ok ? "green" : "amber"} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </details>
         </section>
 
         <section className="home-launchpad__next" data-testid="home-next-step">
@@ -179,7 +190,7 @@ export function HomeScreen() {
               </li>
               <li>
                 <button type="button" onClick={openProvider}>
-                  Review Private Local Model readiness
+                  Check local model readiness
                 </button>
               </li>
               <li>
@@ -194,8 +205,7 @@ export function HomeScreen() {
         <footer className="home-launchpad__boundary" data-testid="home-safety-boundary">
           <Icon name="shield-check" />
           <span>
-            <strong>local_untrusted</strong> · approval-first · no writes by default · private model identity stays on
-            your machine
+            RealForge will not change files here. Local model output stays <strong>local_untrusted</strong> until you review it.
           </span>
         </footer>
       </div>

@@ -99,9 +99,9 @@ textarea:focus-visible,
   display: flex;
   align-items: center;
   min-width: 0;
-  padding: 0 16px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--line);
-  background: rgba(8, 9, 12, 0.94);
+  background: rgba(8, 9, 12, 0.86);
   backdrop-filter: blur(16px);
 }
 
@@ -255,11 +255,11 @@ textarea:focus-visible,
 
 .context-chip {
   gap: 7px;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--line-strong);
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.065);
   border-radius: 4px;
-  background: var(--surface-1);
+  background: rgba(255, 255, 255, 0.018);
 }
 
 .context-chip .icon {
@@ -275,7 +275,7 @@ textarea:focus-visible,
 .context-chip small {
   color: var(--text-3);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .context-chip--provider {
@@ -403,7 +403,7 @@ textarea:focus-visible,
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--line);
-  background: rgba(11, 13, 18, 0.88);
+  background: rgba(9, 10, 14, 0.82);
 }
 
 .sidebar-scroll {
@@ -419,8 +419,8 @@ textarea:focus-visible,
 /* Calm secondary grouping: a thin divider above every group after the first. */
 .nav-group + .nav-group {
   margin-top: 2px;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
+  padding-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
 }
 
 .nav-group h2,
@@ -442,14 +442,14 @@ textarea:focus-visible,
   grid-template-columns: 17px minmax(0, 1fr) 14px;
   align-items: center;
   width: 100%;
-  min-height: 38px;
+  min-height: 36px;
   margin: 1px 0;
   padding: 0 9px;
   border: 0;
   border-left: 2px solid transparent;
   border-radius: 3px;
   background: transparent;
-  color: var(--text-2);
+  color: rgba(220, 224, 232, 0.76);
   text-align: left;
   cursor: pointer;
 }
@@ -481,7 +481,7 @@ textarea:focus-visible,
 
 .nav-item span {
   overflow: hidden;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 650;
   text-overflow: ellipsis;
 }
@@ -2713,17 +2713,35 @@ textarea:focus-visible,
 }
 
 .capability-card > p {
-  min-height: 61px;
   margin: 13px 0 0;
   color: var(--text-2);
   font-size: 12px;
   line-height: 1.55;
 }
 
+.capability-details {
+  margin-top: var(--space-3);
+}
+
+.capability-details > summary {
+  width: max-content;
+  color: var(--text-3);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.capability-details:not([open]) .capability-badges {
+  display: none;
+}
+
+.capability-details[open] .capability-badges {
+  margin-top: var(--space-2);
+}
+
 .capability-badges {
   flex-wrap: wrap;
   gap: 5px;
-  margin: 12px 0;
+  margin: 0;
 }
 
 .capability-card footer {
@@ -3479,6 +3497,14 @@ textarea:focus-visible,
 .status-rail b { color: var(--violet); }
 .rail-command { max-width: 36%; overflow: hidden; text-overflow: ellipsis; }
 
+.app-shell:not([data-screen="workbench"]) {
+  --rail: 0px;
+}
+
+.app-shell:not([data-screen="workbench"]) .status-rail {
+  display: none;
+}
+
 .command-dialog {
   width: min(1040px, calc(100vw - 32px));
   max-height: min(720px, calc(100dvh - 60px));
@@ -4036,6 +4062,34 @@ textarea:focus-visible,
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   gap: 18px;
   align-items: start;
+}
+
+.reports-activity-disclosure {
+  margin-bottom: var(--space-4);
+}
+
+.reports-activity-disclosure > summary {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.reports-activity-disclosure > summary:hover {
+  background: rgba(255, 255, 255, 0.032);
+  color: var(--text);
+}
+
+.reports-activity-disclosure:not([open]) .approval-audit {
+  display: none;
+}
+
+.reports-activity-disclosure[open] .approval-audit {
+  margin-top: var(--space-3);
 }
 
 .import-panel {
@@ -5118,12 +5172,69 @@ textarea:focus-visible,
 }
 
 .home-launchpad__primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   margin-top: var(--space-5);
+}
+
+.home-secondary-action {
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.home-secondary-action:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.home-launchpad__shortcuts {
+  color: var(--text-3);
+}
+
+.home-launchpad__shortcuts > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.home-launchpad__shortcuts > summary:hover {
+  background: rgba(255, 255, 255, 0.032);
+  color: var(--text);
+}
+
+.home-launchpad__shortcuts > summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-launchpad__shortcuts .icon {
+  width: 13px;
+  height: 13px;
+  color: var(--cyan);
+}
+
+.home-launchpad__shortcuts:not([open]) .home-launchpad__secondary {
+  display: none;
+}
+
+.home-launchpad__shortcuts[open] .home-launchpad__secondary {
+  margin-top: var(--space-3);
 }
 
 .home-launchpad__secondary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
@@ -5131,10 +5242,10 @@ textarea:focus-visible,
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: var(--radius-3);
-  background: rgba(255, 255, 255, 0.02);
+  padding: var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: var(--radius-2);
+  background: rgba(255, 255, 255, 0.014);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -5194,6 +5305,24 @@ textarea:focus-visible,
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3) var(--space-5);
   margin: 0;
+  padding-top: var(--space-3);
+}
+
+.home-status-summary-line {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.home-status-details {
+  margin-top: var(--space-3);
+}
+
+.home-status-details > summary {
+  color: var(--text-3);
+  font-size: 11px;
+  cursor: pointer;
 }
 
 .home-status-grid dt {

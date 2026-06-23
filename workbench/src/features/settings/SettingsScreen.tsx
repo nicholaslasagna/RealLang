@@ -106,10 +106,10 @@ export function SettingsScreen() {
             <h1>{current.label}</h1>
             <p>{DESCRIPTIONS[current.id] || "Read-only prototype configuration."}</p>
           </div>
-          <Badge label="READ ONLY" tone="green" />
+          <Badge label="SAFE DEFAULTS" tone="green" />
         </header>
         <details className="settings-disclosure settings-boundaries">
-          <summary>Active safety boundaries</summary>
+          <summary>Safety details</summary>
           <div className="settings-safety-strip settings-safety-strip--compact">
             <span>
               <Icon name="lock-keyhole" />
@@ -170,7 +170,7 @@ export function SettingsScreen() {
         <footer className="settings-footer">
           <Icon name="shield-check" />
           <span>
-            <b>Safe defaults are active.</b> Changes are unavailable in this static prototype.
+            <b>Safe defaults are active.</b> Advanced actions stay behind explicit approval.
           </span>
         </footer>
       </section>

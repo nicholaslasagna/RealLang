@@ -17,9 +17,9 @@ export function CapabilitiesScreen() {
   return (
     <div className="screen">
       <SectionHeading
-        eyebrow="CAPABILITY REGISTRY"
+        eyebrow="CAPABILITIES"
         title="Capabilities"
-        description="One trust-oriented loop across every domain. Provider, research, and generated output stays untrusted until validated."
+        description="See what RealForge can help plan today. Details stay available without turning the page into a policy grid."
       />
       <div className="page-action-row">
         <span>
@@ -39,12 +39,15 @@ export function CapabilitiesScreen() {
               <Badge label={cap.status.toUpperCase()} tone={capabilityTone(cap.status)} />
             </header>
             <p>{cap.description}</p>
-            <div className="capability-badges">
-              <Badge label={cap.safety.toUpperCase()} tone={cap.safety.includes("untrusted") ? "amber" : "blue"} />
-              <Badge label={`WRITES ${cap.writes.toUpperCase()}`} tone={cap.writes === "yes" ? "amber" : "neutral"} />
-              {cap.staff ? <Badge label="STAFF" tone="violet" /> : <Badge label="NO STAFF" tone="neutral" />}
-              {cap.network ? <Badge label="NETWORK" tone="amber" /> : <Badge label="LOCAL" tone="cyan" />}
-            </div>
+            <details className="capability-details">
+              <summary>Safety details</summary>
+              <div className="capability-badges">
+                <Badge label={cap.safety.toUpperCase()} tone={cap.safety.includes("untrusted") ? "amber" : "blue"} />
+                <Badge label={`WRITES ${cap.writes.toUpperCase()}`} tone={cap.writes === "yes" ? "amber" : "neutral"} />
+                {cap.staff ? <Badge label="STAFF" tone="violet" /> : <Badge label="NO STAFF" tone="neutral" />}
+                {cap.network ? <Badge label="NETWORK" tone="amber" /> : <Badge label="LOCAL" tone="cyan" />}
+              </div>
+            </details>
             <footer>
               <Icon name="terminal" />
               <code>{cap.next}</code>

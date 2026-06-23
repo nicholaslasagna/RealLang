@@ -221,7 +221,8 @@ async function run() {
       await page.keyboard.press("Escape");
 
       await page.getByRole("button", { name: "Reports", exact: true }).click();
-      await page.waitForSelector('[data-testid="approval-audit-log"] .approval-audit-entry');
+      await page.locator("summary", { hasText: "Activity log" }).click();
+      await page.waitForSelector('[data-testid="approval-audit-log"] .approval-audit-entry', { state: "visible" });
       if (await overflows()) throw new Error(`Approval log horizontal overflow detected at ${width}px`);
       if (runtimeErrors.length) throw new Error(`Browser errors at ${width}px: ${runtimeErrors.join(" | ")}`);
       console.log(`visual smoke OK at ${width}px`);

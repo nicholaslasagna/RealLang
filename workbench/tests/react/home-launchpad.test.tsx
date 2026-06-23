@@ -54,12 +54,15 @@ describe("Home launchpad", () => {
     expect(screen.getByTestId("home-launchpad")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /what do you want to work on/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open workbench/i })).toBeInTheDocument();
+    expect(document.querySelectorAll(".home-launchpad__primary .button--primary")).toHaveLength(1);
+    expect((screen.getByText(/more quick starts/i).closest("details") as HTMLDetailsElement).open).toBe(false);
   });
 
   it("shows provider and safety status without private identity", async () => {
     render(<HomeScreen />);
     const summary = screen.getByTestId("home-status-summary");
     expect(summary).toBeInTheDocument();
+    expect(screen.getByText(/status details/i).closest("details")).not.toHaveAttribute("open");
     expect(within(summary).getByText("Local provider")).toBeInTheDocument();
     expect(within(summary).getByText(/image execution/i)).toBeInTheDocument();
     expect(screen.getByTestId("home-safety-boundary")).toHaveTextContent(/local_untrusted/i);
@@ -112,7 +115,7 @@ describe("Home launchpad", () => {
     const { useWorkbenchStore } = await import("../../src/state/workbench-store");
     useWorkbenchStore.setState({ screen: "home", settingsSection: "general" });
     render(<HomeScreen />);
-    fireEvent.click(screen.getByRole("button", { name: /check provider readiness/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^check local model$/i }));
     expect(useWorkbenchStore.getState().screen).toBe("settings");
     expect(useWorkbenchStore.getState().settingsSection).toBe("provider");
   });

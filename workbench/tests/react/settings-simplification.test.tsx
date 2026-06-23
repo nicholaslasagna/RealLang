@@ -59,8 +59,9 @@ describe("Settings simplification (0.35)", () => {
 
   it("collapses safety boundaries by default", () => {
     render(<SettingsScreen />);
-    const boundaries = screen.getByText(/active safety boundaries/i).closest("details");
+    const boundaries = screen.getByText(/safety details/i).closest("details");
     expect(boundaries).not.toHaveAttribute("open");
+    expect(screen.getAllByText(/safe defaults/i).length).toBeGreaterThan(0);
   });
 
   it("keeps provider summary visible with advanced details collapsed", async () => {

@@ -41,8 +41,8 @@ export function StudioScreen({ screen }: StudioScreenProps) {
       </div>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} description={content.description} />
       <div className={`workflow-notice workflow-notice--${content.accent}`}>
-        <Icon name="shield-alert" />
-        <span>Planning artifact only · no silent writes · no tool execution · human review required</span>
+        <Icon name="shield-check" />
+        <span>Planning only. RealForge will not change files or run tools from this page.</span>
       </div>
       <section className={`studio-launch studio-launch--${content.accent}`}>
         <span className="studio-launch__icon">
@@ -63,10 +63,10 @@ export function StudioScreen({ screen }: StudioScreenProps) {
       </section>
       <div className="workflow-section-heading">
         <div>
-          <p className="eyebrow">AVAILABLE WORKFLOWS</p>
-          <h2>Structured planning surfaces</h2>
+          <p className="eyebrow">WORKFLOWS</p>
+          <h2>Start from a structured plan</h2>
         </div>
-        <span>Provider output remains untrusted until validated</span>
+        <span>Review every output before use</span>
       </div>
       <div className="workflow-grid">
         {content.items.map(([title, iconName, description, command, status]) => (

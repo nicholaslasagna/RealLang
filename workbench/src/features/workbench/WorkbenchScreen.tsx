@@ -25,8 +25,7 @@ function EmptyWorkbenchCard() {
         <span>Start with a plain-language request</span>
       </div>
       <p>
-        RealForge will stage a preview first. Safety labels, argv metadata, and approval gates stay
-        available after you choose an intent.
+        RealForge can chat locally or prepare a safe preview. Details are available after you choose what to do.
       </p>
     </article>
   );
@@ -245,10 +244,10 @@ export function WorkbenchScreen() {
             <h1>{headerTitle}</h1>
             <span>
               {inAskLocal
-                ? "Ask the user-configured local model. Output is LOCAL UNTRUSTED; the conversation is session-only and not saved."
+                ? "Ask the user-configured local model. You approve each request; the conversation is session-only and not saved."
                 : hasExplicitAction
-                  ? "Review the staged preview. Details stay inspectable, and execution still requires the existing approval gates."
-                  : "Choose Chat to talk to your local model, or pick a suggestion to stage a safe action preview. No writes by default."}
+                  ? "Review the staged preview. Details stay inspectable, and running it still needs approval."
+                  : "Choose Chat to talk to your local model, or describe an action to preview safely."}
             </span>
           </div>
           <button

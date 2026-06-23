@@ -50,6 +50,16 @@ describe("Workbench React app", () => {
     render(<App />);
     expect(screen.getByText(/Imported JSON is untrusted/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Report JSON/i)).toBeInTheDocument();
+    expect(screen.getByText(/Activity log/i).closest("details")).not.toHaveAttribute("open");
+  });
+
+  it("keeps capability safety details collapsed by default", () => {
+    resetStore();
+    useWorkbenchStore.setState({ screen: "capabilities" });
+    render(<App />);
+    const details = screen.getAllByText(/Safety details/i).map((node) => node.closest("details"));
+    expect(details.length).toBeGreaterThan(0);
+    expect(details.every((node) => !node?.hasAttribute("open"))).toBe(true);
   });
 
   it("shows parse error for invalid JSON without throwing", () => {

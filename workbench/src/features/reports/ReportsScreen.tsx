@@ -21,19 +21,21 @@ export function ReportsScreen() {
   return (
     <div className="screen reports-screen">
       <SectionHeading
-        eyebrow="REPORTS · READ-ONLY IMPORT"
-        title="Preview RealForge JSON reports."
-        description="Paste, load a sample, or pull a read-only CLI report through the local bridge. Everything is parsed locally and shown as an untrusted preview. No backend, no commands, no writes."
+        eyebrow="REPORTS"
+        title="Preview a report."
+        description="Paste JSON, load a sample, or pull a read-only CLI report. RealForge shows it locally and never applies changes from it."
       />
       <div className="import-banner">
         <Icon name="shield-alert" />
         <span>
           <b>Imported JSON is untrusted.</b> RealForge will not execute commands or apply changes from this report.
         </span>
-        <Badge label="NO BACKEND" tone="cyan" />
-        <Badge label="NO WRITES" tone="green" />
+        <Badge label="LOCAL PREVIEW" tone="cyan" />
       </div>
-      <ApprovalAuditLog />
+      <details className="reports-activity-disclosure">
+        <summary>Activity log</summary>
+        <ApprovalAuditLog />
+      </details>
       <div className="reports-layout">
         <div className="reports-left">
           <CliBridgePanel />
