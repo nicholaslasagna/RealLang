@@ -5,21 +5,47 @@ noise. It changes **no** behavior, execution, or safety boundary.
 
 ## Navigation hierarchy
 
-The sidebar is grouped so normal users see a calm surface and advanced/security
-detail is one click away without dominating:
+The sidebar is grouped by user intent:
 
 | Group | Screens |
 |-------|---------|
-| **Core** | Home · Workbench · Capabilities |
-| **Engineering** | Code · Research |
+| **Start** | Home · Workbench |
+| **Build** | Code · Research |
 | **Studio** | Creative · Image · Vision · Engine · Assets |
-| **Evaluate** | Benchmarks · Security |
-| **System** | Reports · Updates · Settings |
+| **Evaluate** | Capabilities · Benchmarks · Security · Reports |
+| **System** | Settings · Updates |
 
-- Security moved from a standalone "Advanced" group into **Evaluate** (beside
-  Benchmarks); Reports moved into **System**. The "Advanced" group is removed.
-- Group headers are quieter; a thin divider separates secondary groups.
-- The active item has a clearer left-accent + bolder label.
+- **Home** is a calm launchpad: primary **Open Workbench**, secondary links to provider
+  readiness/smoke and the safety center, plus a compact sanitized status summary.
+- **Workbench** is visually emphasized as the primary destination (`nav-item--primary`).
+- Settings → **Provider / Local Model** remains the path for private provider readiness,
+  smoke, and chat sandbox tools.
+- Route IDs are unchanged; keyboard shortcuts and tests continue to use the same screen ids.
+
+Previously (0.15): Core / Engineering / System grouping. Reports moved from System to
+Evaluate alongside Security for a clearer “review & evaluate” cluster.
+
+## Home launchpad (0.16)
+
+Home is the calm entry point — not a dashboard of every technical detail.
+
+| Area | Purpose |
+|------|---------|
+| Hero | “What do you want to work on?” |
+| Primary | **Open Workbench** |
+| Secondary | Ask local model · provider smoke · readiness · safety center |
+| Status | Sanitized provider/safety summary (desktop loads existing status IPC) |
+| Recent | Approved runs when present; otherwise suggested next steps |
+| Footer | `local_untrusted` · approval-first · no writes · identity stays local |
+
+Empty-state guidance (via `homeNextStepMessage`):
+
+- Web preview → desktop required for execution
+- Provider not configured → home private config + Settings → Provider
+- Configured, smoke not run → run fixed smoke in Settings
+- Ready → open Workbench
+
+Image execution stays disabled; workspace/tools/memory stay disconnected.
 
 ## Normal vs advanced surfaces
 

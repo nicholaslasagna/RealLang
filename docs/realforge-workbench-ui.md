@@ -162,6 +162,23 @@ backend command, write bridge, shell, network call, or auto-fix.
 - **Responsive.** The visual smoke now checks **1024 / 1280 / 1440** and walks the
   Security, Reports, and Settings/About screens for overflow and console errors.
 
+## Workbench 0.16 - Home launchpad and intent-based navigation
+
+- **Home** is a calm launchpad: hero “What do you want to work on?”, primary **Open
+  Workbench**, secondary links (local model, provider smoke/readiness, safety center),
+  compact sanitized status summary, suggested/recent work, and a short
+  `local_untrusted` boundary footer. No new provider IPC from Home — desktop reuses
+  existing `loadProviderStatus()` only.
+- Sidebar regrouped by intent: **Start** (Home/Workbench), **Build** (Code/Research),
+  **Studio**, **Evaluate** (Capabilities/Benchmarks/Security/Reports), **System**
+  (Settings/Updates). Workbench is visually primary; Settings → Provider stays the
+  path for private local model readiness.
+- Image execution remains disabled/metadata-only; workspace/tools/memory stay
+  disconnected; private model identity remains local-only and never appears in the
+  launchpad summary.
+
+See [workbench/docs/ui-navigation.md](../workbench/docs/ui-navigation.md).
+
 ## Workbench 0.15 - UI declutter, navigation hierarchy, Security UX polish
 
 - Calmer grouped sidebar: **Core** (Home/Workbench/Capabilities), **Engineering**

@@ -35,19 +35,22 @@ function resetHome() {
 }
 
 describe("0.15 navigation hierarchy", () => {
-  it("groups Security under Evaluate and Reports under System (no Advanced group)", () => {
+  it("groups Security and Reports under Evaluate (intent-based navigation)", () => {
     const nav = getWorkbenchData().navigation;
     const byId = Object.fromEntries(nav.map((item) => [item.id, item.group]));
+    expect(byId.home).toBe("Start");
+    expect(byId.workbench).toBe("Start");
+    expect(byId.code).toBe("Build");
+    expect(byId.capabilities).toBe("Evaluate");
     expect(byId.security).toBe("Evaluate");
-    expect(byId.benchmarks).toBe("Evaluate");
-    expect(byId.reports).toBe("System");
-    expect(byId.updates).toBe("System");
+    expect(byId.reports).toBe("Evaluate");
     expect(byId.settings).toBe("System");
+    expect(byId.updates).toBe("System");
     expect(nav.some((item) => item.group === "Advanced")).toBe(false);
     expect(nav.length).toBe(15);
   });
 
-  it("renders every nav item and the five groups in the sidebar", () => {
+  it("renders every nav item and the five intent groups in the sidebar", () => {
     resetHome();
     render(<App />);
     const sidebar = document.getElementById("sidebar")!;
@@ -57,10 +60,25 @@ describe("0.15 navigation hierarchy", () => {
     ]) {
       expect(within(sidebar).getByText(label)).toBeInTheDocument();
     }
-    for (const group of ["Core", "Engineering", "Studio", "Evaluate", "System"]) {
+    for (const group of ["Start", "Build", "Studio", "Evaluate", "System"]) {
       expect(within(sidebar).getByText(group)).toBeInTheDocument();
     }
     expect(within(sidebar).queryByText("Advanced")).toBeNull();
+    expect(within(sidebar).queryByText("Core")).toBeNull();
+  });
+
+  it("highlights Workbench as the primary destination", () => {
+    resetHome();
+    render(<App />);
+    const sidebar = document.getElementById("sidebar")!;
+    expect(within(sidebar).getByRole("button", { name: "Workbench" }).className).toMatch(/nav-item--primary/);
+  });
+
+  it("keeps Settings discoverable for provider configuration", () => {
+    resetHome();
+    render(<App />);
+    const sidebar = document.getElementById("sidebar")!;
+    expect(within(sidebar).getByRole("button", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("shows an accurate, non-stale version label", () => {

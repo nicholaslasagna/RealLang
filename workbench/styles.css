@@ -4138,6 +4138,237 @@ textarea:focus-visible,
   line-height: 1.6;
 }
 
+/* --- Home launchpad --- */
+
+.screen--launchpad {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5) var(--space-8);
+}
+
+.home-launchpad__inner {
+  width: min(820px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.home-launchpad__hero h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.home-launchpad__hero p {
+  margin: var(--space-3) 0 0;
+  max-width: 52ch;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.home-launchpad__primary {
+  margin-top: var(--space-5);
+}
+
+.home-launchpad__secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.home-link-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-3);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.home-link-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.home-link-card .icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  color: var(--text-3);
+}
+
+.home-link-card b {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.home-link-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.home-launchpad__status {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-3);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.home-launchpad__status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.home-launchpad__status-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.home-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+}
+
+.home-status-grid dt {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.home-status-grid dd {
+  margin: var(--space-1) 0 0;
+}
+
+.home-launchpad__next {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-2);
+  background: rgba(49, 216, 208, 0.05);
+  border: 1px solid rgba(49, 216, 208, 0.12);
+}
+
+.home-launchpad__next .icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  color: var(--cyan);
+}
+
+.home-launchpad__next p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.home-launchpad__recent-head h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.home-recent-list,
+.home-suggest-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.home-recent-row,
+.home-suggest-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-2);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-recent-row b,
+.home-suggest-list button {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.home-recent-row small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.home-launchpad__boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.home-launchpad__boundary .icon {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  color: var(--green);
+}
+
+.nav-group h2 {
+  color: var(--text-3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.nav-item--primary span {
+  font-weight: 700;
+}
+
+.nav-item--primary:not(.is-active) {
+  border: 1px solid rgba(49, 216, 208, 0.14);
+  background: rgba(49, 216, 208, 0.04);
+}
+
+@media (max-width: 720px) {
+  .home-launchpad__secondary,
+  .home-status-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

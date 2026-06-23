@@ -38,7 +38,7 @@ describe("Workbench React app", () => {
     resetStore();
     render(<App />);
     expect(document.getElementById("app")).toBeTruthy();
-    expect(screen.getByText("RealForge is ready")).toBeInTheDocument();
+    expect(screen.getByText(/What do you want to work on/i)).toBeInTheDocument();
     expect(screen.getAllByText("READONLY").length).toBeGreaterThan(0);
     expect(screen.getAllByText("STAFF OFF").length).toBeGreaterThan(0);
   });

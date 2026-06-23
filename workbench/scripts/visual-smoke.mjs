@@ -162,7 +162,7 @@ async function run() {
       const overflowX = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
       if (overflowX) throw new Error(`Horizontal overflow detected at ${width}px`);
       const title = await page.textContent("h1");
-      if (!title || !title.includes("RealForge")) {
+      if (!title || !title.includes("What do you want to work on")) {
         throw new Error(`Home screen did not render at ${width}px`);
       }
 

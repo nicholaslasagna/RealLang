@@ -20,10 +20,11 @@ export function Sidebar() {
               .map((item) => {
                 const active = screen === item.id;
                 const locked = item.id === "updates" && !staffPreview;
+                const primary = item.id === "workbench";
                 return (
                   <button
                     key={item.id}
-                    className={`nav-item ${active ? "is-active" : ""}`}
+                    className={`nav-item ${active ? "is-active" : ""} ${primary ? "nav-item--primary" : ""}`.trim()}
                     type="button"
                     aria-current={active ? "page" : undefined}
                     onClick={() => navigate(item.id)}
