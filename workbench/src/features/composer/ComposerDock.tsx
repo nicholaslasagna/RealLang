@@ -137,7 +137,7 @@ export function ComposerDock({
           title={desktop ? undefined : "Available in the desktop app only"}
           onClick={() => switchMode("ask-local")}
         >
-          <Icon name="cpu" /> Ask local model
+          <Icon name="cpu" /> Chat
           {desktop ? (
             <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span>
           ) : (
@@ -272,7 +272,7 @@ export function ComposerDock({
           ref={textareaRef}
           rows={4}
           maxLength={2000}
-          placeholder={askMode ? "Ask one bounded local-model question…" : "What do you want to work on?"}
+          placeholder={askMode ? "Ask your local model…" : "Describe an action to preview safely…"}
           onKeyDown={onKeyDown}
         />
         <button
@@ -287,8 +287,8 @@ export function ComposerDock({
 
       <p className="composer-hint">
         {askMode
-          ? "Enter sends · Shift+Enter for a newline · LOCAL UNTRUSTED · nothing saved."
-          : "Approval-first · no writes by default · local output is untrusted."}
+          ? "Enter sends · Shift+Enter for newline · local_untrusted"
+          : "Stages a dry-run preview only · no model chat · no writes"}
       </p>
     </form>
   );

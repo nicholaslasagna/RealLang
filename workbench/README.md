@@ -183,6 +183,7 @@ Historical milestones:
 - **0.39** Local chat usability polish (auto-scroll to newest turn, composer focus retention, pending typing state, sticky Clear chat, long-message wrapping)
 - **0.40** Opt-in bounded visible chat context (default off; composes the last ≤4 visible turns into one capped ≤2000-char prompt on the frontend, disclosed before send and badged in the thread; visible turn text only — no workspace/files/tools/provider/config/secrets; reuses existing IPC, no persistence/audit/authority change)
 - **0.41** Visible chat context preview (inspectable "Preview context" before send showing exact included turns + turn/char counts + cap disclosure; preview shares the compose code path so it matches what is sent; visible text only — no provider/config/secrets; no authority/IPC change)
+- **0.42** Clear Chat vs. Safe-preview split (conversational text in Safe preview no longer becomes a fake "Repair diagnostic dry-run" — it shows a calm "looks like chat → switch to Chat" nudge and makes no model call; mode-specific labels/placeholders/hints; Chat stays approval-gated, Safe preview never calls the model)
 
 ## Toolchain and dependency security
 

@@ -66,24 +66,28 @@ describe("0.31 Workbench conversation flow", () => {
     expect(within(greeting).getByText(/until you approve it/i)).toBeInTheDocument();
   });
 
-  it("holds the illustrative repair evidence until the user stages intent", () => {
+  it("nudges to Chat for free conversational text instead of a fake repair preview (0.42)", () => {
     resetStore("");
     render(<WorkbenchScreen />);
     expect(screen.queryByText("STRUCTURED PLAN")).toBeNull();
     cleanup();
 
-    resetStore("Fix the i32 overflow in looptest.real");
+    // Free conversational text in Safe preview must NOT become a Repair diagnostic dry-run.
+    resetStore("My favorite test word is nebula");
     render(<WorkbenchScreen />);
-    expect(screen.getByText("Fix the i32 overflow in looptest.real")).toBeInTheDocument();
-    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
-    expect(screen.getByText("STRUCTURED PLAN")).toBeInTheDocument();
-    // The flow-hint orientation steps back once the conversation is underway.
+    expect(screen.queryByTestId("action-preview-card")).toBeNull();
+    expect(screen.queryByText("STRUCTURED PLAN")).toBeNull();
+    // Instead, a gentle nudge points to Chat.
+    const nudge = screen.getByTestId("chat-nudge");
+    expect(nudge).toHaveTextContent(/looks like a chat message/i);
     expect(screen.queryByTestId("workbench-flow-hint")).toBeNull();
   });
 
-  it("keeps safety details and argv inspectable after an intent is staged", () => {
-    resetStore("Check the fixed hello.real example");
+  it("keeps safety details and argv inspectable once an explicit action is composed", () => {
+    resetStore("");
+    useWorkbenchStore.setState({ composedActionId: "general-plan" });
     render(<WorkbenchScreen />);
+    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
     expect(screen.getByText("Show safety details")).toBeInTheDocument();
     // Display-only argv text remains present (collapsed but in the DOM).
     expect(screen.getByText("DISPLAY ONLY · NOT EXECUTABLE", { hidden: true })).toBeInTheDocument();

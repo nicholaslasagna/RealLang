@@ -126,3 +126,22 @@ of exactly what would be added, **before** sending.
   status/config, secrets, model identity, workspace, or files. The request shape is unchanged
   (`{ prompt, approvalAcknowledged }`), still opt-in, capped, session-only, no persistence, no
   approval-audit entry, output `local_untrusted`.
+
+## 0.42 — clear chat vs. safe-preview separation
+
+The two composer modes are now unmistakable, and normal chat text can no longer masquerade as a
+mock action preview.
+
+- **Safe preview no longer auto-stages free text as a fake "Repair diagnostic dry-run."** An
+  action preview appears only when the user **explicitly composes a specific action** (a
+  suggestion/palette intent or an approval request). Typing conversational text and submitting
+  shows a calm nudge — "This looks like a chat message… switch to Chat" — and makes **no model
+  call**.
+- **Mode labels and copy are mode-specific.** The Ask-local toggle reads **"Chat"**; Safe
+  preview keeps its name. Placeholders/hints differ per mode ("Ask your local model…" /
+  "Enter sends · Shift+Enter for newline · local_untrusted" vs. "Describe an action to preview
+  safely…" / "Stages a dry-run preview only · no model chat · no writes").
+- **Boundaries unchanged.** Safe preview still never calls the model; Chat is still
+  approval-gated and routes through the existing `{ prompt, approvalAcknowledged }` sandbox;
+  the context toggle and preview remain Chat-only; output stays `local_untrusted`; no
+  persistence, no approval-audit entry for chat bodies, no new authority/IPC.

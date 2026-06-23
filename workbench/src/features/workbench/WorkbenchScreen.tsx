@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
-import { runPrivateProviderChatSandbox } from "../../bridge";
+import { isDesktopRuntime, runPrivateProviderChatSandbox } from "../../bridge";
 import { Badge, Icon } from "../../components/primitives";
 import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
@@ -141,6 +141,7 @@ export function WorkbenchScreen() {
   const setSettingsSection = useWorkbenchStore((s) => s.setSettingsSection);
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const desktop = isDesktopRuntime();
   const [mode, setMode] = useState<ComposerMode>("preview");
   // Session-only visible chat thread. Multiple turns may be shown, but each call
   // to the provider is an independent bounded request (prior turns are NOT sent).
@@ -152,12 +153,17 @@ export function WorkbenchScreen() {
   const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
   const hasStagedTask = stagedTask.trim().length > 0;
   const inAskLocal = mode === "ask-local";
-  const hasActionIntent = hasStagedTask || approvalActionId === action.id || actionId !== DEFAULT_ACTION_ID;
-  const previewEmpty = !inAskLocal && !hasActionIntent;
+  // An action preview only appears once the user EXPLICITLY composes a specific action
+  // (a suggestion/palette intent → non-default id, or an approval request). Typing free
+  // conversational text never auto-stages a fake "Repair diagnostic dry-run".
+  const hasExplicitAction = approvalActionId === action.id || actionId !== DEFAULT_ACTION_ID;
+  // Free text was staged in Safe preview without choosing an action — likely a chat message.
+  const looksLikeChat = !inAskLocal && hasStagedTask && !hasExplicitAction;
+  const previewEmpty = !inAskLocal && !hasExplicitAction && !hasStagedTask;
   const chatRunning = chatTurns.some((turn) => turn.running);
   const headerTitle = inAskLocal
     ? "Local model chat"
-    : hasActionIntent
+    : hasExplicitAction
       ? action.title
       : "What do you want to work on?";
 
@@ -199,9 +205,9 @@ export function WorkbenchScreen() {
             <span>
               {inAskLocal
                 ? "Ask the user-configured local model. Output is LOCAL UNTRUSTED; the conversation is session-only and not saved."
-                : hasActionIntent
+                : hasExplicitAction
                   ? "Review the staged preview. Details stay inspectable, and execution still requires the existing approval gates."
-                  : "Use the composer to ask a question or stage a safe preview. No writes by default; local output is untrusted."}
+                  : "Choose Chat to talk to your local model, or pick a suggestion to stage a safe action preview. No writes by default."}
             </span>
           </div>
           <button
@@ -223,43 +229,66 @@ export function WorkbenchScreen() {
               <>
                 {previewEmpty ? <WorkbenchFlowHint /> : null}
                 {previewEmpty ? <EmptyWorkbenchCard /> : null}
-                {hasStagedTask ? (
-                  <div className="thread-message thread-message--user">
-                    {stagedTask}
-                    <small>reviewed context · session only · not executed</small>
-                  </div>
-                ) : null}
-                {hasActionIntent ? (
-                  <ActionPreviewCard
-                    action={action}
-                    bridgeLoading={runtime.loading}
-                    bridgeError={runtime.error}
-                    loadStatus={loadStatus}
-                    loadingSourceId={loadingSourceId}
-                    onLoad={loadReadOnlyAction}
-                    onOpenReports={() => navigate("reports")}
-                    onRequestApproval={() => setApprovalActionId(action.id)}
-                    onOpenSetup={() => setSettingsSection("workspace")}
-                  />
-                ) : null}
-                {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
-                  <ApprovedDryRunPanel
-                    action={action}
-                    workspacePath={runtime.workspacePath}
-                    onClose={() => setApprovalActionId(null)}
-                  />
-                ) : null}
-                {showsRepairEvidence && hasStagedTask ? (
-                  <>
-                    <div className="agent-label">
-                      <span className="mini-mark" />
-                      <b>RealForge</b>
-                      <small>mock · illustrative plan</small>
-                      <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
+                {looksLikeChat ? (
+                  <article className="chat-nudge" data-testid="chat-nudge">
+                    <Icon name="cpu" />
+                    <div>
+                      <b>This looks like a chat message</b>
+                      <p>
+                        Safe preview only stages action previews — it doesn&rsquo;t chat. To send this to your
+                        user-configured local model, switch to Chat.
+                      </p>
+                      <button
+                        type="button"
+                        className="chat-nudge__action"
+                        data-testid="chat-nudge-switch"
+                        disabled={!desktop}
+                        onClick={() => setMode("ask-local")}
+                      >
+                        <Icon name="cpu" /> {desktop ? "Switch to Chat" : "Chat is available in the desktop app"}
+                      </button>
                     </div>
-                    <PlanCard />
-                    <PatchCard />
-                    <ValidationCard />
+                  </article>
+                ) : null}
+                {hasExplicitAction ? (
+                  <>
+                    {hasStagedTask ? (
+                      <div className="thread-message thread-message--user">
+                        {stagedTask}
+                        <small>reviewed context · session only · not executed</small>
+                      </div>
+                    ) : null}
+                    <ActionPreviewCard
+                      action={action}
+                      bridgeLoading={runtime.loading}
+                      bridgeError={runtime.error}
+                      loadStatus={loadStatus}
+                      loadingSourceId={loadingSourceId}
+                      onLoad={loadReadOnlyAction}
+                      onOpenReports={() => navigate("reports")}
+                      onRequestApproval={() => setApprovalActionId(action.id)}
+                      onOpenSetup={() => setSettingsSection("workspace")}
+                    />
+                    {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
+                      <ApprovedDryRunPanel
+                        action={action}
+                        workspacePath={runtime.workspacePath}
+                        onClose={() => setApprovalActionId(null)}
+                      />
+                    ) : null}
+                    {showsRepairEvidence && hasStagedTask ? (
+                      <>
+                        <div className="agent-label">
+                          <span className="mini-mark" />
+                          <b>RealForge</b>
+                          <small>mock · illustrative plan</small>
+                          <Badge label="UNTRUSTED PROVIDER OUTPUT" tone="amber" />
+                        </div>
+                        <PlanCard />
+                        <PatchCard />
+                        <ValidationCard />
+                      </>
+                    ) : null}
                   </>
                 ) : null}
                 <details className="thread-secondary" data-testid="workbench-secondary-details">
