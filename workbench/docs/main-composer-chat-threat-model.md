@@ -80,3 +80,30 @@ written to tracked files.
   disabled** ("Configured local provider" / "uses your configured default local provider")
   because the sandbox IPC selects no profile. It exposes no model name, endpoint, key, or
   path. No new fields are sent across IPC — the request stays `{ prompt, approvalAcknowledged }`.
+
+## 0.40 — opt-in bounded visible chat context
+
+Ask-local mode can optionally include **recent visible chat turns** as context with the
+current prompt. It changes nothing about the backend: the request stays
+`{ prompt, approvalAcknowledged }`, and the context is composed into that single bounded
+prompt string on the frontend.
+
+- **Only visible chat turns** may be included — the user prompts and local-model responses
+  already shown in this session's thread. Nothing else.
+- **Opt-in.** The "Include recent visible chat" control defaults **off**. The user can turn it
+  off again at any time.
+- **Capped** by both turn count (≤ 4 most-recent completed turns) and characters (context
+  block ≤ 1500 chars; the whole composed prompt is hard-capped to the backend's 2000-char
+  limit, with the current prompt preserved first).
+- **Disclosed before send.** When enabled, the composer shows how many visible turns will be
+  included ("Including up to N visible turns · capped"), and turns that carried context are
+  badged in the thread.
+- **Excluded by construction:** no workspace files, no repo contents, no current file
+  contents, no tools, no shell, no provider status/config, no secrets, no model identity, no
+  hidden data. The composed string contains only visible turn text plus a fixed disclosure
+  preamble.
+- **No persistence / no hidden memory.** Turns remain session-only React state; nothing is
+  written to disk, app-config, or a transcript store.
+- **No approval audit entry** is created for the chat body.
+- Output remains **`local_untrusted`**. Each call is still a single bounded request, gated by
+  the existing per-send approval.

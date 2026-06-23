@@ -4,6 +4,7 @@ import { commandActionDefinitions } from "../../composer/action-model";
 import { isDesktopRuntime } from "../../bridge";
 import { Button, Icon } from "../../components/primitives";
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { MAX_CONTEXT_TURNS } from "../workbench/chat-context";
 
 const quickActionIds: readonly CommandActionId[] = [
   "check-reallang-file",
@@ -23,11 +24,20 @@ interface ComposerDockProps {
   mode: ComposerMode;
   onModeChange: (mode: ComposerMode) => void;
   /** Send one bounded request to the existing private chat sandbox (desktop only). */
-  onAskLocalModel?: (prompt: string) => void;
+  onAskLocalModel?: (prompt: string, includeContext: boolean) => void;
   chatRunning?: boolean;
+  /** Count of visible turns eligible to be included as bounded context. */
+  availableContextTurns?: number;
 }
 
-export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chatRunning = false }: ComposerDockProps) {
+export function ComposerDock({
+  action,
+  mode,
+  onModeChange,
+  onAskLocalModel,
+  chatRunning = false,
+  availableContextTurns = 0
+}: ComposerDockProps) {
   const openPalette = useWorkbenchStore((state) => state.openPalette);
   const composeActionPreview = useWorkbenchStore((state) => state.composeActionPreview);
   const stageTask = useWorkbenchStore((state) => state.stageTask);
@@ -35,6 +45,7 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
 
   const desktop = isDesktopRuntime();
   const [approved, setApproved] = useState(false);
+  const [includeContext, setIncludeContext] = useState(false);
   const intentsRef = useRef<HTMLDetailsElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const askMode = mode === "ask-local";
@@ -61,7 +72,7 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
       return;
     }
     if (chatRunning) return;
-    onAskLocalModel?.(input);
+    onAskLocalModel?.(input, includeContext);
     setApproved(false);
     if (textareaRef.current) {
       textareaRef.current.value = "";
@@ -154,6 +165,30 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
               name, endpoint, or key is shown.
             </small>
           </div>
+
+          <label className="composer-context-toggle" data-testid="composer-context-toggle">
+            <input
+              type="checkbox"
+              checked={includeContext}
+              disabled={chatRunning}
+              onChange={(event) => setIncludeContext(event.currentTarget.checked)}
+            />
+            <span>
+              <b>Include recent visible chat</b>
+              <small>Sends the last few visible turns with this prompt. No files, tools, or memory.</small>
+            </span>
+          </label>
+
+          {includeContext ? (
+            <p className="composer-context-disclosure" data-testid="composer-context-disclosure">
+              <Icon name="shield-check" />
+              {availableContextTurns > 0
+                ? `Including up to ${Math.min(availableContextTurns, MAX_CONTEXT_TURNS)} visible turn${
+                    Math.min(availableContextTurns, MAX_CONTEXT_TURNS) === 1 ? "" : "s"
+                  } · capped · visible chat only`
+                : "No prior visible turns to include yet — only this prompt is sent."}
+            </p>
+          ) : null}
 
           <label className="composer-approval" data-testid="composer-ask-approval">
             <input

@@ -180,6 +180,8 @@ Historical milestones:
 - **0.32** Main composer can use the existing private chat sandbox (explicit Ask-local mode, desktop-only, per-send approval, LOCAL UNTRUSTED single-turn output; reuses the existing IPC; no workspace/files/tools/memory/persistence, no new provider authority)
 - **0.36** Assistant-first Workbench declutter (prompt-first empty route, action/inspector/safety details on demand; no new authority)
 - **0.38** Real local chat interaction (Enter sends / Shift+Enter newline; session-only visible multi-turn thread with single-turn bounded calls — prior turns never sent; informational Local model profile selector; Safe preview and Ask local model fully separated; reuses existing IPC, no new authority/persistence/audit)
+- **0.39** Local chat usability polish (auto-scroll to newest turn, composer focus retention, pending typing state, sticky Clear chat, long-message wrapping)
+- **0.40** Opt-in bounded visible chat context (default off; composes the last ≤4 visible turns into one capped ≤2000-char prompt on the frontend, disclosed before send and badged in the thread; visible turn text only — no workspace/files/tools/provider/config/secrets; reuses existing IPC, no persistence/audit/authority change)
 
 ## Toolchain and dependency security
 

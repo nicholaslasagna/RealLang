@@ -9,6 +9,8 @@ export interface ChatTurn {
   prompt: string;
   result: ProviderChatSandboxResult | null;
   running: boolean;
+  /** True when recent visible turns were composed into this request's prompt. */
+  contextIncluded?: boolean;
 }
 
 interface WorkbenchChatThreadProps {
@@ -59,6 +61,7 @@ export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: Wor
                 prompt={turn.prompt}
                 result={turn.result}
                 running={turn.running}
+                contextIncluded={turn.contextIncluded}
                 onConfigureProvider={onConfigureProvider}
               />
             ))}

@@ -1581,6 +1581,36 @@ textarea:focus-visible,
 .composer-approval b { display: block; color: var(--text); font-size: 12px; }
 .composer-approval small { display: block; margin-top: 3px; color: var(--text-3); font-size: 10px; line-height: 1.45; }
 
+/* Opt-in bounded visible chat context (0.40). Calm, default off. */
+.composer-context-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: min(var(--reading-width), 100%);
+  margin: 0 auto;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: rgba(255, 255, 255, 0.015);
+  cursor: pointer;
+}
+.composer-context-toggle input { margin-top: 2px; flex: 0 0 auto; }
+.composer-context-toggle b { display: block; color: var(--text); font-size: 12px; }
+.composer-context-toggle small { display: block; margin-top: 3px; color: var(--text-3); font-size: 10px; line-height: 1.45; }
+
+.composer-context-disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(var(--reading-width), 100%);
+  margin: 0 auto;
+  color: var(--cyan);
+  font-size: 11px;
+}
+.composer-context-disclosure .icon { width: 13px; height: 13px; flex: 0 0 auto; }
+
+.chat-turn__context-tag { color: var(--cyan); }
+
 /* Single-turn local-model exchange rendered in the thread. */
 /* Session-only multi-turn local chat thread. */
 .chat-thread { display: flex; flex-direction: column; gap: var(--space-5); }

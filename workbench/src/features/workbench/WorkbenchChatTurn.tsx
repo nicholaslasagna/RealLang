@@ -43,6 +43,8 @@ interface WorkbenchChatTurnProps {
   prompt: string;
   result: ProviderChatSandboxResult | null;
   running: boolean;
+  /** True when recent visible turns were composed into this request's prompt. */
+  contextIncluded?: boolean;
   /** Open Settings → Provider / Local Model (shown only on a not-configured result). */
   onConfigureProvider?: () => void;
 }
@@ -53,7 +55,7 @@ interface WorkbenchChatTurnProps {
  * provider). Nothing here is persisted, added to the approval audit, or kept as
  * hidden transcript memory. Output is always shown as LOCAL UNTRUSTED.
  */
-export function WorkbenchChatTurn({ prompt, result, running, onConfigureProvider }: WorkbenchChatTurnProps) {
+export function WorkbenchChatTurn({ prompt, result, running, contextIncluded, onConfigureProvider }: WorkbenchChatTurnProps) {
   const report = result?.ok ? result.data : null;
   const bridgeError = result && !result.ok ? result.error : null;
   const response = report?.response ? clampCharacters(report.response, MAX_RESPONSE_CHARS) : null;
@@ -68,7 +70,12 @@ export function WorkbenchChatTurn({ prompt, result, running, onConfigureProvider
     <div className="chat-turn" data-testid="workbench-chat-turn">
       <div className="thread-message thread-message--user" data-testid="chat-turn-prompt">
         {prompt}
-        <small>local model sandbox · session only · not persisted</small>
+        <small>
+          local model sandbox · session only · not persisted
+          {contextIncluded ? (
+            <span className="chat-turn__context-tag" data-testid="chat-turn-context-tag"> · visible chat context included</span>
+          ) : null}
+        </small>
       </div>
 
       <div className="chat-turn__assistant">

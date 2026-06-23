@@ -12,6 +12,7 @@ import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
 import { WorkbenchChatThread, type ChatTurn } from "./WorkbenchChatThread";
+import { availableContextTurnCount, composeVisibleChatContext } from "./chat-context";
 
 const DEFAULT_ACTION_ID = "repair-diagnostic-dry-run";
 
@@ -167,11 +168,15 @@ export function WorkbenchScreen() {
 
   // Reuses the existing narrow chat-sandbox IPC. No workspace/files/tools/argv —
   // only the bounded prompt + acknowledgement the Rust bridge already validates.
-  // Each send appends a visible turn; prior turns are never sent to the provider.
-  const askLocalModel = async (prompt: string) => {
+  // By default prior turns are NOT sent; when the user opts in, recent VISIBLE turns are
+  // composed into a single bounded prompt on the frontend (capped, disclosed). No workspace,
+  // file, provider, or config data is ever included.
+  const askLocalModel = async (prompt: string, includeContext = false) => {
     const id = (turnIdRef.current += 1);
-    setChatTurns((prev) => [...prev, { id, prompt, result: null, running: true }]);
-    const response = await runPrivateProviderChatSandbox({ prompt, approvalAcknowledged: true });
+    const actuallyIncluded = includeContext && availableContextTurnCount(chatTurns) > 0;
+    const sentPrompt = actuallyIncluded ? composeVisibleChatContext(chatTurns, prompt) : prompt;
+    setChatTurns((prev) => [...prev, { id, prompt, result: null, running: true, contextIncluded: actuallyIncluded }]);
+    const response = await runPrivateProviderChatSandbox({ prompt: sentPrompt, approvalAcknowledged: true });
     setChatTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, result: response, running: false } : turn)));
   };
 
@@ -283,6 +288,7 @@ export function WorkbenchScreen() {
           onModeChange={setMode}
           onAskLocalModel={askLocalModel}
           chatRunning={chatRunning}
+          availableContextTurns={availableContextTurnCount(chatTurns)}
         />
       </section>
       {showDetails ? (
