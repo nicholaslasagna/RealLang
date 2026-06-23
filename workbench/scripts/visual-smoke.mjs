@@ -200,7 +200,7 @@ async function run() {
 
       await page.getByRole("button", { name: "Workbench", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');
-      await page.locator("summary", { hasText: "Quick intents" }).click();
+      await page.locator("summary", { hasText: "Suggestions" }).click();
       await page.getByRole("button", { name: "Check the fixed hello.real example", exact: true }).click();
       await page.getByRole("button", { name: "Review approval", exact: true }).click();
       await page.waitForSelector('[data-testid="approval-panel"]');

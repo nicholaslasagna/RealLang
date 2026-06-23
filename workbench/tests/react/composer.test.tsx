@@ -60,13 +60,21 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("safe command composer UI", () => {
-  it("renders structured preview metadata and keeps web mode execution-free", async () => {
+  it("keeps the empty Workbench execution-free before intent is staged", async () => {
     resetStore("load-capabilities");
     render(<WorkbenchScreen />);
     expect(screen.getByTestId("safe-command-composer")).toBeInTheDocument();
+    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
     expect(screen.getByText("DISPLAY ONLY · NOT EXECUTABLE")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /desktop bridge unavailable/i })).toBeDisabled();
     expect(mocks.loadReadOnlyReportSource).not.toHaveBeenCalled();
+  });
+
+  it("does not show a large action preview on the default empty surface", () => {
+    resetStore();
+    render(<WorkbenchScreen />);
+    expect(screen.getByTestId("workbench-assistant-empty-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("action-preview-card")).toBeNull();
   });
 
   it("loads a fixed desktop source through the existing untrusted import pipeline", async () => {

@@ -174,6 +174,18 @@ backend command, write bridge, shell, network call, or auto-fix.
 
 See [workbench/docs/settings.md](../workbench/docs/settings.md).
 
+## Workbench 0.36 - Assistant-first Workbench declutter
+
+- Default Workbench route opens on a centered assistant surface: greeting, compact
+  flow hint, one composer, and a small safety sentence.
+- Large action preview, argv metadata, safety facts, repair evidence, and audit
+  reference stay hidden until the user stages or selects an intent.
+- Action Inspector is closed by default and opens through the **Details** toggle.
+- Bottom rail is reduced to current state + compact safe-mode summary; detailed
+  no-write/dry-run/latest-command information remains inspectable.
+- No new IPC, provider call, write bridge, shell, workspace context, memory,
+  persistence, image generation, or autonomous execution path is added.
+
 ## Workbench 0.16 - Home launchpad and intent-based navigation
 
 - **Home** is a calm launchpad: hero “What do you want to work on?”, primary **Open
@@ -373,6 +385,7 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 16. **Private chat hardening** (0.27) - single active request, fixed-child cancellation, safe clear/copy behavior, no new authority
 17. **Private provider readiness** (0.28) - sanitized lifecycle, session-only smoke status, explicit disconnected capabilities, no new authority
 18. **Provider area UX consolidation** (0.29) - ordered provider console, reduced duplication, unchanged approval and trust boundaries
-19. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+19. **Assistant-first Workbench declutter** (0.36) - prompt-first default, details on demand, unchanged approval and trust boundaries
+20. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

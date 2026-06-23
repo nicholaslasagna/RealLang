@@ -128,6 +128,15 @@ smoke and chat approval gates are unchanged, output remains `local_untrusted`,
 and web preview remains execution-free. This is frontend organization only; it
 adds no IPC, provider request, storage, workspace access, or execution authority.
 
+**0.36** makes the Workbench route assistant-first by default. The empty state is
+now a centered greeting + composer + small safety sentence; action preview cards,
+argv details, repair evidence, audit reference, and the Action Inspector appear
+only after an intent is staged or selected, or through explicit details toggles.
+The bottom status rail is quieter, while no-write/dry-run/latest-command details
+remain inspectable. This is layout/information hierarchy only: no IPC, provider
+call, shell, write bridge, workspace context, memory, persistence, image
+generation, or autonomous execution authority is added.
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -169,6 +178,7 @@ Historical milestones:
 - **0.29** Provider area UX consolidation (ordered console, reduced duplication, unchanged approval and trust boundaries)
 - **0.31** Conversation flow polish (greeting → describe → preview → approve → result → reference; gated illustrative evidence, secondary audit, clearer result affordance; no new authority, IPC, or execution power)
 - **0.32** Main composer can use the existing private chat sandbox (explicit Ask-local mode, desktop-only, per-send approval, LOCAL UNTRUSTED single-turn output; reuses the existing IPC; no workspace/files/tools/memory/persistence, no new provider authority)
+- **0.36** Assistant-first Workbench declutter (prompt-first empty route, action/inspector/safety details on demand; no new authority)
 
 ## Toolchain and dependency security
 

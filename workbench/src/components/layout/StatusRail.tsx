@@ -11,7 +11,6 @@ export function StatusRail() {
         <span className="live-dot" />
         {operationStatus}
       </span>
-      <span className="rail-divider" />
       <span className="rail-safety-compact" title="No writes · dry run · manual approval">
         <Icon name="shield-check" />
         Safe mode
@@ -29,9 +28,9 @@ export function StatusRail() {
         <span className="rail-detail-item">
           approval: <b>MANUAL</b>
         </span>
+        <span className="rail-detail-item">latest: {lastCommand}</span>
       </details>
       <span className="rail-spacer" />
-      <span className="rail-command">latest: {lastCommand}</span>
     </>
   );
 }

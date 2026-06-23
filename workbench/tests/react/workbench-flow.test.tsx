@@ -47,12 +47,14 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("0.31 Workbench conversation flow", () => {
-  it("empty state shows greeting, flow hint, action preview, and a prominent composer", () => {
+  it("empty state shows an assistant-first greeting, compact orientation, and prominent composer", () => {
     resetStore("");
     render(<WorkbenchScreen />);
     expect(screen.getByTestId("workbench-greeting")).toBeInTheDocument();
     expect(screen.getByTestId("workbench-flow-hint")).toBeInTheDocument();
-    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
+    expect(screen.getByTestId("workbench-assistant-empty-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("action-preview-card")).toBeNull();
+    expect(screen.getByRole("heading", { name: /what do you want to work on/i })).toBeInTheDocument();
     expect(screen.getByTestId("safe-command-composer")).toBeInTheDocument();
   });
 
@@ -73,13 +75,14 @@ describe("0.31 Workbench conversation flow", () => {
     resetStore("Fix the i32 overflow in looptest.real");
     render(<WorkbenchScreen />);
     expect(screen.getByText("Fix the i32 overflow in looptest.real")).toBeInTheDocument();
+    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
     expect(screen.getByText("STRUCTURED PLAN")).toBeInTheDocument();
     // The flow-hint orientation steps back once the conversation is underway.
     expect(screen.queryByTestId("workbench-flow-hint")).toBeNull();
   });
 
-  it("keeps safety details inspectable in the action preview", () => {
-    resetStore("");
+  it("keeps safety details and argv inspectable after an intent is staged", () => {
+    resetStore("Check the fixed hello.real example");
     render(<WorkbenchScreen />);
     expect(screen.getByText("Show safety details")).toBeInTheDocument();
     // Display-only argv text remains present (collapsed but in the DOM).
@@ -105,16 +108,24 @@ describe("0.31 Workbench conversation flow", () => {
     expect(screen.getByTestId("safe-command-composer")).toBeInTheDocument();
   });
 
-  it("collapses quick intents until expanded", () => {
+  it("opens the inspector only after the Details toggle", () => {
+    resetStore("");
+    render(<WorkbenchScreen />);
+    expect(screen.queryByLabelText("Composed action inspector")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /details/i }));
+    expect(screen.getByLabelText("Composed action inspector")).toBeInTheDocument();
+  });
+
+  it("collapses suggestions until expanded", () => {
     resetStore("");
     render(<WorkbenchScreen />);
     const wrap = screen.getByTestId("composer-intents-wrap");
     expect(wrap).not.toHaveAttribute("open");
-    expect(screen.getByText("Quick intents")).toBeInTheDocument();
+    expect(screen.getByText("Suggestions")).toBeInTheDocument();
     expect(
       within(wrap).getByRole("button", { name: /load capabilities report/i, hidden: true })
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Quick intents"));
+    fireEvent.click(screen.getByText("Suggestions"));
     expect(within(wrap).getByRole("button", { name: /load capabilities report/i })).toBeVisible();
   });
 });

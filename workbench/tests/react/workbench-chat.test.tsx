@@ -74,7 +74,8 @@ describe("0.32 main composer → private chat sandbox", () => {
   it("defaults to safe-preview mode with the action preview intact", () => {
     render(<WorkbenchScreen />);
     expect(screen.getByTestId("mode-safe-preview")).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("action-preview-card")).toBeNull();
+    expect(screen.getByTestId("workbench-assistant-empty-state")).toBeInTheDocument();
     expect(screen.queryByTestId("composer-ask-approval")).toBeNull();
   });
 

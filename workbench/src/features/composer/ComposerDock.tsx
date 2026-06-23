@@ -127,7 +127,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
         <details className="composer-intents-wrap" data-testid="composer-intents-wrap">
           <summary className="composer-intents-summary">
             <Icon name="sparkles" />
-            Quick intents
+            Suggestions
           </summary>
           <div className="composer-intents" aria-label="Quick action intents">
             {quickActionIds.map((actionId) => {
@@ -159,10 +159,10 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
         <textarea
           id="task-context"
           name="task-context"
-          rows={3}
+          rows={4}
           maxLength={2000}
           disabled={askMode && chatRunning}
-          placeholder={askMode ? "Ask the local model one bounded question…" : "Describe what you want to build or fix…"}
+          placeholder={askMode ? "Ask one bounded local-model question..." : "What do you want to work on?"}
         />
         <button
           className="send-button"
@@ -177,7 +177,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
       <p className="composer-hint">
         {askMode
           ? "One bounded request to your local model · LOCAL UNTRUSTED · no files, tools, or memory · nothing persisted."
-          : "Plain language only — no shell input. Nothing runs or is written without your explicit approval."}
+          : "Approval-first · no writes by default · local output is untrusted."}
       </p>
     </form>
   );

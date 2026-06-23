@@ -14,6 +14,23 @@ import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
 import { WorkbenchChatTurn } from "./WorkbenchChatTurn";
 
+const DEFAULT_ACTION_ID = "repair-diagnostic-dry-run";
+
+function EmptyWorkbenchCard() {
+  return (
+    <article className="workbench-empty-card" data-testid="workbench-assistant-empty-state">
+      <div>
+        <Icon name="sparkles" />
+        <span>Start with a plain-language request</span>
+      </div>
+      <p>
+        RealForge will stage a preview first. Safety labels, argv metadata, and approval gates stay
+        available after you choose an intent.
+      </p>
+    </article>
+  );
+}
+
 function PlanCard() {
   const steps = [
     "Inspect looptest.real and locate the E221 i32 literal-range diagnostic.",
@@ -132,6 +149,10 @@ export function WorkbenchScreen() {
   const runtime = useComposerRuntime(staffPreview);
   const action = composeActionPlan(actionId, runtime);
   const showsRepairEvidence = action.id === "repair-diagnostic-dry-run";
+  const hasStagedTask = stagedTask.trim().length > 0;
+  const hasActionIntent = hasStagedTask || approvalActionId === action.id || actionId !== DEFAULT_ACTION_ID;
+  const hasWorkbenchActivity = hasActionIntent || chatPrompt !== null;
+  const headerTitle = hasActionIntent ? action.title : "What do you want to work on?";
 
   const loadReadOnlyAction = async (sourceId: "capabilities" | "slash" | "settings-doctor") => {
     const loaded = await loadDesktopReport(sourceId);
@@ -159,12 +180,16 @@ export function WorkbenchScreen() {
   };
 
   return (
-    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"}`}>
-      <section className="workbench-main">
+    <div className={`workbench-layout ${showDetails ? "" : "workbench-layout--solo"} ${hasWorkbenchActivity ? "" : "workbench-layout--empty"}`.trim()}>
+      <section className={`workbench-main ${hasWorkbenchActivity ? "" : "workbench-main--empty"}`.trim()}>
         <header className="workbench-header workbench-header--calm">
           <div>
-            <h1>{action.title}</h1>
-            <span>Describe a task — RealForge plans it and runs only safe, approved steps.</span>
+            <h1>{headerTitle}</h1>
+            <span>
+              {hasActionIntent
+                ? "Review the staged preview. Details stay inspectable, and execution still requires the existing approval gates."
+                : "Use the composer to ask a question or stage a safe preview. No writes by default; local output is untrusted."}
+            </span>
           </div>
           <button
             type="button"
@@ -180,6 +205,7 @@ export function WorkbenchScreen() {
           <div className="thread">
             <WorkbenchGreeting />
             {!stagedTask && chatPrompt === null ? <WorkbenchFlowHint /> : null}
+            {!hasWorkbenchActivity ? <EmptyWorkbenchCard /> : null}
             {chatPrompt !== null ? (
               <WorkbenchChatTurn
                 prompt={chatPrompt}
@@ -193,23 +219,25 @@ export function WorkbenchScreen() {
                 }}
               />
             ) : null}
-            {stagedTask ? (
+            {hasStagedTask ? (
               <div className="thread-message thread-message--user">
                 {stagedTask}
                 <small>reviewed context · session only · not executed</small>
               </div>
             ) : null}
-            <ActionPreviewCard
-              action={action}
-              bridgeLoading={runtime.loading}
-              bridgeError={runtime.error}
-              loadStatus={loadStatus}
-              loadingSourceId={loadingSourceId}
-              onLoad={loadReadOnlyAction}
-              onOpenReports={() => navigate("reports")}
-              onRequestApproval={() => setApprovalActionId(action.id)}
-              onOpenSetup={() => setSettingsSection("workspace")}
-            />
+            {hasActionIntent ? (
+              <ActionPreviewCard
+                action={action}
+                bridgeLoading={runtime.loading}
+                bridgeError={runtime.error}
+                loadStatus={loadStatus}
+                loadingSourceId={loadingSourceId}
+                onLoad={loadReadOnlyAction}
+                onOpenReports={() => navigate("reports")}
+                onRequestApproval={() => setApprovalActionId(action.id)}
+                onOpenSetup={() => setSettingsSection("workspace")}
+              />
+            ) : null}
             {approvalActionId === action.id && action.canRequestApproval && runtime.workspacePath ? (
               <ApprovedDryRunPanel
                 action={action}
@@ -217,7 +245,7 @@ export function WorkbenchScreen() {
                 onClose={() => setApprovalActionId(null)}
               />
             ) : null}
-            {showsRepairEvidence && stagedTask ? (
+            {showsRepairEvidence && hasStagedTask ? (
               <>
                 <div className="agent-label">
                   <span className="mini-mark" />
