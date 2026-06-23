@@ -1,4 +1,5 @@
 import { useWorkbenchStore } from "../../state/workbench-store";
+import { BrandMark } from "../BrandMark";
 import { Icon } from "../primitives";
 
 export function Topbar() {
@@ -23,9 +24,7 @@ export function Topbar() {
   return (
     <>
       <div className="brand-block">
-        <span className="brand-mark" aria-hidden="true">
-          <span />
-        </span>
+        <BrandMark />
         <span className="brand-copy">
           <strong>REALFORGE</strong>
           <small>AI ENGINEERING WORKBENCH</small>

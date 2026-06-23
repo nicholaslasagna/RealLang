@@ -25,6 +25,7 @@ test("entrypoint is offline and uses repository-owned assets", async () => {
   const html = await read("index.html");
   assert.match(html, /id="root"/);
   assert.match(html, /src\/main\.tsx/);
+  assert.match(html, /\/assets\/realforge-mark\.svg/);
   assert.doesNotMatch(html, /https?:\/\//i);
 });
 
@@ -97,6 +98,7 @@ test("settings and command palette retain visible safety metadata", async () => 
 
 test("local Lucide subset and license are present", async () => {
   const files = await readdir(join(root, "assets/icons"));
+  assert.match(await read("assets/realforge-mark.svg"), /RealForge/);
   assert.ok(files.includes("LICENSE"));
   assert.ok(files.filter((file) => file.endsWith(".svg")).length >= 50);
   for (const icon of ["house.svg", "square-terminal.svg", "command.svg", "shield-check.svg", "workflow.svg"]) {

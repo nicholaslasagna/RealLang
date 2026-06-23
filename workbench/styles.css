@@ -174,7 +174,6 @@ textarea:focus-visible,
   gap: 11px;
 }
 
-.brand-mark,
 .mini-mark,
 .signal-mark {
   display: inline-grid;
@@ -187,16 +186,47 @@ textarea:focus-visible,
 }
 
 .brand-mark {
-  width: 27px;
-  height: 27px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 137, 38, 0.34);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 58% 26%, rgba(255, 176, 74, 0.22), transparent 44%),
+    linear-gradient(145deg, rgba(227, 38, 54, 0.18), rgba(8, 9, 12, 0.62) 72%);
+  box-shadow:
+    0 0 22px rgba(227, 38, 54, 0.24),
+    inset 0 1px rgba(255, 255, 255, 0.16);
+  overflow: hidden;
 }
 
-.brand-mark span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 0 7px white;
+.brand-mark__svg {
+  display: block;
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 0 7px rgba(255, 80, 28, 0.5));
+}
+
+.brand-mark__edge,
+.brand-mark__circuit {
+  fill: none;
+  stroke: rgba(255, 231, 174, 0.78);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.35;
+}
+
+.brand-mark__edge {
+  stroke: rgba(255, 191, 89, 0.56);
+  stroke-width: 1;
+}
+
+.brand-mark__node {
+  fill: #ffb34c;
+  stroke: rgba(255, 238, 196, 0.85);
+  stroke-width: 1.1;
 }
 
 .brand-copy {
