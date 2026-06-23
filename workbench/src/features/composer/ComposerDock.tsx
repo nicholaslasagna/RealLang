@@ -4,7 +4,7 @@ import { commandActionDefinitions } from "../../composer/action-model";
 import { isDesktopRuntime } from "../../bridge";
 import { Button, Icon } from "../../components/primitives";
 import { useWorkbenchStore } from "../../state/workbench-store";
-import { MAX_CONTEXT_TURNS } from "../workbench/chat-context";
+import type { ContextPreview } from "../workbench/chat-context";
 
 const quickActionIds: readonly CommandActionId[] = [
   "check-reallang-file",
@@ -26,8 +26,8 @@ interface ComposerDockProps {
   /** Send one bounded request to the existing private chat sandbox (desktop only). */
   onAskLocalModel?: (prompt: string, includeContext: boolean) => void;
   chatRunning?: boolean;
-  /** Count of visible turns eligible to be included as bounded context. */
-  availableContextTurns?: number;
+  /** Transparency preview of the bounded visible-chat context that would be included. */
+  contextPreview?: ContextPreview;
 }
 
 export function ComposerDock({
@@ -36,7 +36,7 @@ export function ComposerDock({
   onModeChange,
   onAskLocalModel,
   chatRunning = false,
-  availableContextTurns = 0
+  contextPreview
 }: ComposerDockProps) {
   const openPalette = useWorkbenchStore((state) => state.openPalette);
   const composeActionPreview = useWorkbenchStore((state) => state.composeActionPreview);
@@ -180,14 +180,35 @@ export function ComposerDock({
           </label>
 
           {includeContext ? (
-            <p className="composer-context-disclosure" data-testid="composer-context-disclosure">
-              <Icon name="shield-check" />
-              {availableContextTurns > 0
-                ? `Including up to ${Math.min(availableContextTurns, MAX_CONTEXT_TURNS)} visible turn${
-                    Math.min(availableContextTurns, MAX_CONTEXT_TURNS) === 1 ? "" : "s"
-                  } · capped · visible chat only`
-                : "No prior visible turns to include yet — only this prompt is sent."}
-            </p>
+            <div className="composer-context-preview" data-testid="composer-context-preview">
+              <p className="composer-context-disclosure" data-testid="composer-context-disclosure">
+                <Icon name="shield-check" />
+                {contextPreview && contextPreview.includedTurns > 0
+                  ? `Including up to ${contextPreview.includedTurns} visible turn${
+                      contextPreview.includedTurns === 1 ? "" : "s"
+                    } · ~${contextPreview.approxChars} chars${contextPreview.truncated ? " · capped" : ""} · visible chat only`
+                  : "No prior visible turns to include yet — only this prompt is sent."}
+              </p>
+              {contextPreview && contextPreview.includedTurns > 0 ? (
+                <details className="composer-context-details" data-testid="composer-context-details">
+                  <summary>Preview context</summary>
+                  <p className="composer-context-note">
+                    Only the visible chat text below is added. No files, tools, workspace, memory, or hidden context.
+                  </p>
+                  <div className="composer-context-entries" data-testid="composer-context-entries">
+                    {contextPreview.entries.map((entry, index) => (
+                      <div className="composer-context-entry" key={index}>
+                        <p><b>You</b> {entry.prompt}</p>
+                        <p><b>Local model</b> {entry.responseText}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {contextPreview.truncated ? (
+                    <p className="composer-context-note">Older turns and long text are trimmed to stay within the cap.</p>
+                  ) : null}
+                </details>
+              ) : null}
+            </div>
           ) : null}
 
           <label className="composer-approval" data-testid="composer-ask-approval">

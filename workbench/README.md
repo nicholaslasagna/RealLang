@@ -182,6 +182,7 @@ Historical milestones:
 - **0.38** Real local chat interaction (Enter sends / Shift+Enter newline; session-only visible multi-turn thread with single-turn bounded calls — prior turns never sent; informational Local model profile selector; Safe preview and Ask local model fully separated; reuses existing IPC, no new authority/persistence/audit)
 - **0.39** Local chat usability polish (auto-scroll to newest turn, composer focus retention, pending typing state, sticky Clear chat, long-message wrapping)
 - **0.40** Opt-in bounded visible chat context (default off; composes the last ≤4 visible turns into one capped ≤2000-char prompt on the frontend, disclosed before send and badged in the thread; visible turn text only — no workspace/files/tools/provider/config/secrets; reuses existing IPC, no persistence/audit/authority change)
+- **0.41** Visible chat context preview (inspectable "Preview context" before send showing exact included turns + turn/char counts + cap disclosure; preview shares the compose code path so it matches what is sent; visible text only — no provider/config/secrets; no authority/IPC change)
 
 ## Toolchain and dependency security
 

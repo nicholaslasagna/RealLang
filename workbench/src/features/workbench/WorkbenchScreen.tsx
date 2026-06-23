@@ -12,7 +12,7 @@ import { ApprovalAuditLog } from "../audit/ApprovalAuditLog";
 import { WorkbenchGreeting } from "./WorkbenchGreeting";
 import { WorkbenchFlowHint } from "./WorkbenchFlowHint";
 import { WorkbenchChatThread, type ChatTurn } from "./WorkbenchChatThread";
-import { availableContextTurnCount, composeVisibleChatContext } from "./chat-context";
+import { availableContextTurnCount, buildContextPreview, composeVisibleChatContext } from "./chat-context";
 
 const DEFAULT_ACTION_ID = "repair-diagnostic-dry-run";
 
@@ -288,7 +288,7 @@ export function WorkbenchScreen() {
           onModeChange={setMode}
           onAskLocalModel={askLocalModel}
           chatRunning={chatRunning}
-          availableContextTurns={availableContextTurnCount(chatTurns)}
+          contextPreview={buildContextPreview(chatTurns)}
         />
       </section>
       {showDetails ? (

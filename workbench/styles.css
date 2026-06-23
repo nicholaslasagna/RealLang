@@ -1598,16 +1598,74 @@ textarea:focus-visible,
 .composer-context-toggle b { display: block; color: var(--text); font-size: 12px; }
 .composer-context-toggle small { display: block; margin-top: 3px; color: var(--text-3); font-size: 10px; line-height: 1.45; }
 
+.composer-context-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(var(--reading-width), 100%);
+  margin: 0 auto;
+}
+
 .composer-context-disclosure {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: min(var(--reading-width), 100%);
-  margin: 0 auto;
+  margin: 0;
   color: var(--cyan);
   font-size: 11px;
 }
 .composer-context-disclosure .icon { width: 13px; height: 13px; flex: 0 0 auto; }
+
+/* Collapsed, calm "Preview context" — shows the exact visible text that will be included. */
+.composer-context-details {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: rgba(255, 255, 255, 0.012);
+}
+.composer-context-details > summary {
+  padding: var(--space-2) var(--space-3);
+  list-style: none;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+.composer-context-details > summary::-webkit-details-marker { display: none; }
+.composer-context-details > summary::before { content: "▸ "; color: var(--text-3); }
+.composer-context-details[open] > summary::before { content: "▾ "; }
+
+.composer-context-note {
+  margin: 0;
+  padding: 0 var(--space-3);
+  color: var(--text-3);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.composer-context-entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 220px;
+  margin: var(--space-2) var(--space-3);
+  overflow-y: auto;
+}
+.composer-context-entry {
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-1);
+  background: rgba(0, 0, 0, 0.18);
+}
+.composer-context-entry p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.composer-context-entry p + p { margin-top: 3px; }
+.composer-context-entry b { color: var(--text-3); font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; margin-right: var(--space-2); }
 
 .chat-turn__context-tag { color: var(--cyan); }
 

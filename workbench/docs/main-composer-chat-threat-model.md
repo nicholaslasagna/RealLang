@@ -107,3 +107,22 @@ prompt string on the frontend.
 - **No approval audit entry** is created for the chat body.
 - Output remains **`local_untrusted`**. Each call is still a single bounded request, gated by
   the existing per-send approval.
+
+## 0.41 — visible chat context preview (transparency)
+
+When "Include recent visible chat" is enabled, the composer now shows an inspectable preview
+of exactly what would be added, **before** sending.
+
+- **Disclosure:** how many visible turns will be included and an approximate character count,
+  flagged "· capped" when caps trimmed anything ("Including up to N visible turns · ~C chars").
+- **Collapsed "Preview context"** details show the exact visible turn text (`You` / `Local
+  model`) that will be composed in — nothing else. It states "No files, tools, workspace,
+  memory, or hidden context."
+- **Accuracy:** the preview and the composed prompt share one code path
+  (`buildContextPreview` / `composeVisibleChatContext` reuse the same turn cap, per-field
+  clip, and char cap), so the preview matches what is actually sent. Running and error turns
+  are excluded from both.
+- **No new data or authority.** The preview reflects only visible turn text — no provider
+  status/config, secrets, model identity, workspace, or files. The request shape is unchanged
+  (`{ prompt, approvalAcknowledged }`), still opt-in, capped, session-only, no persistence, no
+  approval-audit entry, output `local_untrusted`.
