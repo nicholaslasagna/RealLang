@@ -75,7 +75,7 @@ export function ProviderReadinessDashboard({
 
   return (
     <section
-      className="provider-readiness"
+      className="provider-readiness provider-readiness--calm"
       data-testid="provider-readiness-dashboard"
       aria-labelledby="provider-readiness-title"
     >
@@ -83,7 +83,7 @@ export function ProviderReadinessDashboard({
         <span className="provider-readiness__icon"><Icon name="gauge" /></span>
         <div>
           <h2 id="provider-readiness-title">Provider readiness</h2>
-          <p>Local configuration, reachability, and bounded provider surfaces for this session.</p>
+          <p>Sanitized summary for your user-configured local model.</p>
         </div>
         <div className="provider-readiness__badges">
           <Badge label={providerReadinessLabel(readiness.overallReadiness)} tone={readinessTone(readiness.overallReadiness)} />
@@ -91,24 +91,29 @@ export function ProviderReadinessDashboard({
         </div>
       </header>
 
-      <ol className="provider-readiness__lifecycle" aria-label="Private provider readiness lifecycle">
-        {lifecycle.map((step, index) => (
-          <li key={step.id} className={step.complete ? "is-complete" : "is-pending"}>
-            <span className="provider-readiness__step">{index + 1}</span>
-            <span>
-              <b>{step.label}</b>
-              <small>{step.detail}</small>
-            </span>
-            <strong>{step.value}</strong>
-          </li>
-        ))}
-      </ol>
+      <div className="provider-readiness__summary-row" aria-label="Readiness overview">
+        <Badge label={readiness.configDetected ? "Config detected" : "Not configured"} tone={readiness.configDetected ? "green" : "amber"} />
+        <Badge label={readiness.chatSandboxAvailable ? "Sandbox ready" : "Sandbox locked"} tone={readiness.chatSandboxAvailable ? "cyan" : "amber"} />
+        <Badge label="Image execution off" tone="neutral" />
+      </div>
+
+      <details className="settings-disclosure provider-readiness__checklist">
+        <summary>Readiness checklist</summary>
+        <ol className="provider-readiness__lifecycle" aria-label="Private provider readiness lifecycle">
+          {lifecycle.map((step, index) => (
+            <li key={step.id} className={step.complete ? "is-complete" : "is-pending"}>
+              <span className="provider-readiness__step">{index + 1}</span>
+              <span>
+                <b>{step.label}</b>
+                <small>{step.detail}</small>
+              </span>
+              <strong>{step.value}</strong>
+            </li>
+          ))}
+        </ol>
+      </details>
 
       <footer className="provider-readiness__actions">
-        <div>
-          <p className="eyebrow">NEXT SAFE ACTIONS</p>
-          <span>No action adds workspace context, tools, persistence, or image execution.</span>
-        </div>
         <Button
           label={desktop ? "Refresh provider status" : "Desktop app required"}
           iconName="activity"
@@ -116,8 +121,6 @@ export function ProviderReadinessDashboard({
           disabled={!desktop || loading}
           onClick={onRefreshStatus}
         />
-        <a href="#provider-smoke-title"><Icon name="activity" /> Run fixed smoke check</a>
-        <a href="#private-chat-sandbox-title"><Icon name="cpu" /> Try private chat sandbox</a>
       </footer>
     </section>
   );

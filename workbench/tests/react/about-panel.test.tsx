@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { AboutPanel } from "../../src/components/AboutPanel";
 import { SettingsScreen } from "../../src/features/settings/SettingsScreen";
@@ -27,8 +27,9 @@ describe("About panel (0.16)", () => {
   it("renders runtime mode, bridge mode, update status, workspace, and security posture", async () => {
     render(<AboutPanel />);
     const panel = await loadedAboutPanel();
+    fireEvent.click(within(panel).getByText(/system diagnostics/i));
     expect(within(panel).getByText("Runtime mode")).toBeInTheDocument();
-    expect(within(panel).getByText("Web preview")).toBeInTheDocument();
+    expect(within(panel).getAllByText("Web preview").length).toBeGreaterThan(0);
     expect(within(panel).getByText("Bridge mode")).toBeInTheDocument();
     expect(within(panel).getByText("Update status")).toBeInTheDocument();
     expect(within(panel).getByText("Workspace")).toBeInTheDocument();

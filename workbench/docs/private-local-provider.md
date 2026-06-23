@@ -104,6 +104,10 @@ without combining the smoke and chat approval flows. Output remains
 shell, memory, persistence, and image execution remain off. No new IPC or provider
 authority is introduced.
 
+Workbench 0.35 simplifies the layout: **readiness summary** first, **safe actions**
+(smoke + chat sandbox) visible, **advanced provider details** collapsed by default
+(status grid, image metadata, safety matrix). See [settings.md](settings.md).
+
 ## RealForge CLI
 
 The Python RealForge CLI/runtime loads the same fixed home config file with precedence:

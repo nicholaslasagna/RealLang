@@ -117,8 +117,12 @@ describe("Private local model panel", () => {
     vi.restoreAllMocks();
   });
 
-  function openProviderTechnicalDetails() {
-    fireEvent.click(screen.getByText(/technical details/i));
+  function openProviderAdvancedDetails() {
+    fireEvent.click(screen.getByText(/advanced provider details/i));
+  }
+
+  function openReadinessChecklist() {
+    fireEvent.click(screen.getByText(/readiness checklist/i));
   }
 
   it("renders private local profile with local untrusted label", async () => {
@@ -134,7 +138,7 @@ describe("Private local model panel", () => {
   it("renders CLI-parity provider status fields", async () => {
     mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
+    openProviderAdvancedDetails();
     await waitFor(() => {
       expect(screen.getByTestId("provider-status-grid")).toBeInTheDocument();
     });
@@ -160,7 +164,7 @@ describe("Private local model panel", () => {
   it("shows image provider configured with execution disabled", async () => {
     mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
+    openProviderAdvancedDetails();
     await waitFor(() => {
       expect(screen.getByTestId("private-local-image-model-panel")).toBeInTheDocument();
     });
@@ -175,27 +179,27 @@ describe("Private local model panel", () => {
     render(<PrivateLocalModelPanel />);
     const dashboard = await screen.findByTestId("provider-readiness-dashboard");
     expect(within(dashboard).getByText("Provider readiness")).toBeInTheDocument();
-    openProviderTechnicalDetails();
+    openReadinessChecklist();
     expect(within(dashboard).getByText("Private config")).toBeInTheDocument();
     expect(within(dashboard).getByText("Sanitized status")).toBeInTheDocument();
     expect(within(dashboard).getByText("Fixed smoke check")).toBeInTheDocument();
     expect(within(dashboard).getByText("Private chat sandbox")).toBeInTheDocument();
     expect(within(dashboard).getByText("Image provider")).toBeInTheDocument();
+    openProviderAdvancedDetails();
     const safety = screen.getByTestId("provider-safety-boundary");
     expect(within(safety).getAllByText("OFF")).toHaveLength(7);
     for (const label of ["Workspace context", "File access", "Tools", "Shell", "Memory", "Persistence", "Image generation"]) {
       expect(within(safety).getByText(label)).toBeInTheDocument();
     }
-    expect(within(dashboard).getByText(/configured/i)).toBeInTheDocument();
+    expect(within(dashboard).getByText("Config detected")).toBeInTheDocument();
     expect(within(dashboard).getByText("METADATA ONLY")).toBeInTheDocument();
   });
 
   it("advances readiness from configured to sandbox ready after a session smoke pass", async () => {
     mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
     const dashboard = await screen.findByTestId("provider-readiness-dashboard");
-    expect(within(dashboard).getByText(/configured/i)).toBeInTheDocument();
+    expect(within(dashboard).getByText("Config detected")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
     fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
@@ -214,7 +218,7 @@ describe("Private local model panel", () => {
       errors: [{ code: "invalid_toml", message: "Private local config TOML is invalid." }]
     });
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
+    openProviderAdvancedDetails();
     await waitFor(() => {
       expect(screen.getByTestId("provider-status-errors")).toBeInTheDocument();
     });
@@ -228,7 +232,7 @@ describe("Private local model panel", () => {
       warnings: ["Sanitized provider warning."]
     });
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
+    openProviderAdvancedDetails();
     await screen.findByTestId("provider-status-warnings");
     expect(screen.getAllByText("Sanitized provider warning.")).toHaveLength(1);
   });
@@ -267,7 +271,6 @@ describe("Private local model panel", () => {
 
   it("requires fresh approval and exposes no prompt textbox", async () => {
     render(<PrivateLocalModelPanel />);
-    openProviderTechnicalDetails();
     const runButton = await screen.findByRole("button", { name: /run provider smoke/i });
     expect(runButton).toBeDisabled();
     expect(within(screen.getByTestId("provider-smoke-card")).queryByRole("textbox")).not.toBeInTheDocument();

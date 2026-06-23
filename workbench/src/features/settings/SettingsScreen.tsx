@@ -6,20 +6,21 @@ import { RuntimeIndicator } from "../../components/RuntimeIndicator";
 import { UpdateCenterPanel } from "../../components/UpdateCenterPanel";
 import { WorkspacePanel } from "../../components/WorkspacePanel";
 import { Badge, Icon } from "../../components/primitives";
+import { SETTINGS_NAV_GROUPS } from "./settings-nav-groups";
 
 const DESCRIPTIONS: Record<string, string> = {
-  general: "Appearance and local prototype behavior.",
-  workspace: "Bounded paths and artifact locations for the active repository.",
-  updates: "Signed desktop application updates and release channel settings.",
-  provider: "Private local OpenAI-compatible model configuration (session scaffold; identity stays in gitignored files).",
-  permissions: "Effective write, command, and destructive-action boundaries.",
+  general: "Appearance, runtime mode, and inert diagnostics.",
+  workspace: "Repository folder selection and bridge health.",
+  updates: "Signed desktop updates and release readiness.",
+  provider: "Private local model status, smoke check, and chat sandbox.",
+  permissions: "Write, command, and destructive-action boundaries.",
   research: "Network access remains off until an explicit allowlist is supplied.",
   staff: "Advanced update controls are disabled and hidden by default.",
   scheduler: "Bounded staff jobs with hard limits and no automatic apply step.",
   benchmarks: "Validation thresholds used before any output can earn confidence.",
   creative: "Planning-only multimodal capabilities and provenance settings.",
   engine: "Read-only detection and planning for Unreal and Blender workflows.",
-  doctor: "Current safety posture across workspace, provider, network, and update gates."
+  doctor: "Safety posture across workspace, provider, network, and update gates."
 };
 
 function DoctorPanel() {
@@ -41,18 +42,21 @@ function DoctorPanel() {
           <span>BLOCKED</span>
         </div>
       </div>
-      <div className="doctor-list">
-        {doctor.checks.map((check) => (
-          <div key={check.name}>
-            <Icon name={check.status === "PASS" ? "circle-check" : "triangle-alert"} />
-            <span>
-              <b>{check.name}</b>
-              <small>{check.detail}</small>
-            </span>
-            <Badge label={check.status} tone={check.status === "PASS" ? "green" : check.status === "BLOCKED" ? "violet" : "amber"} />
-          </div>
-        ))}
-      </div>
+      <details className="settings-disclosure">
+        <summary>Doctor check details</summary>
+        <div className="doctor-list">
+          {doctor.checks.map((check) => (
+            <div key={check.name}>
+              <Icon name={check.status === "PASS" ? "circle-check" : "triangle-alert"} />
+              <span>
+                <b>{check.name}</b>
+                <small>{check.detail}</small>
+              </span>
+              <Badge label={check.status} tone={check.status === "PASS" ? "green" : check.status === "BLOCKED" ? "violet" : "amber"} />
+            </div>
+          ))}
+        </div>
+      </details>
     </>
   );
 }
@@ -64,56 +68,75 @@ export function SettingsScreen() {
   const current = data.settingsSections.find((section) => section.id === settingsSection) || data.settingsSections[0];
   const fields = data.settings[current.id] || [];
   const staffSection = current.id === "staff" || current.id === "scheduler";
+  const sectionsById = Object.fromEntries(data.settingsSections.map((section) => [section.id, section]));
 
   return (
-    <div className="settings-layout">
-      <aside className="settings-nav">
-        <p className="eyebrow">SETTINGS</p>
-        {data.settingsSections.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            className={current.id === section.id ? "is-active" : ""}
-            onClick={() => setSettingsSection(section.id)}
-          >
-            <Icon name={section.icon} />
-            <span>{section.label}</span>
-            {section.id === "staff" || section.id === "scheduler" ? <Badge label="STAFF" tone="violet" /> : null}
-          </button>
-        ))}
+    <div className="settings-layout" data-testid="settings-screen">
+      <aside className="settings-nav" aria-label="Settings categories">
+        {SETTINGS_NAV_GROUPS.map((group) => {
+          const items = group.sectionIds
+            .map((id) => sectionsById[id])
+            .filter((section): section is NonNullable<typeof section> => Boolean(section));
+          if (items.length === 0) return null;
+          return (
+            <section key={group.label} className="settings-nav-group" aria-label={group.label}>
+              <h2 className="settings-nav-group__label">{group.label}</h2>
+              {items.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  className={current.id === section.id ? "is-active" : ""}
+                  data-settings-section={section.id}
+                  onClick={() => setSettingsSection(section.id)}
+                >
+                  <Icon name={section.icon} />
+                  <span>{section.label}</span>
+                  {section.id === "staff" || section.id === "scheduler" ? (
+                    <Badge label="STAFF" tone="violet" />
+                  ) : null}
+                </button>
+              ))}
+            </section>
+          );
+        })}
       </aside>
       <section className="settings-content">
-        <header>
+        <header className="settings-content__header">
           <div>
-            <p className="eyebrow">EFFECTIVE CONFIGURATION</p>
             <h1>{current.label}</h1>
             <p>{DESCRIPTIONS[current.id] || "Read-only prototype configuration."}</p>
           </div>
           <Badge label="READ ONLY" tone="green" />
         </header>
-        <div className="settings-safety-strip">
-          <span>
-            <Icon name="lock-keyhole" />
-            <b>READONLY</b>
-          </span>
-          <span>
-            <Icon name="hard-drive" />
-            <b>LOCAL ONLY</b>
-          </span>
-          <span>
-            <Icon name="wifi-off" />
-            <b>NETWORK OFF</b>
-          </span>
-          <span>
-            <Icon name="shield" />
-            <b>STAFF OFF</b>
-          </span>
-        </div>
+        <details className="settings-disclosure settings-boundaries">
+          <summary>Active safety boundaries</summary>
+          <div className="settings-safety-strip settings-safety-strip--compact">
+            <span>
+              <Icon name="lock-keyhole" />
+              <b>READONLY</b>
+            </span>
+            <span>
+              <Icon name="hard-drive" />
+              <b>LOCAL ONLY</b>
+            </span>
+            <span>
+              <Icon name="wifi-off" />
+              <b>NETWORK OFF</b>
+            </span>
+            <span>
+              <Icon name="shield" />
+              <b>STAFF OFF</b>
+            </span>
+          </div>
+        </details>
         {current.id === "general" ? (
-          <>
+          <div className="settings-panel-stack">
             <AboutPanel />
-            <RuntimeIndicator />
-          </>
+            <details className="settings-disclosure">
+              <summary>Runtime details</summary>
+              <RuntimeIndicator />
+            </details>
+          </div>
         ) : null}
         {current.id === "workspace" ? <WorkspacePanel /> : null}
         {current.id === "updates" ? <UpdateCenterPanel /> : null}

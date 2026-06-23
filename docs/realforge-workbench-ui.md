@@ -162,6 +162,18 @@ backend command, write bridge, shell, network call, or auto-fix.
 - **Responsive.** The visual smoke now checks **1024 / 1280 / 1440** and walks the
   Security, Reports, and Settings/About screens for overflow and console errors.
 
+## Workbench 0.35 - Settings simplification
+
+- Settings nav grouped by intent: **App**, **Local model**, **System**, **Boundaries**,
+  **Advanced** — quieter labels, same section IDs.
+- Provider settings split: readiness summary → safe actions (smoke + chat) → collapsed
+  advanced details (status grid, image metadata, safety matrix).
+- General About/diagnostics, workspace grid, update configuration, and doctor checks
+  use progressive disclosure (`<details>`) without removing controls.
+- Safety boundary strip collapsed by default; all READONLY / LOCAL ONLY labels remain.
+
+See [workbench/docs/settings.md](../workbench/docs/settings.md).
+
 ## Workbench 0.16 - Home launchpad and intent-based navigation
 
 - **Home** is a calm launchpad: hero “What do you want to work on?”, primary **Open

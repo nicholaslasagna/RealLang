@@ -80,7 +80,9 @@ export function WorkspacePanel() {
             ? "Your workspace selection is saved in the app config directory and restored on launch. Priority: persisted → session picker → REALFORGE_REPO_ROOT → walk-up."
             : "Web preview shows workspace metadata only. Install the desktop app to connect to a local repository."}
       </p>
-      <div className="workspace-panel__grid">
+      <details className="settings-disclosure workspace-panel__details">
+        <summary>Workspace details</summary>
+        <div className="workspace-panel__grid">
         <div className="workspace-panel__row">
           <span>
             <b>Repository root</b>
@@ -151,7 +153,8 @@ export function WorkspacePanel() {
             ))}
           </div>
         </div>
-      </div>
+        </div>
+      </details>
       {(resolution.errors.length > 0 || resolution.warnings.length > 0) && (
         <div className="workspace-panel__messages">
           {resolution.errors.map((item) => (
@@ -169,14 +172,14 @@ export function WorkspacePanel() {
         </div>
       )}
       {health.nextActions.length > 0 ? (
-        <div className="workspace-panel__next">
-          <p className="eyebrow">RECOMMENDED NEXT ACTIONS</p>
+        <details className="settings-disclosure workspace-panel__next">
+          <summary>Recommended next actions</summary>
           <ol>
             {health.nextActions.map((action) => (
               <li key={action}>{action}</li>
             ))}
           </ol>
-        </div>
+        </details>
       ) : null}
       {error ? (
         <p className="workspace-panel__message workspace-panel__message--error" role="alert">

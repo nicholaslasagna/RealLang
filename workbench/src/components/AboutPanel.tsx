@@ -111,7 +111,7 @@ export function AboutPanel() {
   ];
 
   return (
-    <article className="about-panel" data-testid="about-panel" aria-label="About RealForge Workbench">
+    <article className="about-panel about-panel--calm" data-testid="about-panel" aria-label="About RealForge Workbench">
       <header>
         <span className="about-panel__mark">
           <Icon name="shield-check" />
@@ -123,14 +123,22 @@ export function AboutPanel() {
         </div>
         <Badge label="READ ONLY" tone="green" />
       </header>
-      <dl className="about-panel__grid">
-        {rows.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div className="about-panel__quick">
+        <Badge label={runtimeModeLabel(runtime)} tone={runtime.runtime === "desktop" ? "cyan" : "neutral"} />
+        <Badge label={bridgeModeLabel(capabilities)} tone={capabilities.metadataOnly ? "green" : capabilities.readOnly ? "cyan" : "amber"} />
+        <Badge label={workspaceStatusLabel(resolution.status)} tone={resolution.status === "ready" ? "green" : "amber"} />
+      </div>
+      <details className="settings-disclosure about-panel__details">
+        <summary>System diagnostics</summary>
+        <dl className="about-panel__grid">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </details>
       <footer className="about-panel__footer">
         <Button
           label={copied ? "Copied diagnostics" : "Copy diagnostics"}
