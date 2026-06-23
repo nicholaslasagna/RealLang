@@ -81,10 +81,17 @@ export function WorkbenchChatTurn({ prompt, result, running, onConfigureProvider
           </div>
 
           {running ? (
-            <p className="chat-turn__status" role="status" data-testid="chat-turn-loading">
-              <Icon name="activity" /> Waiting for the local model…
-              <small>One bounded request · it times out automatically.</small>
-            </p>
+            <div className="chat-turn__pending" role="status" data-testid="chat-turn-loading">
+              <span className="chat-typing" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className="chat-turn__pending-text">
+                Local model is responding…
+                <small>One bounded request · it times out automatically.</small>
+              </span>
+            </div>
           ) : bridgeError ? (
             <div className="chat-turn__error" role="alert" data-testid="chat-turn-error">
               <Icon name="triangle-alert" />

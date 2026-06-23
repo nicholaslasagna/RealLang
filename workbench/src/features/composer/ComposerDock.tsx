@@ -63,7 +63,11 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
     if (chatRunning) return;
     onAskLocalModel?.(input);
     setApproved(false);
-    if (textareaRef.current) textareaRef.current.value = "";
+    if (textareaRef.current) {
+      textareaRef.current.value = "";
+      // Keep the composer ready for the next message (button-send moved focus away).
+      textareaRef.current.focus();
+    }
   };
 
   const stagePreview = () => {
@@ -212,8 +216,7 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
           ref={textareaRef}
           rows={4}
           maxLength={2000}
-          disabled={askMode && chatRunning}
-          placeholder={askMode ? "Ask one bounded local-model question... (Enter to send, Shift+Enter for a newline)" : "What do you want to work on?"}
+          placeholder={askMode ? "Ask one bounded local-model question…" : "What do you want to work on?"}
           onKeyDown={onKeyDown}
         />
         <button
@@ -228,7 +231,7 @@ export function ComposerDock({ action, mode, onModeChange, onAskLocalModel, chat
 
       <p className="composer-hint">
         {askMode
-          ? "Enter sends · Shift+Enter adds a newline · LOCAL UNTRUSTED · no files, tools, or memory · nothing persisted."
+          ? "Enter sends · Shift+Enter for a newline · LOCAL UNTRUSTED · nothing saved."
           : "Approval-first · no writes by default · local output is untrusted."}
       </p>
     </form>

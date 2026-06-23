@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ProviderChatSandboxResult } from "../../bridge";
 import { Button, Icon } from "../../components/primitives";
 import { WorkbenchChatTurn } from "./WorkbenchChatTurn";
@@ -22,6 +23,14 @@ interface WorkbenchChatThreadProps {
  * NOT sent. Nothing is written to disk, the approval audit, or hidden memory.
  */
 export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: WorkbenchChatThreadProps) {
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const last = turns[turns.length - 1];
+
+  // Keep the newest turn (and its incoming response) in view after send/response.
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
+  }, [turns.length, last?.running, last?.result]);
+
   return (
     <section className="chat-thread" data-testid="workbench-chat-thread" aria-label="Local model conversation">
       {turns.length === 0 ? (
@@ -31,6 +40,18 @@ export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: Wor
         </p>
       ) : (
         <>
+          <div className="chat-thread__bar">
+            <span className="chat-thread__note" data-testid="chat-thread-note">
+              <Icon name="shield-check" /> Session view only · each call is bounded · prior turns aren&rsquo;t sent · nothing saved
+            </span>
+            <Button
+              label="Clear chat"
+              iconName="x"
+              variant="ghost"
+              data-testid="chat-thread-clear"
+              onClick={onClear}
+            />
+          </div>
           <div className="chat-thread__turns">
             {turns.map((turn) => (
               <WorkbenchChatTurn
@@ -41,19 +62,7 @@ export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: Wor
                 onConfigureProvider={onConfigureProvider}
               />
             ))}
-          </div>
-          <div className="chat-thread__footer">
-            <span className="chat-thread__note" data-testid="chat-thread-note">
-              <Icon name="shield-check" /> Session view only · each local call is bounded · prior turns are not
-              sent · nothing is persisted
-            </span>
-            <Button
-              label="Clear chat"
-              iconName="x"
-              variant="ghost"
-              data-testid="chat-thread-clear"
-              onClick={onClear}
-            />
+            <div ref={endRef} data-testid="chat-thread-end" aria-hidden="true" />
           </div>
         </>
       )}
