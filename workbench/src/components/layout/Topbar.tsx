@@ -44,12 +44,13 @@ export function Topbar() {
         </span>
       </div>
       <div className="top-spacer" />
-      <div className="status-cluster" aria-label="Safety status" title="Safe defaults active">
-        <span className="status-cluster__lead">
+      <details className="status-cluster">
+        <summary className="status-cluster__lead" aria-label="Safety status" title="Safe defaults active">
           <Icon name="shield-check" />
           <b>SAFE</b>
-        </span>
-        <div className="status-cluster__pills">
+          <span className="status-cluster__hint">5 protections</span>
+        </summary>
+        <div className="status-cluster__pills" aria-label="Safety status details">
           {statusItems.map(([label, iconName, tone, tooltip]) => (
             <span key={label} className={`status-pill status-pill--${tone}`} title={tooltip}>
               <Icon name={iconName} />
@@ -57,7 +58,7 @@ export function Topbar() {
             </span>
           ))}
         </div>
-      </div>
+      </details>
       <button className="icon-button mobile-menu" type="button" onClick={toggleSidebar} aria-label="Toggle navigation">
         <Icon name="menu" />
       </button>

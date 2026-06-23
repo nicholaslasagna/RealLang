@@ -94,7 +94,9 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
           onClick={() => switchMode("ask-local")}
         >
           <Icon name="cpu" /> Ask local model
-          <span className="composer-mode__tag">{desktop ? "LOCAL UNTRUSTED" : "DESKTOP ONLY"}</span>
+          {desktop ? <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span> : (
+            <span className="composer-mode__tag">desktop only</span>
+          )}
         </button>
       </div>
 
@@ -122,28 +124,34 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
           </span>
         </label>
       ) : (
-        <div className="composer-intents" aria-label="Quick action intents">
-          {quickActionIds.map((actionId) => {
-            const definition = commandActionDefinitions.find((candidate) => candidate.id === actionId);
-            if (!definition) return null;
-            return (
-              <button
-                key={actionId}
-                type="button"
-                className={definition.id === action.id ? "is-active" : ""}
-                onClick={() => composeActionPreview(actionId)}
-              >
-                {definition.title}
-              </button>
-            );
-          })}
-          <button type="button" onClick={() => openPalette()}>
-            All intents <Icon name="command" />
-          </button>
-        </div>
+        <details className="composer-intents-wrap" data-testid="composer-intents-wrap">
+          <summary className="composer-intents-summary">
+            <Icon name="sparkles" />
+            Quick intents
+          </summary>
+          <div className="composer-intents" aria-label="Quick action intents">
+            {quickActionIds.map((actionId) => {
+              const definition = commandActionDefinitions.find((candidate) => candidate.id === actionId);
+              if (!definition) return null;
+              return (
+                <button
+                  key={actionId}
+                  type="button"
+                  className={definition.id === action.id ? "is-active" : ""}
+                  onClick={() => composeActionPreview(actionId)}
+                >
+                  {definition.title}
+                </button>
+              );
+            })}
+            <button type="button" onClick={() => openPalette()}>
+              All intents <Icon name="command" />
+            </button>
+          </div>
+        </details>
       )}
 
-      <div className="composer-box">
+      <div className="composer-box composer-box--prominent">
         <Button label="Commands" iconName="slash" variant="slash" onClick={() => openPalette()} />
         <label className="sr-only" htmlFor="task-context">
           {askMode ? "Local model request" : "Reviewed context for this action"}
@@ -151,7 +159,7 @@ export function ComposerDock({ action, onAskLocalModel, chatRunning = false }: C
         <textarea
           id="task-context"
           name="task-context"
-          rows={2}
+          rows={3}
           maxLength={2000}
           disabled={askMode && chatRunning}
           placeholder={askMode ? "Ask the local model one bounded question…" : "Describe what you want to build or fix…"}

@@ -82,14 +82,11 @@ export function ProviderReadinessDashboard({
       <header className="provider-readiness__header">
         <span className="provider-readiness__icon"><Icon name="gauge" /></span>
         <div>
-          <p className="eyebrow">PRIVATE PROVIDER LIFECYCLE</p>
-          <h2 id="provider-readiness-title">Provider Readiness</h2>
-          <p>
-            One view of local configuration, reachability, and the bounded provider surfaces available in this session.
-          </p>
+          <h2 id="provider-readiness-title">Provider readiness</h2>
+          <p>Local configuration, reachability, and bounded provider surfaces for this session.</p>
         </div>
         <div className="provider-readiness__badges">
-          <Badge label={providerReadinessLabel(readiness.overallReadiness).toUpperCase()} tone={readinessTone(readiness.overallReadiness)} />
+          <Badge label={providerReadinessLabel(readiness.overallReadiness)} tone={readinessTone(readiness.overallReadiness)} />
           <Badge label="LOCAL UNTRUSTED" tone="amber" />
         </div>
       </header>

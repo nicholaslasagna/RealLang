@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -83,7 +83,7 @@ describe("0.31 Workbench conversation flow", () => {
     render(<WorkbenchScreen />);
     expect(screen.getByText("Show safety details")).toBeInTheDocument();
     // Display-only argv text remains present (collapsed but in the DOM).
-    expect(screen.getByText("DISPLAY ONLY · NOT EXECUTABLE")).toBeInTheDocument();
+    expect(screen.getByText("DISPLAY ONLY · NOT EXECUTABLE", { hidden: true })).toBeInTheDocument();
   });
 
   it("renders the approval history as a secondary reference block", () => {
@@ -91,7 +91,30 @@ describe("0.31 Workbench conversation flow", () => {
     render(<WorkbenchScreen />);
     const reference = document.querySelector(".thread-reference");
     expect(reference).not.toBeNull();
-    expect(within(reference as HTMLElement).getByText("Recent approved runs")).toBeInTheDocument();
-    expect(within(reference as HTMLElement).getByText("Reference")).toBeInTheDocument();
+    expect(within(reference as HTMLElement).getByText("Recent approved runs", { hidden: true })).toBeInTheDocument();
+    expect(screen.getByTestId("workbench-secondary-details")).toBeInTheDocument();
+  });
+
+  it("centers the conversation surface and keeps the inspector collapsed by default", () => {
+    resetStore("");
+    render(<WorkbenchScreen />);
+    const thread = document.querySelector(".thread");
+    expect(thread).not.toBeNull();
+    expect(document.querySelector(".workbench-layout--solo")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /details/i })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("safe-command-composer")).toBeInTheDocument();
+  });
+
+  it("collapses quick intents until expanded", () => {
+    resetStore("");
+    render(<WorkbenchScreen />);
+    const wrap = screen.getByTestId("composer-intents-wrap");
+    expect(wrap).not.toHaveAttribute("open");
+    expect(screen.getByText("Quick intents")).toBeInTheDocument();
+    expect(
+      within(wrap).getByRole("button", { name: /load capabilities report/i, hidden: true })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Quick intents"));
+    expect(within(wrap).getByRole("button", { name: /load capabilities report/i })).toBeVisible();
   });
 });

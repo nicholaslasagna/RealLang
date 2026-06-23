@@ -12,19 +12,24 @@ export function StatusRail() {
         {operationStatus}
       </span>
       <span className="rail-divider" />
-      <span>
-        <Icon name="file-x" />
-        NO WRITES
+      <span className="rail-safety-compact" title="No writes · dry run · manual approval">
+        <Icon name="shield-check" />
+        Safe mode
       </span>
-      <span className="rail-divider" />
-      <span className="rail-dry">
-        <Icon name="flask-conical" />
-        DRY RUN
-      </span>
-      <span className="rail-divider" />
-      <span>
-        approval: <b>MANUAL</b>
-      </span>
+      <details className="rail-details">
+        <summary className="rail-details__summary">Details</summary>
+        <span className="rail-detail-item">
+          <Icon name="file-x" />
+          NO WRITES
+        </span>
+        <span className="rail-detail-item rail-dry">
+          <Icon name="flask-conical" />
+          DRY RUN
+        </span>
+        <span className="rail-detail-item">
+          approval: <b>MANUAL</b>
+        </span>
+      </details>
       <span className="rail-spacer" />
       <span className="rail-command">latest: {lastCommand}</span>
     </>

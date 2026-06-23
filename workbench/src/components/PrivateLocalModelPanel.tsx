@@ -41,11 +41,16 @@ export function PrivateLocalModelPanel() {
         desktop={desktop}
         onRefreshStatus={() => void refreshStatus()}
       />
-      <ProviderStatusSummary status={status} loading={loading} desktop={desktop} />
-      <ProviderSmokeCard onSessionStatusChange={setSmokeSessionStatus} />
-      <PrivateChatSandboxCard />
-      <PrivateImageProviderCard status={status} desktop={desktop} />
-      <ProviderSafetyBoundary readiness={readiness} />
+      <details className="provider-console__details" data-testid="provider-console-details">
+        <summary>Technical details &amp; tools</summary>
+        <div className="provider-console__stack">
+          <ProviderStatusSummary status={status} loading={loading} desktop={desktop} />
+          <ProviderSmokeCard onSessionStatusChange={setSmokeSessionStatus} />
+          <PrivateChatSandboxCard />
+          <PrivateImageProviderCard status={status} desktop={desktop} />
+          <ProviderSafetyBoundary readiness={readiness} />
+        </div>
+      </details>
     </div>
   );
 }

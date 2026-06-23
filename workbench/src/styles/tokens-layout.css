@@ -22,5 +22,6 @@
   --radius-pill: 999px;
 
   /* Comfortable reading column for conversational surfaces. */
-  --reading-width: 720px;
+  --reading-width: 760px;
+  --composer-width: 820px;
 }

@@ -181,7 +181,9 @@ async function run() {
       }
 
       await page.getByRole("button", { name: "Provider / Local Model", exact: true }).click();
-      await page.waitForSelector('[data-testid="provider-smoke-card"]');
+      await page.waitForSelector('[data-testid="provider-readiness-dashboard"]');
+      await page.locator("summary", { hasText: "Technical details" }).click();
+      await page.waitForSelector('[data-testid="provider-smoke-card"]', { state: "visible" });
       const smokeButton = page.getByRole("button", { name: "Run provider smoke", exact: true });
       if (await smokeButton.isEnabled()) throw new Error(`Provider smoke started enabled at ${width}px`);
       await page.getByRole("checkbox", { name: /Approve one fixed provider smoke check/i }).check();
@@ -199,6 +201,7 @@ async function run() {
 
       await page.getByRole("button", { name: "Workbench", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');
+      await page.locator("summary", { hasText: "Quick intents" }).click();
       await page.getByRole("button", { name: "Check the fixed hello.real example", exact: true }).click();
       await page.getByRole("button", { name: "Review approval", exact: true }).click();
       await page.waitForSelector('[data-testid="approval-panel"]');
@@ -207,7 +210,8 @@ async function run() {
       await page.getByRole("checkbox", { name: /I understand this runs a local dry-run\/check command/i }).check();
       await runApprovedCheck.click();
       await page.waitForSelector('[data-testid="approved-dry-run-result"]');
-      await page.waitForSelector('[data-testid="recent-approval-runs"] .approval-audit-entry');
+      await page.locator("summary", { hasText: "Boundaries" }).click();
+      await page.waitForSelector('[data-testid="recent-approval-runs"] .approval-audit-entry', { state: "visible" });
       const workbenchOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
       if (workbenchOverflow) throw new Error(`Workbench horizontal overflow detected at ${width}px`);
 

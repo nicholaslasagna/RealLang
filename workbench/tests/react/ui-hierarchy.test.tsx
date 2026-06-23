@@ -79,7 +79,7 @@ describe("0.15 navigation hierarchy", () => {
     const topbar = document.getElementById("topbar")!;
     expect(within(topbar).getByText("SAFE")).toBeInTheDocument();
     for (const label of ["READONLY", "LOCAL ONLY", "NETWORK OFF", "DOCTOR PASS", "STAFF OFF"]) {
-      expect(within(topbar).getByText(label)).toBeInTheDocument();
+      expect(within(topbar).getByText(label, { hidden: true })).toBeInTheDocument();
     }
     expect(within(topbar).queryByText("STAFF PREVIEW")).toBeNull();
   });

@@ -163,9 +163,8 @@ export function WorkbenchScreen() {
       <section className="workbench-main">
         <header className="workbench-header workbench-header--calm">
           <div>
-            <p className="eyebrow">WORKBENCH</p>
             <h1>{action.title}</h1>
-            <span>Describe a task in plain language — RealForge plans it and runs only safe, approved steps.</span>
+            <span>Describe a task — RealForge plans it and runs only safe, approved steps.</span>
           </div>
           <button
             type="button"
@@ -231,19 +230,22 @@ export function WorkbenchScreen() {
                 <ValidationCard />
               </>
             ) : null}
-            {!showsRepairEvidence ? (
-              <article className="composer-boundary-card">
-                <Icon name="shield-check" />
-                <div>
-                  <b>Composition boundary active</b>
-                  <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
-                </div>
-              </article>
-            ) : null}
-            <section className="thread-reference" aria-label="Reference">
-              <p className="thread-reference__label">Reference</p>
-              <ApprovalAuditLog compact />
-            </section>
+            <details className="thread-secondary" data-testid="workbench-secondary-details">
+              <summary>Boundaries &amp; reference</summary>
+              {!showsRepairEvidence ? (
+                <article className="composer-boundary-card">
+                  <Icon name="shield-check" />
+                  <div>
+                    <b>Composition boundary active</b>
+                    <p>No provider, network, workspace write, apply, commit, merge, update, or scheduler path is available from this action.</p>
+                  </div>
+                </article>
+              ) : null}
+              <section className="thread-reference" aria-label="Reference">
+                <p className="thread-reference__label">Reference</p>
+                <ApprovalAuditLog compact />
+              </section>
+            </details>
           </div>
         </div>
         <ComposerDock action={action} onAskLocalModel={askLocalModel} chatRunning={chatRunning} />

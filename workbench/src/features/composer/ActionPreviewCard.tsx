@@ -100,13 +100,9 @@ function ExecutionControl({
 export function ActionPreviewCard(props: ActionPreviewCardProps) {
   const { action, bridgeError } = props;
   return (
-    <article className="action-preview" data-testid="action-preview-card">
+    <article className="action-preview action-preview--calm" data-testid="action-preview-card">
       <header className="action-preview__header">
-        <span className="action-preview__mark">
-          <Icon name="workflow" />
-        </span>
-        <div>
-          <p className="eyebrow">COMPOSED ACTION · {action.domain.toUpperCase()}</p>
+        <div className="action-preview__title">
           <h2>{action.title}</h2>
           <p>{action.description}</p>
         </div>
@@ -118,7 +114,7 @@ export function ActionPreviewCard(props: ActionPreviewCardProps) {
         <span>{safetySummary(action)}</span>
       </p>
 
-      <details className="action-preview__details">
+      <details className="action-preview__details" data-testid="action-preview-safety-details">
         <summary>
           <Icon name="chevron-right" className="action-preview__chevron" />
           <span>Show safety details</span>
