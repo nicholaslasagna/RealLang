@@ -108,12 +108,12 @@ export function buildReleaseChecklist(input: ReleaseReadinessInput): readonly Re
     },
     {
       id: "app_icons",
-      label: "App icons finalized",
-      status: "warn",
+      label: "App icons generated",
+      status: "pass",
       platform: "all",
       requiredFor: "stable",
-      details: "src-tauri/icons currently holds generated placeholders, not final branding.",
-      nextAction: "Replace placeholder .icns/.ico/.png with final branding."
+      details: "src-tauri/icons is generated from the tracked RealForge brand mark asset.",
+      nextAction: "Review platform-specific icon appearance before signed release packaging."
     },
     {
       id: "macos_signing",

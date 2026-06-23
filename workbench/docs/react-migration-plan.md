@@ -383,7 +383,7 @@ becomes `legacy/` or is removed in a single cutover release.
 
 **Goal:** Desktop shell hosting the React app; explicit IPC; no write bridge.
 
-- `src-tauri/` Tauri 2 project (window, CSP, placeholder icons)
+- `src-tauri/` Tauri 2 project (window, CSP, generated RealForge brand icons)
 - Metadata-only IPC: runtime info, bridge capabilities, read-only source catalog, app paths
 - `src/bridge/` typed frontend client with web fallback
 - Settings runtime indicator (web vs desktop)

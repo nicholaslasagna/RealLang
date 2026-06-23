@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import test from "node:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,8 @@ test("entrypoint is offline and uses repository-owned assets", async () => {
   assert.match(html, /id="root"/);
   assert.match(html, /src\/main\.tsx/);
   assert.match(html, /\/assets\/realforge-mark\.svg/);
+  assert.match(html, /\/assets\/favicon-32x32\.png/);
+  assert.match(html, /\/assets\/apple-touch-icon\.png/);
   assert.doesNotMatch(html, /https?:\/\//i);
 });
 
@@ -104,6 +106,21 @@ test("local Lucide subset and license are present", async () => {
   for (const icon of ["house.svg", "square-terminal.svg", "command.svg", "shield-check.svg", "workflow.svg"]) {
     assert.ok(files.includes(icon), `missing icon asset: ${icon}`);
   }
+});
+
+test("branded app icon assets are generated and configured", async () => {
+  const conf = await readJson("src-tauri/tauri.conf.json");
+  const configured = conf.bundle.icon;
+  for (const icon of ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/256x256.png", "icons/512x512.png", "icons/1024x1024.png", "icons/icon.icns", "icons/icon.ico"]) {
+    assert.ok(configured.includes(icon), `missing configured app icon: ${icon}`);
+    assert.ok((await stat(join(root, "src-tauri", icon))).size > 100, `empty generated app icon: ${icon}`);
+  }
+  for (const icon of ["assets/favicon-32x32.png", "assets/apple-touch-icon.png"]) {
+    assert.ok((await stat(join(root, icon))).size > 100, `empty browser icon asset: ${icon}`);
+  }
+  const generator = await read("scripts/generate-tauri-icons.mjs");
+  assert.match(generator, /assets\/realforge-mark\.svg/);
+  assert.doesNotMatch(generator, /placeholder icons/i);
 });
 
 test("reports screen exposes read-only CLI bridge catalog without execution hooks", async () => {

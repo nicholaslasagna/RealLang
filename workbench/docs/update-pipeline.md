@@ -73,7 +73,7 @@ Each of the 15 items has `id`, `label`, `status` (`pass`/`warn`/`missing`/
 | npm audit clean | `warn` (verify in CI) |
 | Security Center reviewed | `pass` |
 | glib upstream-blocked advisory documented | `pass` |
-| App icons finalized | `warn` (placeholders) |
+| App icons generated | `pass` |
 | macOS signing configured | `deferred` |
 | macOS notarization configured | `deferred` |
 | Windows signing configured | `deferred` |
@@ -95,12 +95,11 @@ shipped release); it is bumped only when an actual signed release is cut.
 
 ## Icon & signing readiness (TODO before stable)
 
-The desktop bundle currently ships **generated placeholder icons**. Before a stable
-release:
+The desktop bundle ships generated RealForge brand icons derived from
+`assets/realforge-mark.svg`. Before a stable release:
 
-- [ ] Replace placeholder icons in `src-tauri/icons/` with final branding.
-- [ ] Provide a real macOS **`icon.icns`** (all required sizes).
-- [ ] Provide a real Windows **`icon.ico`** (multi-resolution).
+- [x] Generate branded PNG, **`icon.icns`**, and **`icon.ico`** assets.
+- [ ] Review macOS and Windows icon rendering on real signed builds.
 - [ ] Review **DMG appearance** (background, layout, volume name).
 - [ ] Confirm **app name** consistency ("RealForge Workbench") across
       `tauri.conf.json`, bundle, and UI.
