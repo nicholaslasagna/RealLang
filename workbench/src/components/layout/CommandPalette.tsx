@@ -72,6 +72,20 @@ export function CommandPalette() {
               placeholder="Search commands, domains, or safety levels"
               value={commandQuery}
               onChange={(e) => setCommandQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (!commands.length) return;
+                const i = Math.max(0, commands.findIndex((c) => c.command === activeCommand?.command));
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setSelectedCommand(commands[(i + 1) % commands.length].command);
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSelectedCommand(commands[(i - 1 + commands.length) % commands.length].command);
+                } else if (e.key === "Enter" && actionDefinition) {
+                  e.preventDefault();
+                  composeActionPreview(actionDefinition.id);
+                }
+              }}
             />
           </div>
           <button className="icon-button" type="button" onClick={closePalette} aria-label="Close command palette">

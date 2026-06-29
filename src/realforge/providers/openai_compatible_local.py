@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 from urllib.parse import urljoin
 
@@ -29,7 +29,7 @@ from realforge.providers.base import (
     PlanRequest,
 )
 from realforge.errors import ProviderPlanError
-from realforge.providers.http_util import HTTPProviderError, post_json
+from realforge.providers.http_util import HTTPProviderError, post_json, stream_sse
 from realforge.providers.smoke_constants import SMOKE_USER_PROMPT
 from realforge.providers.prompts import (
     GENERATE_SYSTEM_PROMPT,
@@ -162,6 +162,53 @@ class OpenAICompatibleLocalProvider(ModelProvider):
             opener=opener,
             max_response_bytes=128 * 1024,
         )
+
+    def stream_chat_sandbox(
+        self,
+        user: str,
+        *,
+        opener: Callable[..., Any] | None = None,
+        timeout: float = 20.0,
+        max_tokens: int = 512,
+        max_response_bytes: int = 128 * 1024,
+    ) -> Iterator[str]:
+        """Yield content deltas for one bounded user-only request (streaming SSE).
+
+        Same boundary as ``chat_sandbox`` — no system prompt, context, tools, or
+        persistence. Only assistant content deltas are yielded; provider identity,
+        token usage, and other fields are never surfaced.
+        """
+        if not self._base_url:
+            raise HTTPProviderError(
+                "not_configured",
+                "OpenAI-compatible local provider endpoint is not configured.",
+            )
+        url = urljoin(self._base_url + "/", "chat/completions")
+        payload: dict[str, Any] = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": user}],
+            "stream": True,
+            "max_tokens": min(max(max_tokens, 1), 512),
+        }
+        headers: dict[str, str] = {}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+        for chunk in stream_sse(
+            url,
+            payload,
+            timeout=min(max(timeout, 0.1), 20.0),
+            extra_headers=headers,
+            opener=opener,
+            max_response_bytes=max_response_bytes,
+        ):
+            choices = chunk.get("choices")
+            if not isinstance(choices, list) or not choices:
+                continue
+            first = choices[0]
+            delta = first.get("delta") if isinstance(first, dict) else None
+            content = delta.get("content") if isinstance(delta, dict) else None
+            if isinstance(content, str) and content:
+                yield content
 
     def generate_plan(self, request: PlanRequest) -> AgentPlan:
         user = build_plan_user_prompt(

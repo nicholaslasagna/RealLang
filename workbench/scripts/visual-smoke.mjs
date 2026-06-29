@@ -169,6 +169,8 @@ async function run() {
       const overflows = () =>
         page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
 
+      // Advanced (dev/diagnostic) nav is collapsed by default; open it to reach those screens.
+      await page.locator(".nav-group--advanced > summary").click();
       // 0.16: verify Security, Reports, and Settings (About) render without overflow.
       for (const [navName, selector] of [
         ["Security", ".security-hero"],
@@ -198,7 +200,7 @@ async function run() {
       await page.waitForSelector('[data-testid="chat-sandbox-result"]');
       if (await overflows()) throw new Error(`Private chat sandbox horizontal overflow detected at ${width}px`);
 
-      await page.getByRole("button", { name: "Workbench", exact: true }).click();
+      await page.getByRole("button", { name: "Chat", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');
       await page.locator("summary", { hasText: "Suggestions" }).click();
       await page.getByRole("button", { name: "Check the fixed hello.real example", exact: true }).click();

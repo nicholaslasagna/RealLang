@@ -35,43 +35,43 @@ function resetHome() {
 }
 
 describe("0.15 navigation hierarchy", () => {
-  it("groups Security and Reports under Evaluate (intent-based navigation)", () => {
+  it("splits navigation into Create (creative-first) and a folded Advanced group", () => {
     const nav = getWorkbenchData().navigation;
     const byId = Object.fromEntries(nav.map((item) => [item.id, item.group]));
-    expect(byId.home).toBe("Start");
-    expect(byId.workbench).toBe("Start");
-    expect(byId.code).toBe("Build");
-    expect(byId.capabilities).toBe("Evaluate");
-    expect(byId.security).toBe("Evaluate");
-    expect(byId.reports).toBe("Evaluate");
-    expect(byId.settings).toBe("System");
-    expect(byId.updates).toBe("System");
-    expect(nav.some((item) => item.group === "Advanced")).toBe(false);
+    expect(byId.home).toBe("Create");
+    expect(byId.workbench).toBe("Create");
+    expect(byId.image).toBe("Create");
+    expect(byId.code).toBe("Advanced");
+    expect(byId.capabilities).toBe("Advanced");
+    expect(byId.security).toBe("Advanced");
+    expect(byId.reports).toBe("Advanced");
+    expect(byId.settings).toBe("Advanced");
+    expect(byId.updates).toBe("Advanced");
+    expect([...new Set(nav.map((i) => i.group))]).toEqual(["Create", "Advanced"]);
     expect(nav.length).toBe(15);
   });
 
-  it("renders every nav item and the five intent groups in the sidebar", () => {
+  it("renders every nav item and the two intent groups in the sidebar", () => {
     resetHome();
     render(<App />);
     const sidebar = document.getElementById("sidebar")!;
     for (const label of [
-      "Home", "Workbench", "Capabilities", "Code", "Research", "Creative", "Image",
+      "Home", "Chat", "Capabilities", "Code", "Research", "Creative", "Image",
       "Vision", "Engine", "Assets", "Benchmarks", "Security", "Reports", "Updates", "Settings"
     ]) {
       expect(within(sidebar).getByText(label)).toBeInTheDocument();
     }
-    for (const group of ["Start", "Build", "Studio", "Evaluate", "System"]) {
+    for (const group of ["Create", "Advanced"]) {
       expect(within(sidebar).getByText(group)).toBeInTheDocument();
     }
-    expect(within(sidebar).queryByText("Advanced")).toBeNull();
     expect(within(sidebar).queryByText("Core")).toBeNull();
   });
 
-  it("highlights Workbench as the primary destination", () => {
+  it("highlights Chat as the primary destination", () => {
     resetHome();
     render(<App />);
     const sidebar = document.getElementById("sidebar")!;
-    expect(within(sidebar).getByRole("button", { name: "Workbench" }).className).toMatch(/nav-item--primary/);
+    expect(within(sidebar).getByRole("button", { name: "Chat" }).className).toMatch(/nav-item--primary/);
   });
 
   it("keeps Settings discoverable for provider configuration", () => {

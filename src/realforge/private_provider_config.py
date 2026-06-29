@@ -57,6 +57,9 @@ class PrivateImageProviderRuntimeSettings:
     display_name: str | None
     base_url: str | None
     trust: str
+    # Runtime-only — needed to call the endpoint. Never surfaced in *Status (redacted).
+    model: str | None = None
+    api_key: str | None = None
 
     @property
     def configured(self) -> bool:
@@ -221,6 +224,8 @@ def _parse_image_runtime(data: dict) -> PrivateImageProviderRuntimeSettings | No
         display_name=display_name,
         base_url=base_url,
         trust=DEFAULT_TRUST if trust != DEFAULT_TRUST else DEFAULT_TRUST,
+        model=_sanitize_optional_string(section.get("model")),
+        api_key=_sanitize_optional_string(section.get("api_key")),
     )
 
 

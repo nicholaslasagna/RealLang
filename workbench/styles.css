@@ -103,6 +103,21 @@ textarea:focus-visible,
   border-bottom: 1px solid var(--line);
   background: rgba(8, 9, 12, 0.86);
   backdrop-filter: blur(16px);
+  /* native macOS: titlebar overlays the webview — make the bar a window drag handle */
+  -webkit-app-region: drag;
+}
+
+/* interactive elements must stay clickable, not draggable */
+.topbar button,
+.topbar summary,
+.topbar input,
+.topbar a {
+  -webkit-app-region: no-drag;
+}
+
+/* native macOS Overlay titlebar: clear the traffic lights on the left */
+.app-shell.is-native .topbar {
+  padding-left: 82px;
 }
 
 .brand-block,
@@ -437,6 +452,30 @@ textarea:focus-visible,
   padding: 9px 9px 5px;
 }
 
+/* Collapsible Advanced group — same calm heading look, fold/unfold affordance. */
+.nav-group--advanced > summary {
+  padding: 9px;
+  border-radius: var(--radius-2);
+  color: var(--text-3);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+.nav-group--advanced > summary:hover { background: rgba(255, 255, 255, 0.045); opacity: 1; }
+.nav-group--advanced > summary::-webkit-details-marker { display: none; }
+.nav-group--advanced > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 5px;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.nav-group--advanced[open] > summary::before { transform: rotate(90deg); }
+
 .nav-item {
   display: grid;
   grid-template-columns: 17px minmax(0, 1fr) 14px;
@@ -446,28 +485,38 @@ textarea:focus-visible,
   margin: 1px 0;
   padding: 0 9px;
   border: 0;
-  border-left: 2px solid transparent;
-  border-radius: 3px;
+  /* constant border so active never shifts the row */
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-2);
   background: transparent;
   color: rgba(220, 224, 232, 0.76);
   text-align: left;
   cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(255, 255, 255, 0.045);
   color: var(--text);
 }
 
+.nav-item:active {
+  transform: translateY(0.5px);
+}
+
 .nav-item.is-active {
-  border-left: 3px solid var(--red);
-  padding-left: 8px;
+  border-left-color: var(--red);
   background: linear-gradient(90deg, rgba(227, 38, 54, 0.16), rgba(227, 38, 54, 0.01));
   color: white;
 }
 
 .nav-item.is-active span {
   font-weight: 750;
+}
+
+.nav-item .icon {
+  transition: color var(--dur-fast) var(--ease);
 }
 
 .nav-item.is-active .icon {
@@ -3488,7 +3537,10 @@ textarea:focus-visible,
   background: rgba(8, 9, 12, 0.82);
   color: var(--text-3);
   font-size: 9px;
+  opacity: 0.82;
+  transition: opacity var(--dur) var(--ease);
 }
+.status-rail:hover { opacity: 1; }
 
 .status-rail > span { gap: 5px; white-space: nowrap; }
 .rail-state { color: var(--text-2); font-weight: 700; }
@@ -3512,15 +3564,35 @@ textarea:focus-visible,
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-top-color: rgba(227, 38, 54, 0.5);
-  border-radius: 7px;
+  border-radius: var(--radius-3);
   background: var(--surface-0);
   color: var(--text);
   box-shadow: 0 30px 120px rgba(0, 0, 0, 0.75), 0 0 40px rgba(227, 38, 54, 0.08);
 }
 
+/* Buttery open: fade + lift the dialog and its backdrop in. */
+.command-dialog[open] {
+  animation: palette-in var(--dur) var(--ease);
+}
 .command-dialog::backdrop {
   background: rgba(2, 3, 5, 0.78);
   backdrop-filter: blur(7px);
+}
+.command-dialog[open]::backdrop {
+  animation: palette-backdrop-in var(--dur) var(--ease);
+}
+@keyframes palette-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes palette-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.command-results button {
+  transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  scroll-margin: 8px;
 }
 
 .command-palette-form {
@@ -5455,5 +5527,14 @@ textarea:focus-visible,
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* ponytail: one global guard so every nav transition respects reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

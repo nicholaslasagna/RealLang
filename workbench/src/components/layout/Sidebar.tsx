@@ -9,34 +9,45 @@ export function Sidebar() {
   const data = getWorkbenchData();
   const groups = [...new Set(data.navigation.map((item) => item.group))];
 
+  const renderItems = (group: string) =>
+    data.navigation
+      .filter((item) => item.group === group)
+      .map((item) => {
+        const active = screen === item.id;
+        const locked = item.id === "updates" && !staffPreview;
+        const primary = item.id === "workbench";
+        return (
+          <button
+            key={item.id}
+            className={`nav-item ${active ? "is-active" : ""} ${primary ? "nav-item--primary" : ""}`.trim()}
+            type="button"
+            aria-current={active ? "page" : undefined}
+            onClick={() => navigate(item.id)}
+          >
+            <Icon name={item.icon} />
+            <span>{item.label}</span>
+            {locked ? <Icon name="lock" className="nav-lock" /> : null}
+          </button>
+        );
+      });
+
   return (
     <>
       <div className="sidebar-scroll">
-        {groups.map((group) => (
-          <section key={group} className="nav-group" aria-labelledby={`nav-${group.toLowerCase()}`}>
-            <h2 id={`nav-${group.toLowerCase()}`}>{group}</h2>
-            {data.navigation
-              .filter((item) => item.group === group)
-              .map((item) => {
-                const active = screen === item.id;
-                const locked = item.id === "updates" && !staffPreview;
-                const primary = item.id === "workbench";
-                return (
-                  <button
-                    key={item.id}
-                    className={`nav-item ${active ? "is-active" : ""} ${primary ? "nav-item--primary" : ""}`.trim()}
-                    type="button"
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => navigate(item.id)}
-                  >
-                    <Icon name={item.icon} />
-                    <span>{item.label}</span>
-                    {locked ? <Icon name="lock" className="nav-lock" /> : null}
-                  </button>
-                );
-              })}
-          </section>
-        ))}
+        {groups.map((group) =>
+          // ponytail: Advanced (dev/diagnostic) folds away; Create stays open.
+          group === "Advanced" ? (
+            <details key={group} className="nav-group nav-group--advanced">
+              <summary>{group}</summary>
+              {renderItems(group)}
+            </details>
+          ) : (
+            <section key={group} className="nav-group" aria-labelledby={`nav-${group.toLowerCase()}`}>
+              <h2 id={`nav-${group.toLowerCase()}`}>{group}</h2>
+              {renderItems(group)}
+            </section>
+          )
+        )}
       </div>
       <div className="sidebar-version">
         <div>

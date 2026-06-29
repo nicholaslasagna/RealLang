@@ -5,8 +5,12 @@ import { StatusRail } from "./components/layout/StatusRail";
 import { ToastRegion } from "./components/layout/ToastRegion";
 import { Topbar } from "./components/layout/Topbar";
 import { MainRouter } from "./components/MainRouter";
+import { isDesktopRuntime } from "./bridge";
 import { useWorkbenchStore } from "./state/workbench-store";
 import { bindGlobalShortcuts } from "./platform/shortcuts";
+
+// ponytail: computed once at module load; runtime never changes within a session.
+const NATIVE = isDesktopRuntime();
 
 export default function App() {
   const screen = useWorkbenchStore((s) => s.screen);
@@ -41,7 +45,7 @@ export default function App() {
     <>
       <div
         id="app"
-        className={`app-shell ${sidebarOpen ? "sidebar-open" : ""}`}
+        className={`app-shell ${sidebarOpen ? "sidebar-open" : ""} ${NATIVE ? "is-native" : ""}`}
         data-screen={screen}
         data-workbench-mode={screen === "workbench" ? workbenchMode : "default"}
       >

@@ -2,7 +2,12 @@
 :root {
   --sidebar: 224px;
   --topbar: 58px;
-  --rail: 34px;
+  --rail: 30px;
+
+  /* Motion — one easing/duration set so every nav surface feels consistent. */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
 
   /* Spacing scale — consistent breathing room (0.17 UX pass). */
   --space-1: 4px;

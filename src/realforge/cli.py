@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -41,11 +42,17 @@ from realforge.provider_smoke import (
     format_provider_smoke_json,
     run_private_provider_smoke,
 )
+from realforge.provider_image_gen import (
+    IMAGE_MAX_PROMPT_CHARS,
+    format_provider_image_gen_json,
+    run_private_provider_image_gen,
+)
 from realforge.provider_chat_sandbox import (
     CHAT_SANDBOX_MAX_PROMPT_CHARS,
     format_provider_chat_sandbox,
     format_provider_chat_sandbox_json,
     run_private_provider_chat_sandbox,
+    run_private_provider_chat_sandbox_stream,
 )
 from realforge.providers import resolve_provider
 from realforge.errors import ProviderPlanError
@@ -302,6 +309,17 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="emit machine-readable sanitized private chat sandbox JSON",
     )
+    provider_chat.add_argument(
+        "--stream",
+        action="store_true",
+        help="stream sanitized NDJSON delta/final/error events (one JSON object per line)",
+    )
+    provider_image = provider_sub.add_parser(
+        "image",
+        help="generate one bounded image via the configured local image provider",
+    )
+    provider_image.add_argument("--stdin", action="store_true", required=True, help="read bounded prompt from stdin only")
+    provider_image.add_argument("--json", action="store_true", help="emit sanitized image-generation JSON")
 
     index = sub.add_parser("index", help="scan workspace and list tracked project files")
     index.add_argument(
@@ -1330,12 +1348,24 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if report.ok else 1
         if args.provider_command == "chat-sandbox":
             prompt = sys.stdin.read(CHAT_SANDBOX_MAX_PROMPT_CHARS + 1)
+            if getattr(args, "stream", False):
+                ok = True
+                for event in run_private_provider_chat_sandbox_stream(prompt):
+                    print(json.dumps(event), flush=True)
+                    if event.get("type") == "error":
+                        ok = False
+                return 0 if ok else 1
             report = run_private_provider_chat_sandbox(prompt)
             print(
                 format_provider_chat_sandbox_json(report)
                 if args.json
                 else format_provider_chat_sandbox(report)
             )
+            return 0 if report.ok else 1
+        if args.provider_command == "image":
+            prompt = sys.stdin.read(IMAGE_MAX_PROMPT_CHARS + 1)
+            report = run_private_provider_image_gen(prompt)
+            print(format_provider_image_gen_json(report))
             return 0 if report.ok else 1
         return 1
 

@@ -61,21 +61,23 @@ export interface WorkbenchMockData {
 }
 
 const navigation: readonly NavigationItem[] = Object.freeze([
-  { id: "home", label: "Home", icon: "house", group: "Start" },
-  { id: "workbench", label: "Workbench", icon: "square-terminal", group: "Start" },
-  { id: "code", label: "Code", icon: "code-xml", group: "Build" },
-  { id: "research", label: "Research", icon: "globe", group: "Build" },
-  { id: "creative", label: "Creative", icon: "drama", group: "Studio" },
-  { id: "image", label: "Image", icon: "image", group: "Studio" },
-  { id: "vision", label: "Vision", icon: "eye", group: "Studio" },
-  { id: "engine", label: "Engine", icon: "box", group: "Studio" },
-  { id: "assets", label: "Assets", icon: "package", group: "Studio" },
-  { id: "capabilities", label: "Capabilities", icon: "layers", group: "Evaluate" },
-  { id: "benchmarks", label: "Benchmarks", icon: "gauge", group: "Evaluate" },
-  { id: "security", label: "Security", icon: "shield-alert", group: "Evaluate" },
-  { id: "reports", label: "Reports", icon: "clipboard-list", group: "Evaluate" },
-  { id: "settings", label: "Settings", icon: "settings", group: "System" },
-  { id: "updates", label: "Updates", icon: "shield", group: "System" }
+  // Create — what a non-technical user reaches for. Chat is the live, primary surface.
+  { id: "home", label: "Home", icon: "house", group: "Create" },
+  { id: "workbench", label: "Chat", icon: "square-terminal", group: "Create" },
+  { id: "image", label: "Image", icon: "image", group: "Create" },
+  { id: "vision", label: "Vision", icon: "eye", group: "Create" },
+  { id: "creative", label: "Creative", icon: "drama", group: "Create" },
+  { id: "assets", label: "Assets", icon: "package", group: "Create" },
+  // Advanced — developer/diagnostic surfaces, collapsed by default to cut clutter.
+  { id: "code", label: "Code", icon: "code-xml", group: "Advanced" },
+  { id: "research", label: "Research", icon: "globe", group: "Advanced" },
+  { id: "engine", label: "Engine", icon: "box", group: "Advanced" },
+  { id: "capabilities", label: "Capabilities", icon: "layers", group: "Advanced" },
+  { id: "benchmarks", label: "Benchmarks", icon: "gauge", group: "Advanced" },
+  { id: "security", label: "Security", icon: "shield-alert", group: "Advanced" },
+  { id: "reports", label: "Reports", icon: "clipboard-list", group: "Advanced" },
+  { id: "settings", label: "Settings", icon: "settings", group: "Advanced" },
+  { id: "updates", label: "Updates", icon: "shield", group: "Advanced" }
 ]);
 
 let cachedMockData: WorkbenchMockData | null = null;

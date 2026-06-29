@@ -34,7 +34,7 @@ test("entrypoint is offline and uses repository-owned assets", async () => {
 test("all requested navigation and settings screens are registered", async () => {
   const source = await read("src/data/workbench-data.ts");
   const settings = await readJson("src/data/fixtures/settings.json");
-  for (const label of ["Home", "Workbench", "Capabilities", "Code", "Research", "Creative", "Image", "Vision", "Engine", "Assets", "Benchmarks", "Reports", "Updates", "Settings"]) {
+  for (const label of ["Home", "Chat", "Capabilities", "Code", "Research", "Creative", "Image", "Vision", "Engine", "Assets", "Benchmarks", "Reports", "Updates", "Settings"]) {
     assert.match(source, new RegExp(`label: "${label}"`));
   }
   for (const section of ["General", "Workspace", "Provider / Local Model", "Permissions", "Research / Network", "Staff Mode", "Scheduler", "Benchmarks / Gates", "Creative / Multimodal", "Engine Integrations", "Safety / Doctor"]) {
