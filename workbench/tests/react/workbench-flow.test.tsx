@@ -54,7 +54,7 @@ describe("0.31 Workbench conversation flow", () => {
     expect(screen.getByTestId("workbench-flow-hint")).toBeInTheDocument();
     expect(screen.getByTestId("workbench-assistant-empty-state")).toBeInTheDocument();
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
-    expect(screen.getByRole("heading", { name: /what do you want to work on/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /what should realforge shape next/i })).toBeInTheDocument();
     expect(screen.getByTestId("safe-command-composer")).toBeInTheDocument();
   });
 
@@ -62,8 +62,8 @@ describe("0.31 Workbench conversation flow", () => {
     resetStore("");
     render(<WorkbenchScreen />);
     const greeting = screen.getByTestId("workbench-greeting");
-    expect(within(greeting).getByText(/tell me what you want to build or fix/i)).toBeInTheDocument();
-    expect(within(greeting).getByText(/until you approve it/i)).toBeInTheDocument();
+    expect(within(greeting).getByText(/describe the outcome/i)).toBeInTheDocument();
+    expect(within(greeting).getByText(/approval before anything touches your files/i)).toBeInTheDocument();
   });
 
   it("nudges to Chat for free conversational text instead of a fake repair preview (0.42)", () => {

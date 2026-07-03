@@ -20,6 +20,8 @@ import type {
   ProviderChatSandboxCancelResult,
   ProviderChatSandboxInput,
   ProviderChatSandboxResult,
+  ProviderImageGenInput,
+  ProviderImageGenResult,
   ProviderSmokeInput,
   ProviderSmokeResult,
   UpdateCheckResult,
@@ -88,6 +90,18 @@ export function webRunPrivateProviderSmoke(_input: ProviderSmokeInput): Provider
     error: {
       code: "unsupported_web",
       message: "Provider smoke is available in the desktop shell only. Web mode never executes provider checks."
+    }
+  };
+}
+
+export function webRunPrivateProviderImageGen(
+  _input: ProviderImageGenInput
+): ProviderImageGenResult {
+  return {
+    ok: false,
+    error: {
+      code: "unsupported_web",
+      message: "Image generation is available in the desktop shell only. Web mode never contacts providers."
     }
   };
 }

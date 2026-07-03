@@ -43,6 +43,23 @@ async function run() {
     for (const width of widths) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       await page.addInitScript(() => {
+        const tauriCallbacks = new Map();
+        let nextCallbackId = 1;
+        const emitChannel = (channel, message, index) => {
+          if (channel?.onmessage) {
+            channel.onmessage(message);
+            return;
+          }
+          const rawId =
+            typeof channel === "string" && channel.startsWith("__CHANNEL__:")
+              ? channel.slice("__CHANNEL__:".length)
+              : typeof channel?.id === "number"
+                ? String(channel.id)
+                : null;
+          if (!rawId) return;
+          const callback = tauriCallbacks.get(Number(rawId));
+          callback?.({ index, message });
+        };
         const sources = [
           { id: "capabilities", label: "Capability registry", description: "mock", displayCommand: "realforge capabilities --json", detectType: "capability_registry", readOnly: true },
           { id: "slash", label: "Slash registry", description: "mock", displayCommand: "realforge slash --json", detectType: "slash_command_registry", readOnly: true },
@@ -62,6 +79,14 @@ async function run() {
           supportedSources: sources
         };
         window.__TAURI_INTERNALS__ = {
+          transformCallback: (callback) => {
+            const id = nextCallbackId++;
+            tauriCallbacks.set(id, callback);
+            return id;
+          },
+          unregisterCallback: (id) => {
+            tauriCallbacks.delete(id);
+          },
           invoke: async (command, args = {}) => {
             if (command === "check_bridge_health") {
               return { resolution, healthy: true, probeAttempted: true, probeOk: true, probeSourceId: "capabilities", nextActions: [] };
@@ -148,6 +173,25 @@ async function run() {
                 }
               };
             }
+            if (command === "run_private_provider_chat_sandbox_stream") {
+              if (args.input?.approvalAcknowledged !== true) throw new Error("approval required");
+              if (typeof args.input?.prompt !== "string" || !args.input.prompt.trim()) throw new Error("prompt required");
+              emitChannel(args.onEvent, { type: "delta", text: "Bounded " }, 0);
+              emitChannel(args.onEvent, { type: "delta", text: "local response" }, 1);
+              emitChannel(args.onEvent, {
+                type: "final",
+                ok: true,
+                attempted: true,
+                configured: true,
+                provider_kind: "openai_compatible_local",
+                status: "pass",
+                input_length: args.input.prompt.length,
+                duration_ms: 46,
+                response_truncated: false,
+                untrusted_output: true
+              }, 2);
+              return;
+            }
             throw new Error(`visual mock does not implement ${command}`);
           }
         };
@@ -162,7 +206,7 @@ async function run() {
       const overflowX = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
       if (overflowX) throw new Error(`Horizontal overflow detected at ${width}px`);
       const title = await page.textContent("h1");
-      if (!title || !title.includes("What do you want to work on")) {
+      if (!title || !title.includes("RealForge is ready")) {
         throw new Error(`Home screen did not render at ${width}px`);
       }
 

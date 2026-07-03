@@ -11,6 +11,11 @@ MAX_FIELD_LEN = 256
 DEFAULT_TRUST = "local_untrusted"
 LOCAL_PROVIDER = "openai_compatible_local"
 LOCAL_IMAGE_PROVIDER = "local_image_provider"
+COMFYUI_IMAGE_PROVIDER = "comfyui"
+SUPPORTED_IMAGE_PROVIDERS = (LOCAL_IMAGE_PROVIDER, COMFYUI_IMAGE_PROVIDER)
+# Inline ComfyUI workflow is bounded by the config file size; a workflow_path file
+# gets its own larger cap at read time.
+MAX_WORKFLOW_INLINE_CHARS = MAX_FILE_BYTES
 
 
 class PrivateProviderConfigError(Exception):
@@ -60,12 +65,21 @@ class PrivateImageProviderRuntimeSettings:
     # Runtime-only — needed to call the endpoint. Never surfaced in *Status (redacted).
     model: str | None = None
     api_key: str | None = None
+    # ComfyUI backend: inline API-format workflow JSON, or a path to one. The
+    # workflow must contain the literal token %prompt% where the user prompt is
+    # injected. Runtime-only; never surfaced in *Status.
+    workflow: str | None = None
+    workflow_path: str | None = None
 
     @property
     def configured(self) -> bool:
-        if self.kind != LOCAL_IMAGE_PROVIDER:
+        if parse_local_endpoint(self.base_url or "") is None:
             return False
-        return parse_local_endpoint(self.base_url or "") is not None
+        if self.kind == LOCAL_IMAGE_PROVIDER:
+            return True
+        if self.kind == COMFYUI_IMAGE_PROVIDER:
+            return bool(self.workflow) or bool(self.workflow_path)
+        return False
 
 
 @dataclass(frozen=True)
@@ -226,7 +240,20 @@ def _parse_image_runtime(data: dict) -> PrivateImageProviderRuntimeSettings | No
         trust=DEFAULT_TRUST if trust != DEFAULT_TRUST else DEFAULT_TRUST,
         model=_sanitize_optional_string(section.get("model")),
         api_key=_sanitize_optional_string(section.get("api_key")),
+        workflow=_sanitize_workflow_inline(section.get("workflow")),
+        workflow_path=_sanitize_optional_string(section.get("workflow_path")),
     )
+
+
+def _sanitize_workflow_inline(value: object) -> str | None:
+    # Inline workflow JSON is multi-line and longer than MAX_FIELD_LEN, so it skips
+    # _sanitize_optional_string; bounded instead by the config file size.
+    if not isinstance(value, str):
+        return None
+    trimmed = value.strip()
+    if not trimmed or len(trimmed) > MAX_WORKFLOW_INLINE_CHARS:
+        return None
+    return trimmed
 
 
 def build_private_image_provider_status(
@@ -247,7 +274,7 @@ def build_private_image_provider_status(
         )
 
     endpoint = parse_local_endpoint(runtime.base_url or "") if runtime.base_url else None
-    if runtime.kind != LOCAL_IMAGE_PROVIDER:
+    if runtime.kind not in SUPPORTED_IMAGE_PROVIDERS:
         return PrivateImageProviderStatus(
             future=True,
             configured=False,
@@ -257,15 +284,17 @@ def build_private_image_provider_status(
             display_name_configured=runtime.display_name is not None,
             trust=DEFAULT_TRUST,
             config_source="home_local",
-            message="Private local image provider kind is not local_image_provider.",
+            message="Private local image provider kind is not a supported image backend.",
             execution_enabled=False,
         )
 
-    configured = endpoint is not None
+    configured = runtime.configured
     if configured:
         message = "Private local image provider metadata detected (execution not enabled yet)."
-    else:
+    elif endpoint is None:
         message = "Private local image provider is present but the endpoint is missing or not local."
+    else:
+        message = "ComfyUI image provider is present but no workflow is configured."
 
     return PrivateImageProviderStatus(
         future=True,

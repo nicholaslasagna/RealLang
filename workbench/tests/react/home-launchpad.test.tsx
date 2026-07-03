@@ -52,7 +52,7 @@ describe("Home launchpad", () => {
   it("renders hero and primary Open Workbench action", () => {
     render(<HomeScreen />);
     expect(screen.getByTestId("home-launchpad")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /what do you want to work on/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /realforge is ready/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /open workbench/i })).toBeInTheDocument();
     expect(document.querySelectorAll(".home-launchpad__primary .button--primary")).toHaveLength(1);
     expect((screen.getByText(/more quick starts/i).closest("details") as HTMLDetailsElement).open).toBe(false);

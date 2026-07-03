@@ -90,8 +90,8 @@ export function HomeScreen() {
     <div className="screen screen--home screen--launchpad" data-testid="home-launchpad">
       <div className="home-launchpad__inner">
         <header className="home-launchpad__hero">
-          <h1>What do you want to work on?</h1>
-          <p>Start with a plain-language request. RealForge can chat locally or stage a safe preview before anything runs.</p>
+          <h1>RealForge is ready.</h1>
+          <p>Ask the local model, shape a safe preview, and keep every action reviewable before it touches your workspace.</p>
           <div className="home-launchpad__primary">
             <Button
               label="Open Workbench"

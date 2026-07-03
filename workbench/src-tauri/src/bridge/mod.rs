@@ -9,6 +9,7 @@ mod approval_audit_store;
 mod health;
 mod private_provider_config;
 mod provider_chat_sandbox;
+mod provider_image_gen;
 mod provider_smoke;
 mod real_files;
 mod resolve_python;
@@ -33,7 +34,13 @@ use health::{check_bridge_health as compute_bridge_health, BridgeHealth};
 use provider_chat_sandbox::{
     cancel_private_provider_chat_sandbox as cancel_private_provider_chat,
     run_private_provider_chat_sandbox as spawn_private_provider_chat_sandbox,
-    ProviderChatSandboxCancelResult, ProviderChatSandboxInput, ProviderChatSandboxResult,
+    run_private_provider_chat_sandbox_stream as stream_private_provider_chat_sandbox,
+    ChatStreamEvent, ProviderChatSandboxCancelResult, ProviderChatSandboxError,
+    ProviderChatSandboxInput, ProviderChatSandboxResult,
+};
+use provider_image_gen::{
+    run_private_provider_image_gen as spawn_private_provider_image_gen, ProviderImageGenInput,
+    ProviderImageGenResult,
 };
 use provider_smoke::{
     run_private_provider_smoke as spawn_private_provider_smoke, ProviderSmokeInput,
@@ -275,6 +282,23 @@ pub fn run_private_provider_smoke(input: ProviderSmokeInput) -> ProviderSmokeRes
     spawn_private_provider_smoke(input)
 }
 
+/// Generate one approval-gated, bounded image via the user-configured local image
+/// backend (ComfyUI or OpenAI-compatible). Rust owns the executable and argv; the
+/// prompt goes only to child stdin. Output is one sanitized base64 PNG.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn run_private_provider_image_gen(
+    input: ProviderImageGenInput,
+) -> ProviderImageGenResult {
+    match tauri::async_runtime::spawn_blocking(move || spawn_private_provider_image_gen(input)).await
+    {
+        Ok(result) => result,
+        Err(_) => ProviderImageGenResult::failure(
+            "request_failed",
+            "The image generation request could not be completed.",
+        ),
+    }
+}
+
 #[tauri::command(rename_all = "camelCase")]
 pub async fn run_private_provider_chat_sandbox(
     input: ProviderChatSandboxInput,
@@ -287,6 +311,40 @@ pub async fn run_private_provider_chat_sandbox(
             "request_failed",
             "The private chat sandbox request could not be completed.",
         ),
+    }
+}
+
+/// Stream one approval-gated, bounded request. Every sanitized delta/final/error
+/// event is forwarded over the channel; the channel always receives exactly one
+/// terminal event. Same fixed argv, caps, cancellation, and redaction as the
+/// single-shot command — Rust never trusts the child's output.
+#[tauri::command(rename_all = "camelCase")]
+pub async fn run_private_provider_chat_sandbox_stream(
+    input: ProviderChatSandboxInput,
+    on_event: tauri::ipc::Channel<ChatStreamEvent>,
+) {
+    let fallback = on_event.clone();
+    let joined = tauri::async_runtime::spawn_blocking(move || {
+        stream_private_provider_chat_sandbox(input, move |event| {
+            let _ = on_event.send(event);
+        });
+    })
+    .await;
+    if joined.is_err() {
+        let _ = fallback.send(ChatStreamEvent::Error {
+            ok: false,
+            attempted: false,
+            configured: false,
+            provider_kind: None,
+            status: "fail".to_string(),
+            input_length: 0,
+            duration_ms: 0,
+            untrusted_output: true,
+            error: ProviderChatSandboxError {
+                code: "request_failed".to_string(),
+                message: "The private chat sandbox stream could not be completed.".to_string(),
+            },
+        });
     }
 }
 

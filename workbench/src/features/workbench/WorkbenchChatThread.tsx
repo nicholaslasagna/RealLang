@@ -11,6 +11,8 @@ export interface ChatTurn {
   running: boolean;
   /** True when recent visible turns were composed into this request's prompt. */
   contextIncluded?: boolean;
+  /** Live response tokens accumulated while the request streams (desktop). */
+  streamingText?: string;
 }
 
 interface WorkbenchChatThreadProps {
@@ -31,7 +33,7 @@ export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: Wor
   // Keep the newest turn (and its incoming response) in view after send/response.
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
-  }, [turns.length, last?.running, last?.result]);
+  }, [turns.length, last?.running, last?.result, last?.streamingText]);
 
   return (
     <section className="chat-thread" data-testid="workbench-chat-thread" aria-label="Local model conversation">
@@ -61,6 +63,7 @@ export function WorkbenchChatThread({ turns, onClear, onConfigureProvider }: Wor
                 prompt={turn.prompt}
                 result={turn.result}
                 running={turn.running}
+                streamingText={turn.streamingText}
                 contextIncluded={turn.contextIncluded}
                 onConfigureProvider={onConfigureProvider}
               />

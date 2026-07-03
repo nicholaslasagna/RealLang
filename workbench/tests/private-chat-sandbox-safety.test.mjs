@@ -66,9 +66,11 @@ test("chat sandbox adds no shell, browser network, or write bridge", async () =>
   assert.doesNotMatch(rust, /sh\s+-c|cmd\.exe|fs::write|OpenOptions|\.write\(/);
   assert.doesNotMatch(bridge, /\bfetch\s*\(|XMLHttpRequest/);
   assert.doesNotMatch(component, /\bfetch\s*\(|XMLHttpRequest|type="file"/);
+  // Desktop path streams over a Tauri channel; the fixed command receives only the
+  // bounded input plus the event channel — no path, argv, tools, or file content.
   assert.match(
     bridge,
-    /invokeDesktop<ProviderChatSandboxResult>\("run_private_provider_chat_sandbox", \{ input \}\)/
+    /invoke\("run_private_provider_chat_sandbox_stream", \{ input, onEvent: channel \}\)/
   );
   assert.match(
     bridge,

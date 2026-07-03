@@ -9,8 +9,8 @@ export function WorkbenchGreeting() {
       <div>
         <b>RealForge</b>
         <p>
-          Hi — tell me what you want to build or fix. I&rsquo;ll outline a plan and show exactly what
-          would run. Nothing executes or touches your files until you approve it.
+          Describe the outcome. I&rsquo;ll keep the path visible: conversation, preview, validation,
+          and approval before anything touches your files.
         </p>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { composeActionPlan } from "../../composer/action-model";
 import { useComposerRuntime } from "../../composer/use-composer-runtime";
 import { useWorkbenchStore } from "../../state/workbench-store";
-import { isDesktopRuntime, loadProviderStatus, runPrivateProviderChatSandbox, type ProviderStatus } from "../../bridge";
+import { isDesktopRuntime, loadProviderStatus, runPrivateProviderChatSandbox, setChatStreamDeltaListener, type ProviderStatus } from "../../bridge";
 import { Badge, Icon } from "../../components/primitives";
 import { ActionInspector } from "../composer/ActionInspector";
 import { ActionPreviewCard } from "../composer/ActionPreviewCard";
@@ -22,10 +22,10 @@ function EmptyWorkbenchCard() {
     <article className="workbench-empty-card" data-testid="workbench-assistant-empty-state">
       <div>
         <Icon name="sparkles" />
-        <span>Start with a plain-language request</span>
+        <span>Start in plain language</span>
       </div>
       <p>
-        RealForge can chat locally or prepare a safe preview. Details are available after you choose what to do.
+        RealForge turns intent into a local chat or a bounded preview. Execution stays behind approval.
       </p>
     </article>
   );
@@ -168,7 +168,7 @@ export function WorkbenchScreen() {
     ? "Local model chat"
     : hasExplicitAction
       ? action.title
-      : "What do you want to work on?";
+      : "What should RealForge shape next?";
 
   useEffect(() => {
     setWorkbenchMode(inAskLocal ? "chat" : "default");
@@ -211,9 +211,19 @@ export function WorkbenchScreen() {
     const id = (turnIdRef.current += 1);
     const actuallyIncluded = includeContext && availableContextTurnCount(chatTurns) > 0;
     const sentPrompt = actuallyIncluded ? composeVisibleChatContext(chatTurns, prompt) : prompt;
-    setChatTurns((prev) => [...prev, { id, prompt, result: null, running: true, contextIncluded: actuallyIncluded }]);
-    const response = await runPrivateProviderChatSandbox({ prompt: sentPrompt, approvalAcknowledged: true });
-    setChatTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, result: response, running: false } : turn)));
+    setChatTurns((prev) => [...prev, { id, prompt, result: null, running: true, contextIncluded: actuallyIncluded, streamingText: "" }]);
+    // Live tokens stream in (desktop); the resolved result stays identical in shape.
+    setChatStreamDeltaListener((text) => {
+      setChatTurns((prev) =>
+        prev.map((turn) => (turn.id === id ? { ...turn, streamingText: (turn.streamingText ?? "") + text } : turn))
+      );
+    });
+    try {
+      const response = await runPrivateProviderChatSandbox({ prompt: sentPrompt, approvalAcknowledged: true });
+      setChatTurns((prev) => prev.map((turn) => (turn.id === id ? { ...turn, result: response, running: false } : turn)));
+    } finally {
+      setChatStreamDeltaListener(null);
+    }
   };
 
   const clearChat = () => {
@@ -247,7 +257,7 @@ export function WorkbenchScreen() {
                 ? "Ask the user-configured local model. You approve each request; the conversation is session-only and not saved."
                 : hasExplicitAction
                   ? "Review the staged preview. Details stay inspectable, and running it still needs approval."
-                  : "Choose Chat to talk to your local model, or describe an action to preview safely."}
+                  : "Use Chat for a local model turn, or describe work to preview safely before anything runs."}
             </span>
           </div>
           <button

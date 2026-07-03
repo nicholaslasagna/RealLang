@@ -22,7 +22,11 @@ import type {
   ProviderStatus,
   ProviderChatSandboxCancelResult,
   ProviderChatSandboxInput,
+  ProviderChatSandboxReport,
   ProviderChatSandboxResult,
+  ChatStreamEvent,
+  ProviderImageGenInput,
+  ProviderImageGenResult,
   ProviderSmokeInput,
   ProviderSmokeResult
 } from "./types";
@@ -40,6 +44,7 @@ import {
   webRunApprovedDryRunAction,
   webCancelPrivateProviderChatSandbox,
   webRunPrivateProviderChatSandbox,
+  webRunPrivateProviderImageGen,
   webRunPrivateProviderSmoke,
   webRunSecurityScanSource,
   webRuntimeInfo,
@@ -308,15 +313,107 @@ export async function runPrivateProviderSmoke(input: ProviderSmokeInput): Promis
 }
 
 /**
+ * Generate one approval-gated, bounded image via the user-configured local image
+ * backend (ComfyUI or OpenAI-compatible; desktop only). Rust owns the executable
+ * and argv; the backend and model are chosen only by the gitignored home config.
+ * Output is one sanitized base64 PNG, always LOCAL UNTRUSTED.
+ */
+export async function runPrivateProviderImageGen(
+  input: ProviderImageGenInput
+): Promise<ProviderImageGenResult> {
+  if (!isDesktopRuntime()) return webRunPrivateProviderImageGen(input);
+  try {
+    return await invokeDesktop<ProviderImageGenResult>("run_private_provider_image_gen", { input });
+  } catch {
+    return {
+      ok: false,
+      error: {
+        code: "ipc_failed",
+        message: "The image generation bridge could not return a sanitized result."
+      }
+    };
+  }
+}
+
+// Single-flight live-token sink. The Rust bridge runs at most one chat request
+// at a time and the UI disables send while running, so one active listener is
+// sufficient. ponytail: single-flight → one global listener, not a registry.
+let chatStreamDeltaListener: ((text: string) => void) | null = null;
+
+/** Subscribe to live response tokens for the active chat request (or clear with null). */
+export function setChatStreamDeltaListener(listener: ((text: string) => void) | null): void {
+  chatStreamDeltaListener = listener;
+}
+
+function buildStreamReport(
+  event: Extract<ChatStreamEvent, { type: "final" | "error" }>,
+  response: string
+): ProviderChatSandboxReport {
+  return {
+    ok: event.type === "final" ? event.ok : false,
+    attempted: event.attempted,
+    configured: event.configured,
+    provider_kind: event.provider_kind,
+    status: event.status,
+    input_length: event.input_length,
+    duration_ms: event.duration_ms,
+    response: response.length ? response : null,
+    response_truncated: event.type === "final" ? event.response_truncated : false,
+    untrusted_output: true,
+    error: event.type === "error" ? event.error : null
+  };
+}
+
+/**
+ * Stream one bounded request over a Tauri channel, forwarding live tokens to the
+ * active delta listener and resolving with the aggregated sanitized result.
+ * Rust guarantees exactly one terminal (final/error) event per request.
+ */
+async function streamPrivateProviderChatSandbox(
+  input: ProviderChatSandboxInput
+): Promise<ProviderChatSandboxResult> {
+  const { invoke, Channel } = await import("@tauri-apps/api/core");
+  const channel = new Channel<ChatStreamEvent>();
+  let response = "";
+  let settled = false;
+  let resolveResult!: (result: ProviderChatSandboxResult) => void;
+  const result = new Promise<ProviderChatSandboxResult>((resolve) => {
+    resolveResult = resolve;
+  });
+  channel.onmessage = (event) => {
+    if (settled) return;
+    if (event.type === "delta") {
+      response += event.text;
+      chatStreamDeltaListener?.(event.text);
+      return;
+    }
+    settled = true;
+    resolveResult({ ok: true, data: buildStreamReport(event, response) });
+  };
+  try {
+    await invoke("run_private_provider_chat_sandbox_stream", { input, onEvent: channel });
+  } catch (error) {
+    if (!settled) {
+      settled = true;
+      const message = error instanceof Error ? error.message : String(error);
+      resolveResult({ ok: false, error: { code: "ipc_failed", message } });
+    }
+  }
+  return result;
+}
+
+/**
  * Run one approval-gated, bounded, user-only provider request (desktop only).
- * Rust accepts no path, argv, tools, file content, or persistence option.
+ * Rust accepts no path, argv, tools, file content, or persistence option. In the
+ * desktop shell this streams live tokens; the resolved result is identical in
+ * shape to the single-shot command.
  */
 export async function runPrivateProviderChatSandbox(
   input: ProviderChatSandboxInput
 ): Promise<ProviderChatSandboxResult> {
   if (!isDesktopRuntime()) return webRunPrivateProviderChatSandbox(input);
   try {
-    return await invokeDesktop<ProviderChatSandboxResult>("run_private_provider_chat_sandbox", { input });
+    return await streamPrivateProviderChatSandbox(input);
   } catch {
     return {
       ok: false,

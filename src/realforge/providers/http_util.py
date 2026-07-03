@@ -163,6 +163,63 @@ def post_json(
     return data
 
 
+def get_bytes(
+    url: str,
+    *,
+    timeout: float = 120.0,
+    extra_headers: dict[str, str] | None = None,
+    opener: Callable[..., Any] | None = None,
+    max_bytes: int = 2 * 1024 * 1024,
+) -> bytes:
+    """GET raw bytes with the same bounded, redacted error mapping as ``post_json``."""
+    request = urllib.request.Request(url, headers=dict(extra_headers or {}), method="GET")
+    open_request = opener or urllib.request.urlopen
+    try:
+        with open_request(request, timeout=timeout) as response:
+            raw_bytes = response.read(max_bytes + 1)
+        if len(raw_bytes) > max_bytes:
+            raise HTTPProviderError(
+                "response_too_large",
+                "Local provider response exceeded the allowed size.",
+            )
+    except urllib.error.HTTPError as err:
+        raise HTTPProviderError("http_error", f"Local provider returned HTTP {err.code}.") from err
+    except (TimeoutError, socket.timeout) as err:
+        raise HTTPProviderError("timeout", "Local provider request timed out.") from err
+    except urllib.error.URLError as err:
+        if isinstance(err.reason, (TimeoutError, socket.timeout)):
+            raise HTTPProviderError("timeout", "Local provider request timed out.") from err
+        raise HTTPProviderError("connection_failed", "Could not connect to the local provider.") from err
+    except OSError as err:
+        raise HTTPProviderError("connection_failed", "Could not connect to the local provider.") from err
+    return raw_bytes
+
+
+def get_json(
+    url: str,
+    *,
+    timeout: float = 120.0,
+    extra_headers: dict[str, str] | None = None,
+    opener: Callable[..., Any] | None = None,
+    max_response_bytes: int = 2 * 1024 * 1024,
+) -> dict:
+    """GET and parse one JSON object (bounded, redacted errors)."""
+    raw_bytes = get_bytes(
+        url,
+        timeout=timeout,
+        extra_headers=extra_headers,
+        opener=opener,
+        max_bytes=max_response_bytes,
+    )
+    try:
+        data = json.loads(raw_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise HTTPProviderError("invalid_json", "Local provider returned invalid JSON.") from err
+    if not isinstance(data, dict):
+        raise HTTPProviderError("invalid_json", "Local provider returned invalid JSON.")
+    return data
+
+
 def extract_json_object(text: str) -> dict:
     stripped = text.strip()
     if stripped.startswith("{") and stripped.endswith("}"):

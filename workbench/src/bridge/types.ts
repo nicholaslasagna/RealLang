@@ -380,3 +380,68 @@ export type ProviderChatSandboxResult =
 export type ProviderChatSandboxCancelResult =
   | { ok: true; status: "cancellation_requested" | "idle" }
   | { ok: false; status: "unavailable"; error: BridgeError };
+
+/** The complete frontend-controlled input for one image generation request. */
+export interface ProviderImageGenInput {
+  prompt: string;
+  approvalAcknowledged: boolean;
+}
+
+export interface ProviderImageError {
+  code: string;
+  message: string;
+}
+
+/** Sanitized image result. Prompt, model, key, and workflow are absent. */
+export interface ProviderImageReport {
+  ok: boolean;
+  attempted: boolean;
+  configured: boolean;
+  status: "pass" | "fail" | "not_configured" | "rejected";
+  input_length: number;
+  duration_ms: number;
+  image_base64: string | null;
+  mime: "image/png" | null;
+  image_bytes: number;
+  untrusted_output: true;
+  error: ProviderImageError | null;
+}
+
+export type ProviderImageGenResult =
+  | { ok: true; data: ProviderImageReport }
+  | { ok: false; error: BridgeError };
+
+type ChatSandboxStatus = "pass" | "fail" | "not_configured" | "rejected";
+
+/**
+ * One sanitized streaming event forwarded from the Rust bridge over a Tauri
+ * channel. Fields mirror {@link ProviderChatSandboxReport}; the response text is
+ * accumulated client-side from `delta` events. Exactly one terminal event
+ * (`final` or `error`) always arrives.
+ */
+export type ChatStreamEvent =
+  | { type: "delta"; text: string }
+  | {
+      type: "final";
+      ok: boolean;
+      attempted: boolean;
+      configured: boolean;
+      provider_kind: string | null;
+      status: ChatSandboxStatus;
+      input_length: number;
+      duration_ms: number;
+      response_truncated: boolean;
+      untrusted_output: boolean;
+    }
+  | {
+      type: "error";
+      ok: boolean;
+      attempted: boolean;
+      configured: boolean;
+      provider_kind: string | null;
+      status: ChatSandboxStatus;
+      input_length: number;
+      duration_ms: number;
+      untrusted_output: boolean;
+      error: ProviderChatSandboxError;
+    };

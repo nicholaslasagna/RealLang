@@ -45,6 +45,8 @@ interface WorkbenchChatTurnProps {
   prompt: string;
   result: ProviderChatSandboxResult | null;
   running: boolean;
+  /** Live response tokens accumulated while the request streams (desktop). */
+  streamingText?: string;
   /** True when recent visible turns were composed into this request's prompt. */
   contextIncluded?: boolean;
   /** Open Settings → Provider / Local Model (shown only on a not-configured result). */
@@ -57,7 +59,8 @@ interface WorkbenchChatTurnProps {
  * provider). Nothing here is persisted, added to the approval audit, or kept as
  * hidden transcript memory. Output is always shown as LOCAL UNTRUSTED.
  */
-export function WorkbenchChatTurn({ prompt, result, running, contextIncluded, onConfigureProvider }: WorkbenchChatTurnProps) {
+export function WorkbenchChatTurn({ prompt, result, running, streamingText, contextIncluded, onConfigureProvider }: WorkbenchChatTurnProps) {
+  const liveText = streamingText ? clampCharacters(streamingText, MAX_RESPONSE_CHARS) : "";
   const report = result?.ok ? result.data : null;
   const bridgeError = result && !result.ok ? result.error : null;
   const response = report?.response ? clampCharacters(report.response, MAX_RESPONSE_CHARS) : null;
@@ -90,17 +93,28 @@ export function WorkbenchChatTurn({ prompt, result, running, contextIncluded, on
           </div>
 
           {running ? (
-            <div className="chat-turn__pending" role="status" data-testid="chat-turn-loading">
-              <span className="chat-typing" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </span>
-              <span className="chat-turn__pending-text">
-                Local model is responding…
-                <small>One bounded request · it times out automatically.</small>
-              </span>
-            </div>
+            liveText ? (
+              <pre
+                className="chat-turn__response chat-turn__response--streaming"
+                aria-label="Untrusted local model response, streaming"
+                data-testid="chat-turn-streaming"
+              >
+                {liveText}
+                <span className="chat-stream-cursor" aria-hidden="true" />
+              </pre>
+            ) : (
+              <div className="chat-turn__pending" role="status" data-testid="chat-turn-loading">
+                <span className="chat-typing" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                <span className="chat-turn__pending-text">
+                  Local model is responding…
+                  <small>One bounded request · it times out automatically.</small>
+                </span>
+              </div>
+            )
           ) : bridgeError ? (
             <div className="chat-turn__error" role="alert" data-testid="chat-turn-error">
               <Icon name="triangle-alert" />
