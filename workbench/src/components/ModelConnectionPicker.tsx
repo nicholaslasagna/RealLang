@@ -23,7 +23,10 @@ function profileTone(profile: ModelProviderProfile, status: ProviderStatus | nul
 
 function profileStatus(profile: ModelProviderProfile, status: ProviderStatus | null, desktop: boolean): string {
   if (profile.id === "mock") return "Preview only";
-  if (profile.id === "private-local-image") return "Future image workflows";
+  if (profile.id === "private-local-image") {
+    if (!desktop) return "Desktop app";
+    return status?.image_provider_configured ? "Ready" : "Set up in file";
+  }
   if (!desktop) return "Desktop app required";
   if (status?.configured) return "Configured";
   return "Needs setup";
@@ -34,7 +37,7 @@ function profileHint(profile: ModelProviderProfile, status: ProviderStatus | nul
     return "Deterministic preview runtime. It never contacts a model.";
   }
   if (profile.id === "private-local-image") {
-    return "Image metadata can be detected; generation remains disabled.";
+    return "ComfyUI or any OpenAI-compatible image server. Configure it in your private file, then generate on the Image screen.";
   }
   if (status?.configured) {
     return "Uses your configured local provider. Exact model identity stays private.";
@@ -68,9 +71,10 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
       'trust = "local_untrusted"',
       "",
       "[image_provider]",
-      'kind = "local_image_provider"',
+      "# ComfyUI (recommended). Or kind = \"local_image_provider\" for an OpenAI-compatible image server.",
+      'kind = "comfyui"',
       `base_url = "${imageEndpoint}"`,
-      "execution_enabled = false"
+      'workflow_path = "/path/to/workflow_api.json"  # export from ComfyUI (Save API Format); put %prompt% in a text node'
     ].join("\n");
 
     if (!navigator.clipboard?.writeText) {
@@ -130,7 +134,7 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
       </div>
 
       <p className="model-picker__note">
-        Selection is session-local UI state. Only <b>Private Local Model</b> can send chat requests today, and every send still requires approval.
+        Selection is session-local UI state. <b>Private Local Model</b> powers chat; image generation runs on the Image screen from your configured backend. Every send still requires approval.
       </p>
 
       <details className="model-setup" data-testid="provider-setup-guide">
@@ -177,7 +181,7 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
               <span>Copy private config template</span>
             </button>
             <small>
-              Template only. Workbench does not write <code>~/.realforge.local.toml</code>, store secrets, or enable image generation.
+              Template only. Workbench never writes <code>~/.realforge.local.toml</code> or stores secrets.
             </small>
           </div>
         </div>

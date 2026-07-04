@@ -3,6 +3,7 @@ import { useWorkbenchStore } from "../../state/workbench-store";
 import type { WorkbenchScreen } from "../../state/types";
 import { Badge, Button, Icon, SectionHeading } from "../../components/primitives";
 import { ImageGenerator } from "./ImageGenerator";
+import { CreativeBriefPanel } from "./CreativeBriefPanel";
 
 const STUDIO_TABS: WorkbenchScreen[] = ["creative", "image", "vision", "engine", "assets"];
 
@@ -43,6 +44,8 @@ export function StudioScreen({ screen }: StudioScreenProps) {
       <SectionHeading eyebrow={content.eyebrow} title={content.title} description={content.description} />
       {screen === "image" ? (
         <ImageGenerator />
+      ) : screen === "creative" ? (
+        <CreativeBriefPanel />
       ) : (
       <>
       <div className={`workflow-notice workflow-notice--${content.accent}`}>

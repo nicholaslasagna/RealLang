@@ -1,9 +1,9 @@
 {
   "creative": {
     "presentation": {
-      "eyebrow": "CREATIVE PLANNING",
+      "eyebrow": "CREATIVE STUDIO",
       "title": "Turn direction into structured briefs.",
-      "description": "Game, map, and asset planning stays explicit, reviewable, and untrusted.",
+      "description": "Your local model shapes a direction into a concept, mood, visual prompt, variants, and production notes. Approve each send; output stays local and untrusted until you review it.",
       "accent": "violet",
       "example": ["Create a horror map brief", "map", "Define traversal, encounter pacing, landmark language, lighting, and performance constraints before production.", "/creative map", "Preview dry-run brief"],
       "items": [

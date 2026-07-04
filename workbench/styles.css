@@ -8420,3 +8420,175 @@ textarea {
   color: var(--text-3, #86838b);
   font-size: 12px;
 }
+
+/* Creative brief panel — real brief generation via the local chat model. */
+.creative-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+}
+
+.creative-brief__notice,
+.creative-brief__pending {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.creative-brief__pending {
+  align-items: center;
+}
+
+.creative-brief__error {
+  border-color: rgba(255, 122, 23, 0.28);
+  background: rgba(255, 122, 23, 0.045);
+}
+
+.creative-brief__notice .icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+.creative-brief__notice span,
+.creative-brief__pending span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.creative-brief__notice b {
+  color: #fff;
+  font-size: 14px;
+}
+
+.creative-brief__notice small,
+.creative-brief__pending small {
+  color: var(--sx-muted, #a7a7ad);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.creative-brief__notice code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.creative-brief__notice .button {
+  flex: none;
+  margin-left: auto;
+}
+
+.creative-brief__composer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.creative-brief__prompt {
+  width: 100%;
+  min-height: 104px;
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.creative-brief__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.creative-brief__approve {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sx-muted, #a7a7ad);
+  font-size: 13px;
+}
+
+.creative-brief__approve input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--red, #e32636);
+}
+
+.creative-brief__count {
+  margin-left: auto;
+  color: var(--text-3, #86838b);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.creative-brief__result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.creative-brief__result-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.creative-brief__meta {
+  color: var(--sx-muted, #a7a7ad);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.creative-brief__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.creative-brief__copy:hover {
+  border-color: #fff;
+}
+
+.creative-brief__copy .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.creative-brief__output {
+  margin: 0;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: #101114;
+  color: var(--x-body, #dadbdf);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.creative-brief__output--live {
+  border-color: rgba(255, 255, 255, 0.18);
+}
