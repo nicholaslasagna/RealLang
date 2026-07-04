@@ -99,5 +99,6 @@ export interface WorkbenchState {
   approvalAuditHydrated: boolean;
   approvalAuditStorageStatus: ApprovalAuditStorageStatus;
   approvalAuditStorageWarning: string | null;
+  selectedModelProfileId: string;
   privateLocalModel: PrivateLocalModelSession;
 }

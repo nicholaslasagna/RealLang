@@ -8,7 +8,7 @@ afterEach(() => cleanup());
 
 describe("RealForge brand mark", () => {
   it("renders the symbol mark without replacing accessible RealForge text", () => {
-    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false });
+    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false, selectedModelProfileId: "private-local" });
     render(<Topbar />);
 
     const mark = screen.getByTestId("brand-mark");
@@ -18,12 +18,12 @@ describe("RealForge brand mark", () => {
     expect(screen.getByText("AI ENGINEERING WORKBENCH")).toBeInTheDocument();
   });
 
-  it("labels mock as the preview runtime, not local chat", () => {
-    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false });
+  it("shows a simple model connection picker in the topbar", () => {
+    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false, selectedModelProfileId: "private-local" });
     render(<Topbar />);
 
-    expect(screen.getByText("Preview runtime")).toBeInTheDocument();
-    expect(screen.getByText(/chat uses local provider/i)).toBeInTheDocument();
-    expect(screen.queryByText("deterministic")).not.toBeInTheDocument();
+    expect(screen.getByText("Model")).toBeInTheDocument();
+    expect(screen.getAllByText("Private Local Model").length).toBeGreaterThan(0);
+    expect(screen.getByRole("combobox", { name: /model connection/i })).toBeInTheDocument();
   });
 });

@@ -75,7 +75,9 @@ generic **Private Local Model** OpenAI-compatible profile. Copy
 `.realforge.toml.example` to gitignored `~/.realforge.local.toml` for local use. The
 public repo never stores model identity, weights, API keys, or private prompts.
 Desktop IPC reads sanitized home-config metadata only (no secrets). Workbench UI
-session fields remain supplementary — no browser endpoint probes. Output
+session fields remain supplementary — no browser endpoint probes. The Settings
+provider area includes a session-local model connection picker, but only the
+generic **Private Local Model** profile can send approval-gated chat today. Output
 remains **LOCAL UNTRUSTED**. See [docs/private-local-provider.md](docs/private-local-provider.md).
 
 **0.20** adds threat-modeled, desktop-only persistence for sanitized approval
@@ -137,6 +139,17 @@ remain inspectable. This is layout/information hierarchy only: no IPC, provider
 call, shell, write bridge, workspace context, memory, persistence, image
 generation, or autonomous execution authority is added.
 
+**0.50** is a no-clutter visual-system pass. It flattens heavy glow/card treatment,
+uses calmer outline pills, keeps Settings advanced categories behind disclosure,
+and makes Chat, Home, and Provider surfaces feel more native and spacious. It does
+not add IPC, provider authority, workspace context, tools, writes, shell access,
+memory, persistence, or image generation.
+
+**0.51** aligns the full Workbench surface with the attached design brief:
+near-black canvas, regular-weight display typography, 8px hairline cards, white
+outline pills as the primary interactive vocabulary, sparse accent color, and no
+shadow-based elevation. It is CSS/UX polish only and adds no behavior or authority.
+
 ### Versioning
 
 Two versions are tracked and never conflated:
@@ -179,11 +192,14 @@ Historical milestones:
 - **0.31** Conversation flow polish (greeting → describe → preview → approve → result → reference; gated illustrative evidence, secondary audit, clearer result affordance; no new authority, IPC, or execution power)
 - **0.32** Main composer can use the existing private chat sandbox (explicit Ask-local mode, desktop-only, per-send approval, LOCAL UNTRUSTED single-turn output; reuses the existing IPC; no workspace/files/tools/memory/persistence, no new provider authority)
 - **0.36** Assistant-first Workbench declutter (prompt-first empty route, action/inspector/safety details on demand; no new authority)
-- **0.38** Real local chat interaction (Enter sends / Shift+Enter newline; session-only visible multi-turn thread with single-turn bounded calls — prior turns never sent; informational Local model profile selector; Safe preview and Ask local model fully separated; reuses existing IPC, no new authority/persistence/audit)
+- **0.38** Real local chat interaction (Enter sends / Shift+Enter newline; session-only visible multi-turn thread with single-turn bounded calls — prior turns never sent; informational Local model profile selector; reuses existing IPC, no new authority/persistence/audit)
 - **0.39** Local chat usability polish (auto-scroll to newest turn, composer focus retention, pending typing state, sticky Clear chat, long-message wrapping)
 - **0.40** Opt-in bounded visible chat context (default off; composes the last ≤4 visible turns into one capped ≤2000-char prompt on the frontend, disclosed before send and badged in the thread; visible turn text only — no workspace/files/tools/provider/config/secrets; reuses existing IPC, no persistence/audit/authority change)
 - **0.41** Visible chat context preview (inspectable "Preview context" before send showing exact included turns + turn/char counts + cap disclosure; preview shares the compose code path so it matches what is sent; visible text only — no provider/config/secrets; no authority/IPC change)
 - **0.42** Clear Chat vs. Safe-preview split (conversational text in Safe preview no longer becomes a fake "Repair diagnostic dry-run" — it shows a calm "looks like chat → switch to Chat" nudge and makes no model call; mode-specific labels/placeholders/hints; Chat stays approval-gated, Safe preview never calls the model)
+- **0.49** Chat-first simplification (desktop Workbench opens to Chat; Safe Preview is a secondary **Preview action** in the same composer; Chat options are collapsed; sidebar is off-canvas in Chat; provider setup copies a private config template without reading model folders or writing secrets)
+- **0.50** No-clutter fluidity pass (flatter native surface, fewer visible boxes, Settings advanced group behind disclosure, calmer outline controls; no behavior or authority change)
+- **0.51** Design-brief alignment (near-black canvas, regular display type, white outline pills, 8px hairline cards, no shadows; no behavior or authority change)
 
 ## Toolchain and dependency security
 

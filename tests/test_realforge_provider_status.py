@@ -88,7 +88,7 @@ def test_provider_status_valid_private_config_redacted(isolated_home: Path, tmp_
     assert report.image_provider_configured is True
     assert report.image_provider_kind == "local_image_provider"
     assert report.image_endpoint_host == "http://localhost:8188"
-    assert report.image_provider_execution_enabled is False
+    assert report.image_provider_execution_enabled is True
 
     human = format_provider_status(report)
     payload = json.loads(format_provider_status_json(report))

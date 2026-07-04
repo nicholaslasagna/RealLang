@@ -35,7 +35,8 @@ function resetStore() {
     approvalAuditEntries: [],
     approvalAuditHydrated: false,
     approvalAuditStorageStatus: "idle",
-    approvalAuditStorageWarning: null
+    approvalAuditStorageWarning: null,
+    selectedModelProfileId: "private-local"
   });
 }
 
@@ -66,7 +67,7 @@ const configuredStatus = {
   errors: []
 };
 
-const safePreviewInput = () => screen.getByLabelText("Reviewed context for this action");
+const safePreviewInput = () => screen.getByLabelText("Local model request");
 const composer = () => screen.getByTestId("safe-command-composer");
 const openChatOptions = () => {
   const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
@@ -87,23 +88,24 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("0.42 chat vs safe-preview clarity", () => {
-  it("clearly offers a Chat mode (sandbox available)", () => {
+  it("opens as a focused Chat surface in desktop mode", () => {
     render(<WorkbenchScreen />);
     const chat = screen.getByTestId("mode-ask-local");
-    expect(chat).toBeEnabled();
     expect(chat).toHaveTextContent(/Chat/);
+    expect(useWorkbenchStore.getState().workbenchMode).toBe("chat");
+    expect(screen.getByTestId("workbench-chat-thread").closest(".workbench-layout")).toHaveClass("workbench-layout--chat");
+    expect(screen.getByTestId("mode-safe-preview")).toHaveTextContent(/Preview action/i);
   });
 
   it("Chat mode starts with collapsed options and no Commands button", () => {
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
 
     expect(useWorkbenchStore.getState().workbenchMode).toBe("chat");
     expect(screen.getByTestId("workbench-chat-thread").closest(".workbench-layout")).toHaveClass("workbench-layout--chat");
     const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
     expect(options.open).toBe(false);
     expect(screen.queryByRole("button", { name: "Commands", exact: true })).toBeNull();
-    expect(screen.getByLabelText("Local model request")).toHaveAttribute("placeholder", "Ask your local model…");
+    expect(screen.getByLabelText("Local model request")).toHaveAttribute("placeholder", "Ask your local model, or preview an action…");
     expect(screen.getByTestId("composer-ask-approval")).toBeVisible();
     expect(screen.getByTestId("composer-profile")).not.toBeVisible();
 
@@ -111,6 +113,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
     expect(options.open).toBe(true);
     expect(screen.getByTestId("composer-context-toggle")).toBeVisible();
 
+    fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "Preview this safely" } });
     fireEvent.click(screen.getByTestId("mode-safe-preview"));
     expect(useWorkbenchStore.getState().workbenchMode).toBe("default");
   });
@@ -118,7 +121,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
   it("does NOT turn conversational text into a repair dry-run in Safe preview", () => {
     render(<WorkbenchScreen />);
     fireEvent.change(safePreviewInput(), { target: { value: "My favorite test word is nebula" } });
-    fireEvent.submit(composer());
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
     // Text is staged, but no fake repair preview / no model call.
     expect(useWorkbenchStore.getState().stagedTask).toBe("My favorite test word is nebula");
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
@@ -131,7 +134,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
   it("the nudge switches to Chat without calling the model", () => {
     render(<WorkbenchScreen />);
     fireEvent.change(safePreviewInput(), { target: { value: "tell me a joke" } });
-    fireEvent.submit(composer());
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
     fireEvent.click(screen.getByTestId("chat-nudge-switch"));
     expect(screen.getByTestId("workbench-chat-thread")).toBeInTheDocument();
     expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
@@ -142,6 +145,9 @@ describe("0.42 chat vs safe-preview clarity", () => {
 
   it("Safe preview still stages an action preview for an explicit suggestion", () => {
     render(<WorkbenchScreen />);
+    fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "Open safe preview" } });
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
+    fireEvent.click(within(screen.getByTestId("composer-intents-wrap")).getByText("Suggestions"));
     fireEvent.click(screen.getByRole("button", { name: "Load capabilities report" }));
     expect(screen.getByTestId("action-preview-card")).toBeInTheDocument();
     expect(screen.queryByTestId("chat-nudge")).toBeNull();
@@ -150,9 +156,6 @@ describe("0.42 chat vs safe-preview clarity", () => {
 
   it("Ask local model does not show an action preview; the context toggle is chat-only", () => {
     render(<WorkbenchScreen />);
-    // Context toggle is not present in Safe preview.
-    expect(screen.queryByTestId("composer-context-toggle")).toBeNull();
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
     expect(screen.getByTestId("workbench-chat-thread")).toBeInTheDocument();
     openChatOptions();
@@ -163,11 +166,11 @@ describe("0.42 chat vs safe-preview clarity", () => {
     render(<WorkbenchScreen />);
     // Safe preview never calls the model.
     fireEvent.change(safePreviewInput(), { target: { value: "stage something" } });
-    fireEvent.submit(composer());
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
 
     // Chat: requires approval.
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
+    fireEvent.click(screen.getByTestId("mode-ask-local-button"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "hello" } });
     const send = screen.getByRole("button", { name: "Ask local model", exact: true });
     expect(send).toBeDisabled();
@@ -186,7 +189,7 @@ describe("0.42 chat vs safe-preview clarity", () => {
     mocks.isDesktopRuntime.mockReturnValue(false);
     mocks.checkBridgeHealth.mockResolvedValue({ healthy: false, resolution: { bridgeMode: "metadata-only", repoRoot: null } });
     render(<WorkbenchScreen />);
-    expect(screen.getByTestId("mode-ask-local")).toBeDisabled();
+    expect(screen.queryByTestId("mode-ask-local")).toBeNull();
     expect(screen.getByTestId("composer-web-note")).toHaveTextContent(/desktop app only/i);
   });
 });

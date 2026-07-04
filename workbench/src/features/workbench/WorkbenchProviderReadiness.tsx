@@ -1,5 +1,7 @@
 import type { ProviderChatSandboxResult, ProviderStatus } from "../../bridge";
 import { Button, Icon } from "../../components/primitives";
+import { getModelProviderProfile, MODEL_PROVIDER_PROFILES } from "../../providers";
+import { useWorkbenchStore } from "../../state/workbench-store";
 
 type ChatReadinessTone = "ready" | "configured" | "blocked" | "neutral";
 
@@ -111,7 +113,16 @@ export function WorkbenchProviderReadiness({
   lastResult,
   onOpenSettings
 }: WorkbenchProviderReadinessProps) {
-  const view = resultReadiness(lastResult) ?? statusReadiness(desktop, loading, status);
+  const selectedModelProfileId = useWorkbenchStore((s) => s.selectedModelProfileId);
+  const selectedProfile = getModelProviderProfile(selectedModelProfileId) ?? MODEL_PROVIDER_PROFILES[0];
+  const view =
+    selectedProfile.id === "private-local"
+      ? resultReadiness(lastResult) ?? statusReadiness(desktop, loading, status)
+      : {
+          title: `${selectedProfile.displayName} selected`,
+          detail: "This profile is preview-only in Chat. Choose Private Local Model to send an approval-gated local request.",
+          tone: "neutral" as const
+        };
 
   return (
     <section
@@ -125,7 +136,7 @@ export function WorkbenchProviderReadiness({
       <span className="chat-provider-readiness__copy">
         <b>{view.title}</b>
         <small>{view.detail}</small>
-        <small>Preview runtime is mock; Chat uses the configured local provider.</small>
+        <small>Selected connection: {selectedProfile.displayName}. Output remains local_untrusted when a provider is used.</small>
       </span>
       <Button
         label="Local model settings"

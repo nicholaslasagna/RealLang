@@ -59,6 +59,13 @@ beforeEach(() => {
 
 afterEach(() => cleanup());
 
+function switchDesktopChatToPreview(text = "Preview this safely") {
+  const input = screen.queryByLabelText("Local model request");
+  if (!input) return;
+  fireEvent.change(input, { target: { value: text } });
+  fireEvent.click(screen.getByTestId("mode-safe-preview"));
+}
+
 describe("safe command composer UI", () => {
   it("keeps the empty Workbench execution-free before intent is staged", async () => {
     resetStore("load-capabilities");
@@ -92,6 +99,7 @@ describe("safe command composer UI", () => {
     });
     resetStore("load-capabilities");
     render(<WorkbenchScreen />);
+    switchDesktopChatToPreview();
 
     const load = await screen.findByRole("button", { name: /^load now$/i });
     fireEvent.click(load);
@@ -122,6 +130,7 @@ describe("safe command composer UI", () => {
     });
     resetStore("check-reallang-file");
     render(<WorkbenchScreen />);
+    switchDesktopChatToPreview();
     expect(await screen.findByRole("button", { name: /desktop approval unavailable/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /open workspace setup/i })).toBeEnabled();
   });
@@ -153,6 +162,7 @@ describe("safe command composer UI", () => {
     });
     resetStore("check-reallang-file");
     render(<WorkbenchScreen />);
+    switchDesktopChatToPreview();
 
     fireEvent.click(await screen.findByRole("button", { name: /review approval/i }));
     expect(screen.getByTestId("approval-panel")).toBeInTheDocument();
@@ -193,5 +203,34 @@ describe("safe command composer UI", () => {
     expect(await screen.findByTestId("command-action-detail")).toBeInTheDocument();
     expect(screen.getAllByText("STAFF ONLY").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /compose preview/i })).toBeInTheDocument();
+  });
+
+  it("opens the command dropdown when slash text is typed in the composer", async () => {
+    mocks.isDesktopRuntime.mockReturnValue(true);
+    resetStore();
+    render(<WorkbenchScreen />);
+
+    fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "/command" } });
+
+    expect(await screen.findByTestId("composer-slash-menu")).toBeInTheDocument();
+    expect(useWorkbenchStore.getState().paletteOpen).toBe(false);
+    expect(screen.getByText("/ask")).toBeInTheDocument();
+    expect(screen.getByText("/plan")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /all commands/i })).toBeInTheDocument();
+  });
+
+  it("filters the command dropdown from slash prefixes without sending chat", async () => {
+    mocks.isDesktopRuntime.mockReturnValue(true);
+    resetStore();
+    render(<WorkbenchScreen />);
+
+    const input = screen.getByLabelText("Local model request");
+    fireEvent.change(input, { target: { value: "/image" } });
+
+    expect(await screen.findByTestId("composer-slash-menu")).toBeInTheDocument();
+    expect(screen.getByText("/image prompt")).toBeInTheDocument();
+    expect(screen.getByText("/image job")).toBeInTheDocument();
+    expect(screen.queryByText("/ask")).toBeNull();
+    expect(mocks.runApprovedDryRunAction).not.toHaveBeenCalled();
   });
 });

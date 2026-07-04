@@ -15,6 +15,7 @@ import {
 } from "../bridge";
 import { getActionDefinition, getActionForSlashCommand, type CommandActionId } from "../composer/action-model";
 import { cliReportSources, getWorkbenchData, reportImport } from "../data/workbench-data";
+import { getModelProviderProfile } from "../providers";
 import type { ImportPreview, WorkbenchLayoutMode, WorkbenchScreen, WorkbenchState } from "./types";
 
 type WorkbenchActions = {
@@ -43,6 +44,7 @@ type WorkbenchActions = {
   initializeApprovalAuditHistory: () => Promise<void>;
   clearApprovalAuditHistory: () => Promise<boolean>;
   recordApprovalAuditEntry: (entry: ApprovalAuditEntry) => void;
+  selectModelProfile: (profileId: string) => void;
   setPrivateLocalEndpoint: (endpoint: string) => void;
   setPrivateLocalModelLabel: (modelLabel: string) => void;
   markPrivateLocalConfigured: () => void;
@@ -72,6 +74,7 @@ const initialState: WorkbenchState = {
   approvalAuditHydrated: false,
   approvalAuditStorageStatus: "idle",
   approvalAuditStorageWarning: null,
+  selectedModelProfileId: "private-local",
   privateLocalModel: {
     endpoint: "http://localhost:8000/v1",
     modelLabel: "",
@@ -409,6 +412,23 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
     });
   },
 
+  selectModelProfile: (profileId) => {
+    const profile = getModelProviderProfile(profileId);
+    if (!profile) {
+      get().showToast("Unknown model connection", "warn");
+      return;
+    }
+    set({
+      selectedModelProfileId: profile.id,
+      operationStatus:
+        profile.id === "private-local"
+          ? "Private Local Model selected · approval still required"
+          : `${profile.displayName} selected · preview only`,
+      lastCommand: `model connection · ${profile.displayName}`
+    });
+    get().showToast(`${profile.displayName} selected`);
+  },
+
   setPrivateLocalEndpoint: (endpoint) =>
     set((state) => ({
       privateLocalModel: { ...state.privateLocalModel, endpoint: endpoint.trim() }
@@ -436,7 +456,10 @@ export const useWorkbenchStore = create<WorkbenchState & WorkbenchActions>((set,
 
 export function filterCommands(query: string) {
   const data = getWorkbenchData();
-  const normalized = query.trim().toLowerCase();
+  const raw = query.trim().toLowerCase();
+  const normalized = raw === "/" || raw === "/command" || raw === "/commands" || raw === "command" || raw === "commands"
+    ? ""
+    : raw;
   return data.commands.filter(
     (command) =>
       !normalized ||

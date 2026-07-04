@@ -246,6 +246,9 @@ async function run() {
 
       await page.getByRole("button", { name: "Chat", exact: true }).click();
       await page.waitForSelector('[data-testid="safe-command-composer"]');
+      await page.getByRole("textbox", { name: "Local model request", exact: true }).fill("Check the fixed hello example safely");
+      await page.getByTestId("mode-safe-preview").click();
+      await page.waitForSelector('[data-testid="composer-intents-wrap"]');
       await page.locator("summary", { hasText: "Suggestions" }).click();
       await page.getByRole("button", { name: "Check the fixed hello.real example", exact: true }).click();
       await page.getByRole("button", { name: "Review approval", exact: true }).click();

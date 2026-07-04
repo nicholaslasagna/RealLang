@@ -61,8 +61,10 @@ See the [provider smoke threat model](provider-smoke-threat-model.md).
 Settings → **Provider / Local Model** shows **Private Local Model** and
 **Private Local Image Model** cards using only the sanitized fields above,
 including **LOCAL UNTRUSTED** badges and a hint to run `realforge provider status --json`.
-The provider smoke card is a fixed reachability check, not chat or general provider
-execution.
+It also exposes a simple model connection picker for session-local UI selection:
+**Private Local Model** can send approval-gated chat, **Deterministic Mock** is
+preview-only, and image execution remains disabled. The provider smoke card is a
+fixed reachability check, not chat or general provider execution.
 
 Workbench 0.26 adds a separate **Private Chat Sandbox**. It sends one bounded
 user-written text value only after a fresh approval acknowledgement. The runtime
@@ -107,6 +109,14 @@ authority is introduced.
 Workbench 0.35 simplifies the layout: **readiness summary** first, **safe actions**
 (smoke + chat sandbox) visible, **advanced provider details** collapsed by default
 (status grid, image metadata, safety matrix). See [settings.md](settings.md).
+
+Workbench 0.49 adds a simpler **Connect local providers** disclosure to the model
+picker. It clarifies that RealForge connects to a running local provider endpoint;
+it does **not** browse private model folders, inspect weights, or manage runtime
+files. The UI can preview endpoint/model-label fields and copy a starter
+`~/.realforge.local.toml` template for the user to save outside the repo. The
+template workflow is inert: Workbench does not write the file, store secrets, or
+enable image generation.
 
 ## RealForge CLI
 

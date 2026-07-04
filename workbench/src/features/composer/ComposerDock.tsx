@@ -1,9 +1,13 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { ComposedAction, CommandActionId } from "../../composer/action-model";
-import { commandActionDefinitions } from "../../composer/action-model";
+import { commandActionDefinitions, getActionForSlashCommand } from "../../composer/action-model";
 import { isDesktopRuntime } from "../../bridge";
+import {
+  getModelProviderProfile,
+  MODEL_PROVIDER_PROFILES
+} from "../../providers";
 import { Button, Icon } from "../../components/primitives";
-import { useWorkbenchStore } from "../../state/workbench-store";
+import { commandTone, filterCommands, useWorkbenchStore } from "../../state/workbench-store";
 import type { ContextPreview } from "../workbench/chat-context";
 
 const quickActionIds: readonly CommandActionId[] = [
@@ -16,6 +20,13 @@ const quickActionIds: readonly CommandActionId[] = [
   "creative-brief",
   "skill-benchmark"
 ];
+
+function slashPaletteQuery(raw: string): string | null {
+  const firstLine = raw.trimStart().split(/\r?\n/, 1)[0]?.trim() ?? "";
+  if (!firstLine.startsWith("/")) return null;
+  if (firstLine === "/" || /^\/commands?$/.test(firstLine)) return "";
+  return firstLine;
+}
 
 export type ComposerMode = "preview" | "ask-local";
 
@@ -42,21 +53,35 @@ export function ComposerDock({
   const composeActionPreview = useWorkbenchStore((state) => state.composeActionPreview);
   const stageTask = useWorkbenchStore((state) => state.stageTask);
   const showToast = useWorkbenchStore((state) => state.showToast);
+  const selectedModelProfileId = useWorkbenchStore((state) => state.selectedModelProfileId);
+  const selectModelProfile = useWorkbenchStore((state) => state.selectModelProfile);
 
   const desktop = isDesktopRuntime();
   const [approved, setApproved] = useState(false);
   const [includeContext, setIncludeContext] = useState(false);
+  const [slashQuery, setSlashQuery] = useState<string | null>(null);
   const intentsRef = useRef<HTMLDetailsElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const askMode = mode === "ask-local";
+  const selectedModelProfile =
+    getModelProviderProfile(selectedModelProfileId) ??
+    MODEL_PROVIDER_PROFILES[0];
+  const chatProfileReady = selectedModelProfile.id === "private-local";
+  const slashMatches = slashQuery === null ? [] : filterCommands(slashQuery).slice(0, 8);
 
   // A pending approval never carries across a mode switch.
   useEffect(() => setApproved(false), [mode]);
 
-  const sendDisabled = askMode && (!desktop || !approved || chatRunning);
+  const sendDisabled = askMode && (!desktop || !approved || chatRunning || !chatProfileReady);
 
   const sendAskLocal = () => {
     const input = (textareaRef.current?.value ?? "").trim();
+    const query = slashPaletteQuery(input);
+    if (query !== null) {
+      setSlashQuery(query);
+      if (askMode) onModeChange("preview");
+      return;
+    }
     if (!input) {
       showToast("Enter text for the local model sandbox", "warn");
       return;
@@ -71,6 +96,10 @@ export function ComposerDock({
       showToast("Approve the local model request before sending", "warn");
       return;
     }
+    if (!chatProfileReady) {
+      showToast("Select Private Local Model before sending chat", "warn");
+      return;
+    }
     if (chatRunning) return;
     onAskLocalModel?.(input, includeContext);
     setApproved(false);
@@ -83,11 +112,18 @@ export function ComposerDock({
 
   const stagePreview = () => {
     const input = (textareaRef.current?.value ?? "").trim();
+    const query = slashPaletteQuery(input);
+    if (query !== null) {
+      setSlashQuery(query);
+      if (askMode) onModeChange("preview");
+      return;
+    }
     if (!input) {
-      showToast("Add reviewed context for the composed action", "warn");
+      showToast(askMode ? "Describe what you want to preview safely" : "Add reviewed context for the composed action", "warn");
       return;
     }
     stageTask(input);
+    if (askMode) onModeChange("preview");
   };
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -99,6 +135,14 @@ export function ComposerDock({
   // Standard chat keyboard behavior, in Ask-local mode only. Safe preview keeps
   // the default textarea behavior (Enter inserts a newline; never sends/executes).
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    const query = slashPaletteQuery(event.currentTarget.value);
+    if (query !== null && event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      const firstMatch = filterCommands(query)[0];
+      if (firstMatch) selectSlashCommand(firstMatch.command);
+      else setSlashQuery(query);
+      return;
+    }
     if (!askMode) return;
     if (event.key !== "Enter") return;
     if (event.shiftKey) return; // Shift+Enter → newline
@@ -116,44 +160,71 @@ export function ComposerDock({
     if (intentsRef.current) intentsRef.current.open = false;
   };
 
+  const openSlashPalette = (query: string) => {
+    if (askMode) onModeChange("preview");
+    setSlashQuery(query);
+  };
+
+  const onTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const query = slashPaletteQuery(event.currentTarget.value);
+    if (query !== null) {
+      openSlashPalette(query);
+      return;
+    }
+    if (slashQuery !== null) setSlashQuery(null);
+  };
+
+  const selectSlashCommand = (command: string) => {
+    const actionDefinition = getActionForSlashCommand(command);
+    setSlashQuery(null);
+    if (textareaRef.current) textareaRef.current.value = "";
+    if (actionDefinition) {
+      composeActionPreview(actionDefinition.id);
+      onModeChange("preview");
+      return;
+    }
+    openPalette(command);
+  };
+
   return (
     <form
       className={`composer composer--safe ${askMode ? "composer--chat" : ""}`.trim()}
       data-testid="safe-command-composer"
       onSubmit={onSubmit}
     >
-      <div className="composer-mode" role="group" aria-label="Composer mode">
+      <div className="composer-mode composer-mode--single" role="group" aria-label="Composer action">
+        {askMode ? (
+          <span className="composer-mode__state" data-testid="mode-ask-local">
+            <Icon name="cpu" /> Chat
+            <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span>
+          </span>
+        ) : null}
         <button
           type="button"
           data-testid="mode-safe-preview"
           className={!askMode ? "is-active" : ""}
           aria-pressed={!askMode}
-          onClick={() => switchMode("preview")}
+          onClick={() => (askMode ? stagePreview() : switchMode("preview"))}
         >
-          <Icon name="eye" /> Safe preview
+          <Icon name="eye" /> {askMode ? "Preview action" : "Safe preview"}
         </button>
-        <button
-          type="button"
-          data-testid="mode-ask-local"
-          className={`composer-mode__ask ${askMode ? "is-active" : ""}`.trim()}
-          aria-pressed={askMode}
-          disabled={!desktop}
-          title={desktop ? undefined : "Available in the desktop app only"}
-          onClick={() => switchMode("ask-local")}
-        >
-          <Icon name="cpu" /> Chat
-          {desktop ? (
-            <span className="composer-mode__tag composer-mode__tag--quiet">local untrusted</span>
-          ) : (
-            <span className="composer-mode__tag">desktop only</span>
-          )}
-        </button>
+        {!askMode && desktop ? (
+          <button
+            type="button"
+            data-testid="mode-ask-local-button"
+            className="composer-mode__ask"
+            aria-pressed={false}
+            onClick={() => switchMode("ask-local")}
+          >
+            <Icon name="cpu" /> Back to chat
+          </button>
+        ) : null}
       </div>
 
       {!desktop ? (
         <p className="composer-mode__webnote" data-testid="composer-web-note">
           <Icon name="lock-keyhole" /> Local model chat runs in the desktop app only. Web preview never contacts a
-          provider — use Safe preview to compose actions.
+          provider — use Preview action to compose safely.
         </p>
       ) : null}
 
@@ -202,7 +273,8 @@ export function ComposerDock({
           ref={textareaRef}
           rows={4}
           maxLength={2000}
-          placeholder={askMode ? "Ask your local model…" : "Describe an action to preview safely…"}
+          placeholder={askMode ? "Ask your local model, or preview an action…" : "Describe an action to preview safely…"}
+          onChange={onTextChange}
           onKeyDown={onKeyDown}
         />
         {askMode ? (
@@ -241,9 +313,42 @@ export function ComposerDock({
 
       <p className="composer-hint">
         {askMode
-          ? "LOCAL UNTRUSTED · session-only · no files, tools, memory, or workspace context"
+          ? `${selectedModelProfile.displayName} · session-only · no files, tools, memory, or workspace context`
           : "Stages a dry-run preview only · no model chat · no writes"}
       </p>
+
+      {slashQuery !== null ? (
+        <div className="composer-slash-menu" data-testid="composer-slash-menu" role="listbox" aria-label="Slash command suggestions">
+          <header>
+            <span>COMMANDS</span>
+            <button type="button" onClick={() => {
+              openPalette(slashQuery);
+              setSlashQuery(null);
+            }}>
+              All commands <Icon name="command" />
+            </button>
+          </header>
+          {slashMatches.length ? (
+            <div className="composer-slash-menu__list">
+              {slashMatches.map((command) => (
+                <button
+                  key={command.command}
+                  type="button"
+                  role="option"
+                  onClick={() => selectSlashCommand(command.command)}
+                >
+                  <code>{command.command}</code>
+                  <span>{command.description}</span>
+                  <small>{command.domain}</small>
+                  <em className={`slash-safety slash-safety--${commandTone(command)}`}>{command.safety}</em>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p>No matching slash command. Open all commands to browse the registry.</p>
+          )}
+        </div>
+      ) : null}
 
       {askMode ? (
         <details className="composer-chat-options" data-testid="composer-chat-options">
@@ -257,13 +362,26 @@ export function ComposerDock({
           <div className="composer-chat-options__content">
             <div className="composer-profile" data-testid="composer-profile">
               <label htmlFor="local-model-profile">Local model profile</label>
-              <select id="local-model-profile" value="default" disabled aria-describedby="local-model-profile-note">
-                <option value="default">Configured local provider</option>
+              <select
+                id="local-model-profile"
+                value={selectedModelProfile.id}
+                disabled={chatRunning}
+                aria-describedby="local-model-profile-note"
+                onChange={(event) => selectModelProfile(event.currentTarget.value)}
+              >
+                <option value="private-local">Configured local provider</option>
+                <option value="mock">Deterministic Mock</option>
+                <option value="private-local-image" disabled>Private Local Image Model</option>
               </select>
               <small id="local-model-profile-note">
-                Uses your configured default local provider. Profile selection isn&rsquo;t available yet — no model
-                name, endpoint, or key is shown.
+                Uses your configured default local provider when Private Local Model is selected. No model name,
+                endpoint, or key is shown.
               </small>
+              {!chatProfileReady ? (
+                <small className="composer-profile__warning">
+                  Select Private Local Model to send chat; this profile is preview-only here.
+                </small>
+              ) : null}
             </div>
 
             <label className="composer-context-toggle" data-testid="composer-context-toggle">

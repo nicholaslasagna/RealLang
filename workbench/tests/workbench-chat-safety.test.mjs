@@ -103,8 +103,12 @@ test("0.44 focused chat layout hides rail and compacts navigation without adding
   assert.match(app, /data-workbench-mode/);
   assert.match(store, /workbenchMode: "default"/);
   assert.match(styles, /data-workbench-mode="chat"/);
-  assert.match(styles, /--sidebar:\s*64px/);
+  assert.match(styles, /--sidebar:\s*0px/);
   assert.match(styles, /--rail:\s*0px/);
   assert.match(styles, /\.status-rail\s*\{\s*display:\s*none;/);
+  assert.match(styles, /is-native\[data-screen="workbench"\]\[data-workbench-mode="chat"\] \.topbar/);
+  assert.match(styles, /padding-left:\s*126px/);
+  assert.match(styles, /sidebar-open\[data-screen="workbench"\]\[data-workbench-mode="chat"\] \.sidebar/);
+  assert.match(styles, /nav-item span[\s\S]*position:\s*static/);
   assert.match(styles, /composer-chat-options:not\(\[open\]\) \.composer-chat-options__content/);
 });

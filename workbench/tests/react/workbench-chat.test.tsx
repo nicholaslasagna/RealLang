@@ -34,7 +34,8 @@ function resetStore() {
     approvalAuditEntries: [],
     approvalAuditHydrated: false,
     approvalAuditStorageStatus: "idle",
-    approvalAuditStorageWarning: null
+    approvalAuditStorageWarning: null,
+    selectedModelProfileId: "private-local"
   });
 }
 
@@ -81,7 +82,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("0.32 main composer → private chat sandbox", () => {
-  it("defaults to safe-preview mode with the action preview intact", () => {
+  it("defaults to safe-preview mode in web preview with the action preview intact", () => {
     render(<WorkbenchScreen />);
     expect(screen.getByTestId("mode-safe-preview")).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByTestId("action-preview-card")).toBeNull();
@@ -89,15 +90,15 @@ describe("0.32 main composer → private chat sandbox", () => {
     expect(screen.queryByTestId("composer-ask-approval")).toBeNull();
   });
 
-  it("disables Ask-local mode in web mode", () => {
+  it("keeps web mode execution-free", () => {
     render(<WorkbenchScreen />);
-    expect(screen.getByTestId("mode-ask-local")).toBeDisabled();
+    expect(screen.queryByTestId("mode-ask-local")).toBeNull();
+    expect(screen.getByTestId("composer-web-note")).toHaveTextContent(/desktop app only/i);
   });
 
   it("requires explicit approval before the send control is enabled (desktop)", () => {
     enterDesktop();
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     expect(screen.getByTestId("composer-chat-options")).toBeInTheDocument();
     expect(screen.getByTestId("composer-ask-approval")).toBeVisible();
     const send = screen.getByRole("button", { name: "Ask local model", exact: true });
@@ -111,7 +112,6 @@ describe("0.32 main composer → private chat sandbox", () => {
   it("never sends without an explicit approved click (no auto-send while typing)", () => {
     enterDesktop();
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "do not send me" } });
     // Submitting the form without approval must not reach the bridge.
     fireEvent.submit(screen.getByTestId("safe-command-composer"));
@@ -123,7 +123,6 @@ describe("0.32 main composer → private chat sandbox", () => {
     enterDesktop();
     mocks.runPrivateProviderChatSandbox.mockResolvedValue(passReport);
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "summarize this" } });
     approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
@@ -152,7 +151,6 @@ describe("0.32 main composer → private chat sandbox", () => {
       data: { ...passReport.data, response: huge, response_truncated: true }
     });
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "long please" } });
     approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
@@ -170,7 +168,6 @@ describe("0.32 main composer → private chat sandbox", () => {
       error: { code: "timeout", message: "Local provider request timed out." }
     });
     render(<WorkbenchScreen />);
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "slow" } });
     approveLocalRequest();
     fireEvent.click(screen.getByRole("button", { name: "Ask local model", exact: true }));
@@ -181,11 +178,8 @@ describe("0.32 main composer → private chat sandbox", () => {
   it("still stages a safe-preview action when switched back", () => {
     enterDesktop();
     render(<WorkbenchScreen />);
-    // Switch to ask-local then back to preview.
-    fireEvent.click(screen.getByTestId("mode-ask-local"));
+    fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "Fix the overflow" } });
     fireEvent.click(screen.getByTestId("mode-safe-preview"));
-    fireEvent.change(screen.getByLabelText("Reviewed context for this action"), { target: { value: "Fix the overflow" } });
-    fireEvent.submit(screen.getByTestId("safe-command-composer"));
     expect(useWorkbenchStore.getState().stagedTask).toBe("Fix the overflow");
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
   });

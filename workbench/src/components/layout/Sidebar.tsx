@@ -35,7 +35,7 @@ export function Sidebar() {
     <>
       <div className="sidebar-scroll">
         {groups.map((group) =>
-          // ponytail: Advanced (dev/diagnostic) folds away; Create stays open.
+          // Advanced development/diagnostic routes stay out of the default path.
           group === "Advanced" ? (
             <details key={group} className="nav-group nav-group--advanced">
               <summary>{group}</summary>

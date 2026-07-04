@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { PrivateLocalModelPanel } from "../../src/components/PrivateLocalModelPanel";
 import { PRIVATE_LOCAL_IMAGE_MODEL_PROFILE, PRIVATE_LOCAL_MODEL_PROFILE } from "../../src/providers";
 import type { ProviderChatSandboxResult, ProviderStatus } from "../../src/bridge";
+import { useWorkbenchStore } from "../../src/state/workbench-store";
 
 const mocks = vi.hoisted(() => ({
   cancelPrivateProviderChatSandbox: vi.fn(),
@@ -109,6 +110,7 @@ describe("Private local model panel", () => {
       ok: true,
       status: "cancellation_requested"
     });
+    useWorkbenchStore.setState({ selectedModelProfileId: "private-local" });
   });
 
   afterEach(() => {
@@ -133,6 +135,24 @@ describe("Private local model panel", () => {
     expect(screen.getByRole("heading", { name: PRIVATE_LOCAL_MODEL_PROFILE.displayName })).toBeInTheDocument();
     expect(screen.getAllByText(/local untrusted/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/exact identity and secrets never cross/i)).toBeInTheDocument();
+  });
+
+  it("offers a simple session-local model connection picker", async () => {
+    mocks.loadProviderStatus.mockResolvedValue(configuredStatus);
+    render(<PrivateLocalModelPanel />);
+
+    const picker = await screen.findByTestId("model-connection-picker");
+    expect(within(picker).getByRole("heading", { name: /choose model/i })).toBeInTheDocument();
+    expect(within(picker).getByRole("radio", { name: /private local model/i })).toBeChecked();
+    expect(within(picker).getByText(/exact model names, endpoints, keys, and paths stay out/i)).toBeInTheDocument();
+
+    fireEvent.click(within(picker).getByRole("radio", { name: /deterministic mock/i }));
+    expect(useWorkbenchStore.getState().selectedModelProfileId).toBe("mock");
+    expect(within(picker).getByRole("radio", { name: /private local image model/i })).toBeDisabled();
+    expect(within(picker).getByTestId("provider-setup-guide")).toHaveTextContent(/private config/i);
+    expect(within(picker).getByLabelText(/local chat endpoint preview/i)).toBeInTheDocument();
+    expect(within(picker).getByLabelText(/configured model label preview/i)).toBeInTheDocument();
+    expect(picker.textContent ?? "").not.toMatch(/sk-|\.safetensors|\.gguf|private\/model|model_path/i);
   });
 
   it("renders CLI-parity provider status fields", async () => {

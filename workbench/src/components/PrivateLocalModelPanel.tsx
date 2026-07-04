@@ -3,6 +3,7 @@ import { isDesktopRuntime, loadProviderStatus } from "../bridge";
 import type { ProviderStatus } from "../bridge";
 import { derivePrivateProviderReadiness } from "../providers";
 import type { ProviderSmokeSessionStatus } from "../providers";
+import { ModelConnectionPicker } from "./ModelConnectionPicker";
 import { PrivateChatSandboxCard } from "./PrivateChatSandboxCard";
 import { PrivateImageProviderCard } from "./PrivateImageProviderCard";
 import { ProviderReadinessDashboard } from "./ProviderReadinessDashboard";
@@ -35,6 +36,7 @@ export function PrivateLocalModelPanel() {
 
   return (
     <div className="private-local-model provider-console" data-testid="private-local-model-panel">
+      <ModelConnectionPicker status={status} loading={loading} desktop={desktop} />
       <ProviderReadinessDashboard
         readiness={readiness}
         loading={loading}

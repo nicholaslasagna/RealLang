@@ -69,6 +69,19 @@ export function SettingsScreen() {
   const fields = data.settings[current.id] || [];
   const staffSection = current.id === "staff" || current.id === "scheduler";
   const sectionsById = Object.fromEntries(data.settingsSections.map((section) => [section.id, section]));
+  const renderSectionButton = (section: (typeof data.settingsSections)[number]) => (
+    <button
+      key={section.id}
+      type="button"
+      className={current.id === section.id ? "is-active" : ""}
+      data-settings-section={section.id}
+      onClick={() => setSettingsSection(section.id)}
+    >
+      <Icon name={section.icon} />
+      <span>{section.label}</span>
+      {section.id === "staff" || section.id === "scheduler" ? <Badge label="STAFF" tone="violet" /> : null}
+    </button>
+  );
 
   return (
     <div className="settings-layout" data-testid="settings-screen">
@@ -78,24 +91,21 @@ export function SettingsScreen() {
             .map((id) => sectionsById[id])
             .filter((section): section is NonNullable<typeof section> => Boolean(section));
           if (items.length === 0) return null;
+          if (group.label === "Advanced") {
+            return (
+              <details key={group.label} className="settings-nav-group settings-nav-group--advanced-settings">
+                <summary className="settings-nav-group__summary">
+                  <span>{group.label}</span>
+                  <small>Optional</small>
+                </summary>
+                <div className="settings-nav-group__items">{items.map(renderSectionButton)}</div>
+              </details>
+            );
+          }
           return (
             <section key={group.label} className="settings-nav-group" aria-label={group.label}>
               <h2 className="settings-nav-group__label">{group.label}</h2>
-              {items.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  className={current.id === section.id ? "is-active" : ""}
-                  data-settings-section={section.id}
-                  onClick={() => setSettingsSection(section.id)}
-                >
-                  <Icon name={section.icon} />
-                  <span>{section.label}</span>
-                  {section.id === "staff" || section.id === "scheduler" ? (
-                    <Badge label="STAFF" tone="violet" />
-                  ) : null}
-                </button>
-              ))}
+              {items.map(renderSectionButton)}
             </section>
           );
         })}

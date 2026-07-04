@@ -34,7 +34,8 @@ function resetStore() {
     approvalAuditEntries: [],
     approvalAuditHydrated: false,
     approvalAuditStorageStatus: "idle",
-    approvalAuditStorageWarning: null
+    approvalAuditStorageWarning: null,
+    selectedModelProfileId: "private-local"
   });
 }
 
@@ -72,7 +73,10 @@ const configuredStatus = {
 
 const textarea = () => screen.getByLabelText("Local model request");
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
-const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
+const askLocal = () => {
+  const backToChat = screen.queryByTestId("mode-ask-local-button");
+  if (backToChat) fireEvent.click(backToChat);
+};
 const type = (value: string) => fireEvent.change(textarea(), { target: { value } });
 const openChatOptions = () => {
   const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;
@@ -138,7 +142,7 @@ describe("0.38 real local chat — keyboard", () => {
     mocks.isDesktopRuntime.mockReturnValue(false);
     mocks.checkBridgeHealth.mockResolvedValue({ healthy: false, resolution: { bridgeMode: "metadata-only", repoRoot: null } });
     render(<WorkbenchScreen />);
-    expect(screen.getByTestId("mode-ask-local")).toBeDisabled();
+    expect(screen.queryByTestId("mode-ask-local")).toBeNull();
     expect(screen.getByTestId("composer-web-note")).toHaveTextContent(/desktop app only/i);
     // Preview-mode Enter never reaches the model.
     fireEvent.keyDown(screen.getByLabelText("Reviewed context for this action"), { key: "Enter", code: "Enter" });
@@ -224,7 +228,7 @@ describe("0.38 real local chat — errors and provider", () => {
     askLocal();
     const readiness = await screen.findByTestId("chat-provider-readiness");
     expect(readiness).toHaveTextContent("Local provider configured, not verified");
-    expect(readiness).toHaveTextContent("Preview runtime is mock; Chat uses the configured local provider.");
+    expect(readiness).toHaveTextContent("Selected connection: Private Local Model");
     expect(readiness).toHaveTextContent("loopback host");
     expect(readiness.textContent ?? "").not.toMatch(/http:\/\/localhost:8000|sk-/i);
   });
@@ -319,10 +323,24 @@ describe("0.38 real local chat — errors and provider", () => {
     expect(profile).toHaveTextContent(/Local model profile/i);
     expect(profile).toHaveTextContent(/Configured local provider/i);
     expect(profile).toHaveTextContent(/configured default local provider/i);
-    expect(within(profile).getByRole("combobox")).toBeDisabled();
+    expect(within(profile).getByRole("combobox")).toBeEnabled();
     // No actual leaked values — a key, a weights path, or a live endpoint URL.
     const text = profile.textContent ?? "";
     expect(text).not.toMatch(/sk-[a-z0-9]|\.safetensors|\.gguf|https?:\/\/|127\.0\.0\.1|localhost/i);
+  });
+
+  it("keeps preview-only model selections from sending chat", () => {
+    render(<WorkbenchScreen />);
+    askLocal();
+    openChatOptions();
+    fireEvent.change(screen.getByRole("combobox", { name: /local model profile/i }), {
+      target: { value: "mock" }
+    });
+    type("do not send through mock");
+    approve();
+    expect(sendButton()).toBeDisabled();
+    fireEvent.keyDown(textarea(), { key: "Enter", code: "Enter" });
+    expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
   });
 
   it("does not surface provider keys, paths, or model names in a turn", async () => {
@@ -347,9 +365,8 @@ describe("0.38 real local chat — mode separation", () => {
 
   it("Safe preview mode does not call the local model", () => {
     render(<WorkbenchScreen />);
-    // Default is preview mode.
-    fireEvent.change(screen.getByLabelText("Reviewed context for this action"), { target: { value: "Fix the overflow" } });
-    fireEvent.submit(screen.getByTestId("safe-command-composer"));
+    fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "Fix the overflow" } });
+    fireEvent.click(screen.getByTestId("mode-safe-preview"));
     expect(useWorkbenchStore.getState().stagedTask).toBe("Fix the overflow");
     expect(mocks.runPrivateProviderChatSandbox).not.toHaveBeenCalled();
     expect(screen.queryByTestId("workbench-chat-thread")).toBeNull();

@@ -183,8 +183,8 @@ trust = "local_untrusted"
     bundle = load_private_local_config_bundle(path=isolated_home / CONFIG_FILE_NAME)
     status = build_private_image_provider_status(bundle.image)
     assert status.configured is True
-    assert status.future is True
-    assert status.execution_enabled is False
+    assert status.future is False
+    assert status.execution_enabled is True
     assert status.trust == "local_untrusted"
     redacted = format_redacted_provider_status(build_private_provider_status(bundle.chat))
     assert "chat-model" not in redacted

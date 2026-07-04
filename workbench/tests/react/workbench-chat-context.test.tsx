@@ -33,7 +33,8 @@ function resetStore() {
     approvalAuditEntries: [],
     approvalAuditHydrated: false,
     approvalAuditStorageStatus: "idle",
-    approvalAuditStorageWarning: null
+    approvalAuditStorageWarning: null,
+    selectedModelProfileId: "private-local"
   });
 }
 
@@ -57,7 +58,10 @@ const passReport = {
 
 const textarea = () => screen.getByLabelText("Local model request") as HTMLTextAreaElement;
 const sendButton = () => screen.getByRole("button", { name: "Ask local model", exact: true });
-const askLocal = () => fireEvent.click(screen.getByTestId("mode-ask-local"));
+const askLocal = () => {
+  const backToChat = screen.queryByTestId("mode-ask-local-button");
+  if (backToChat) fireEvent.click(backToChat);
+};
 const type = (value: string) => fireEvent.change(textarea(), { target: { value } });
 const openChatOptions = () => {
   const options = screen.getByTestId("composer-chat-options") as HTMLDetailsElement;

@@ -2,6 +2,7 @@ import { getWorkbenchData } from "../../data/workbench-data";
 import { useWorkbenchStore } from "../../state/workbench-store";
 import type { WorkbenchScreen } from "../../state/types";
 import { Badge, Button, Icon, SectionHeading } from "../../components/primitives";
+import { ImageGenerator } from "./ImageGenerator";
 
 const STUDIO_TABS: WorkbenchScreen[] = ["creative", "image", "vision", "engine", "assets"];
 
@@ -40,6 +41,10 @@ export function StudioScreen({ screen }: StudioScreenProps) {
         })}
       </div>
       <SectionHeading eyebrow={content.eyebrow} title={content.title} description={content.description} />
+      {screen === "image" ? (
+        <ImageGenerator />
+      ) : (
+      <>
       <div className={`workflow-notice workflow-notice--${content.accent}`}>
         <Icon name="shield-check" />
         <span>Planning only. RealForge will not change files or run tools from this page.</span>
@@ -101,6 +106,8 @@ export function StudioScreen({ screen }: StudioScreenProps) {
         </div>
         <Button label="Browse all commands" iconName="command" variant="ghost" onClick={() => openPalette()} />
       </section>
+      </>
+      )}
     </div>
   );
 }

@@ -290,14 +290,14 @@ def build_private_image_provider_status(
 
     configured = runtime.configured
     if configured:
-        message = "Private local image provider metadata detected (execution not enabled yet)."
+        message = "Private local image provider is configured and ready for approval-gated generation."
     elif endpoint is None:
         message = "Private local image provider is present but the endpoint is missing or not local."
     else:
         message = "ComfyUI image provider is present but no workflow is configured."
 
     return PrivateImageProviderStatus(
-        future=True,
+        future=not configured,
         configured=configured,
         provider_kind=runtime.kind,
         endpoint_scheme=endpoint.scheme if endpoint else None,
@@ -306,7 +306,8 @@ def build_private_image_provider_status(
         trust=DEFAULT_TRUST,
         config_source="home_local",
         message=message,
-        execution_enabled=False,
+        # Execution is live once a supported backend is fully configured.
+        execution_enabled=configured,
     )
 
 

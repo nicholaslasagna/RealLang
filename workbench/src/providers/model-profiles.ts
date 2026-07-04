@@ -58,8 +58,8 @@ export const MOCK_PROVIDER_PROFILE: ModelProviderProfile = {
 
 export const MODEL_PROVIDER_PROFILES: ModelProviderProfile[] = [
   PRIVATE_LOCAL_MODEL_PROFILE,
-  PRIVATE_LOCAL_IMAGE_MODEL_PROFILE,
-  MOCK_PROVIDER_PROFILE
+  MOCK_PROVIDER_PROFILE,
+  PRIVATE_LOCAL_IMAGE_MODEL_PROFILE
 ];
 
 export function getModelProviderProfile(id: string): ModelProviderProfile | undefined {

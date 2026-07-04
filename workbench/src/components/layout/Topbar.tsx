@@ -1,10 +1,17 @@
 import { useWorkbenchStore } from "../../state/workbench-store";
+import {
+  getModelProviderProfile,
+  MODEL_PROVIDER_PROFILES
+} from "../../providers";
 import { BrandMark } from "../BrandMark";
 import { Icon } from "../primitives";
 
 export function Topbar() {
   const staffPreview = useWorkbenchStore((s) => s.staffPreview);
   const toggleSidebar = useWorkbenchStore((s) => s.toggleSidebar);
+  const selectedModelProfileId = useWorkbenchStore((s) => s.selectedModelProfileId);
+  const selectModelProfile = useWorkbenchStore((s) => s.selectModelProfile);
+  const selectedModelProfile = getModelProviderProfile(selectedModelProfileId) ?? MODEL_PROVIDER_PROFILES[0];
 
   // [label, icon, tone, tooltip]. The cluster leads with one obvious "safe"
   // indicator; the individual pills stay compact and quiet (tooltips carry detail).
@@ -38,8 +45,20 @@ export function Topbar() {
         </span>
         <span className="context-chip context-chip--provider">
           <Icon name="cpu" />
-          <b>Preview runtime</b>
-          <small>mock · chat uses local provider</small>
+          <span className="model-chip__copy">
+            <b>Model</b>
+            <small>{selectedModelProfile.displayName}</small>
+          </span>
+          <select
+            className="model-chip__select"
+            aria-label="Model connection"
+            value={selectedModelProfile.id}
+            onChange={(event) => selectModelProfile(event.currentTarget.value)}
+          >
+            <option value="private-local">Private Local Model</option>
+            <option value="mock">Deterministic Mock</option>
+            <option value="private-local-image" disabled>Private Local Image Model</option>
+          </select>
         </span>
       </div>
       <div className="top-spacer" />

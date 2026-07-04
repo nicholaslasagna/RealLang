@@ -16,9 +16,9 @@
   },
   "image": {
     "presentation": {
-      "eyebrow": "IMAGE WORKFLOWS",
-      "title": "Plan images before generation exists.",
-      "description": "Prompt jobs, prompt packs, reference hashes, iteration plans, and provenance metadata.",
+      "eyebrow": "IMAGE GENERATION",
+      "title": "Generate images on your own machine.",
+      "description": "One bounded prompt runs on your local backend — ComfyUI or any OpenAI-compatible image server. Approve each send; output stays local and untrusted until you review it.",
       "accent": "amber",
       "example": ["Generate an image prompt pack", "wand-sparkles", "Shape a cinematic horror concept into reusable prompts, negative guidance, variants, and provenance notes.", "/image prompt", "Preview prompt pack"],
       "items": [

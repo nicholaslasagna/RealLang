@@ -30,6 +30,7 @@ signing/notarization.
 ## Workbench — private local model provider (provider-agnostic)
 
 - Settings → **Provider / Local Model** generic **Private Local Model** profile
+- Session-local model connection picker with private identity hidden
 - OpenAI-compatible local provider type; endpoint scaffold in session only
 - **LOCAL UNTRUSTED** trust label; output remains untrusted until validated
 - Public template: `.realforge.toml.example` → copy to gitignored `~/.realforge.local.toml`
@@ -42,6 +43,9 @@ signing/notarization.
 - Workbench 0.27: hardens private chat with one active request, input-free desktop cancellation, redacted timeout/cancel states, and capped untrusted copy
 - Workbench 0.28: adds a sanitized private provider readiness dashboard; smoke state is session-only and workspace/files/tools/memory/image execution remain disconnected
 - Workbench 0.29: consolidates readiness, sanitized status, smoke, chat, disabled image metadata, and the safety boundary into one provider console without adding authority
+- Workbench 0.49: desktop Workbench opens to Chat, Safe Preview is an inline **Preview action**, Chat options stay collapsed, and local provider setup copies a private config template without scanning model folders or writing secrets
+- Workbench 0.50: no-clutter visual pass with flatter native surfaces, outline controls, and Settings advanced categories behind disclosure; no new authority
+- Workbench 0.51: design-brief alignment using near-black canvas, regular display type, white outline pills, 8px hairline cards, sparse accents, and no shadows; no new authority
 - Provider status remains a sanitized boolean/host shape, with CLI guidance for full env/repo precedence
 
 See [local models](realforge-local-models.md) and [provider template](provider-config.example.toml).
@@ -185,6 +189,30 @@ See [workbench/docs/settings.md](../workbench/docs/settings.md).
   no-write/dry-run/latest-command information remains inspectable.
 - No new IPC, provider call, write bridge, shell, workspace context, memory,
   persistence, image generation, or autonomous execution path is added.
+
+## Workbench 0.50 - no-clutter visual-system pass
+
+- Heavy glow/card treatment is flattened into hairline borders, near-black native
+  surfaces, and calmer outline controls.
+- Chat, Home, Provider, and Settings surfaces keep the same safety boundaries but
+  expose less instrumentation by default.
+- Settings keeps App, Local model, System, and Boundaries visible; Advanced is now
+  opt-in through a disclosure.
+- No model authority, IPC, provider call, workspace context, tools, writes, shell,
+  memory, persistence, image generation, or autonomous execution path is added.
+
+## Workbench 0.51 - design-brief alignment
+
+- The visual system now follows the attached brief more strictly: one near-black
+  canvas, regular-weight display type, 8px content cards, hairline elevation, and
+  white outline pills as the shared interactive shape.
+- Shadows, glow-heavy cards, bright stacked state chrome, and overused accent
+  gradients are flattened across Workbench, Home, Settings, Provider, Reports,
+  Security, and Studio screens.
+- Accent color remains sparse and informative; provider output and local model
+  boundaries remain visible but calmer.
+- No behavior, provider authority, IPC, workspace context, tools, writes, shell,
+  memory, persistence, image generation, or autonomous execution path is added.
 
 ## Workbench 0.16 - Home launchpad and intent-based navigation
 
@@ -386,6 +414,9 @@ staff-only, approval, local-only, network-off, readonly, and no-write states.
 17. **Private provider readiness** (0.28) - sanitized lifecycle, session-only smoke status, explicit disconnected capabilities, no new authority
 18. **Provider area UX consolidation** (0.29) - ordered provider console, reduced duplication, unchanged approval and trust boundaries
 19. **Assistant-first Workbench declutter** (0.36) - prompt-first default, details on demand, unchanged approval and trust boundaries
-20. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
+20. **Chat-first Workbench simplification** (0.49) - Chat default, preview action in the same composer, off-canvas chat navigation, private-config setup guide, no new authority
+21. **No-clutter fluidity pass** (0.50) - flatter native visual system, Advanced Settings behind disclosure, no behavior or authority change
+22. **Design-brief alignment** (0.51) - near-black canvas, white outline pills, 8px cards, no shadows, no behavior or authority change
+21. Future: encrypted/tamper-evident audit history, write bridge, signed updater, and any security remediation/fix pipeline require separate reviews and approval gates
 
 Run and validation instructions are in [`workbench/README.md`](../workbench/README.md).

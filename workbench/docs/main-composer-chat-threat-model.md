@@ -50,13 +50,13 @@ thread. It adds no new provider execution path: it reuses the narrow
 - The composer component itself performs **no IPC** — it raises a callback; the
   screen makes the single existing bridge call.
 
-## Mode separation
+## Composer boundary
 
-The composer is explicitly two distinct modes the user chooses between:
-
-1. **Safe preview** — stages a structured, display-only action preview (no
-   execution), unchanged from prior versions.
-2. **Ask local model** — sends one bounded request to the local sandbox.
+In the desktop app, the Workbench now opens as a focused **Chat** surface. Safe
+preview is still available, but as a secondary **Preview action** from the same
+composer rather than a competing default panel. Choosing Preview action stages a
+structured, display-only action preview and never calls the model. Choosing Send
+in Chat still requires the explicit per-request approval checkbox.
 
 This is **not** an autonomous agent, not image generation, and not connected to
 the workspace. The private model's identity remains local-only and is never
@@ -76,10 +76,11 @@ written to tracked files.
   never calls the model.
 - **Mode separation.** Ask-local renders only the chat thread (no staged action preview);
   Safe-preview renders only the preview surface (no model call).
-- **Profile selector.** A "Local model profile" selector is shown but **informational and
-  disabled** ("Configured local provider" / "uses your configured default local provider")
-  because the sandbox IPC selects no profile. It exposes no model name, endpoint, key, or
-  path. No new fields are sent across IPC — the request stays `{ prompt, approvalAcknowledged }`.
+- **Connection selector.** A "Local model profile" selector lets the user choose the
+  session-local Workbench connection. Only **Private Local Model** can send chat today;
+  mock and future image profiles are preview-only in Chat. It exposes no model name,
+  endpoint, key, or path. No new fields are sent across IPC — the request stays
+  `{ prompt, approvalAcknowledged }`.
 
 ## 0.40 — opt-in bounded visible chat context
 
@@ -145,3 +146,16 @@ mock action preview.
   approval-gated and routes through the existing `{ prompt, approvalAcknowledged }` sandbox;
   the context toggle and preview remain Chat-only; output stays `local_untrusted`; no
   persistence, no approval-audit entry for chat bodies, no new authority/IPC.
+
+## 0.49 — simplified chat-first composer
+
+- **Chat is the default desktop work surface.** The conversation thread and
+  composer are the dominant objects.
+- **Safe preview is built into the composer.** The user can type once and choose
+  **Preview action** to stage a dry-run action preview. No provider call occurs.
+- **Chat options stay collapsed by default.** Profile/context controls remain
+  available, but they are secondary. The approval checkbox stays inline near Send.
+- **Navigation is off-canvas in Chat.** The bottom rail is hidden; the sidebar is
+  available from the menu so the chat surface keeps its horizontal space.
+- **Authority unchanged.** No new IPC, provider call, file context, tools, shell,
+  writes, memory, persistence, image generation, or autonomous loop is added.

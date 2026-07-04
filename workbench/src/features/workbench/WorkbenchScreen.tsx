@@ -143,7 +143,7 @@ export function WorkbenchScreen() {
   const [approvalActionId, setApprovalActionId] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const desktop = isDesktopRuntime();
-  const [mode, setMode] = useState<ComposerMode>("preview");
+  const [mode, setMode] = useState<ComposerMode>(() => (isDesktopRuntime() ? "ask-local" : "preview"));
   // Session-only visible chat thread. Multiple turns may be shown, but each call
   // to the provider is an independent bounded request (prior turns are NOT sent).
   // Never persisted, never added to the approval audit, never hidden transcript memory.
@@ -254,10 +254,10 @@ export function WorkbenchScreen() {
             <h1>{headerTitle}</h1>
             <span>
               {inAskLocal
-                ? "Ask the user-configured local model. You approve each request; the conversation is session-only and not saved."
+                ? "Ask the user-configured local model, or preview an action safely from the same composer."
                 : hasExplicitAction
                   ? "Review the staged preview. Details stay inspectable, and running it still needs approval."
-                  : "Use Chat for a local model turn, or describe work to preview safely before anything runs."}
+                  : "Describe work to preview safely before anything runs."}
             </span>
           </div>
           <button

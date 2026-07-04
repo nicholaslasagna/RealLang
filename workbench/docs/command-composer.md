@@ -149,21 +149,23 @@ intent, and is labelled as untrusted, illustrative provider output. None of thes
 changes alter the approval gates, dry-run-only behavior, untrusted output trust
 level, or the absence of workspace/tool/model autonomy.
 
-## Main composer local sandbox mode (0.32)
+## Main composer local sandbox mode (0.32, updated 0.49)
 
-The main composer has two explicit modes the user chooses between:
+The desktop Workbench now treats chat as the primary surface and keeps Safe
+Preview as an inline action from the same composer:
 
-1. **Safe preview** (default) — stages a structured, display-only action preview.
-   Unchanged: the `ActionPreviewCard`, approval flow, approved dry-run result,
-   audit reference, and display-only argv details all still work.
-2. **Ask local model** — sends one bounded request to the **existing** private
-   chat sandbox (`run_private_provider_chat_sandbox`) and renders the response in
-   the thread as a `LOCAL UNTRUSTED` assistant turn.
+1. **Chat** — sends one bounded request to the **existing** private chat sandbox
+   (`run_private_provider_chat_sandbox`) and renders the response in the thread
+   as a `LOCAL UNTRUSTED` assistant turn.
+2. **Preview action** — stages a structured, display-only action preview from the
+   same typed text. The `ActionPreviewCard`, approval flow, approved dry-run
+   result, audit reference, and display-only argv details all still work.
 
-Ask-local mode is **desktop only** (disabled and labelled in web mode), requires
-an explicit per-send approval, and never auto-sends while typing. The request
-carries only a bounded prompt plus an acknowledgement — no workspace, files,
-context, tools, shell, memory, history, or image generation. Output is
+Chat is **desktop only**; web preview stays execution-free and can still compose a
+Safe Preview. Chat requires an explicit per-send approval and never auto-sends
+while typing. The request carries only a bounded prompt plus an acknowledgement
+— no workspace, files, context unless the visible-chat option is enabled, tools,
+shell, memory, history, or image generation. Output is
 `local_untrusted`, capped, and session-only; nothing is persisted or added to the
 approval audit. See
 [main-composer-chat-threat-model.md](./main-composer-chat-threat-model.md).
@@ -176,7 +178,21 @@ identity stays local-only and never appears in tracked files.
 Ask-local mode now behaves like a real local chat surface: Enter sends, Shift+Enter adds a
 newline, and the thread shows a session-only back-and-forth. Each call is still one bounded
 request — previous turns are never sent to the provider, and nothing is persisted or added to
-the approval audit. A "Local model profile" selector is shown but informational/disabled
-("Configured local provider") until the sandbox supports profile selection; it exposes no
-model name, endpoint, key, or path. Safe preview and Ask local model are now fully separate
-surfaces — a typed chat prompt never renders as a fake command preview.
+the approval audit. A "Local model profile" selector is available for session-local Workbench
+connection choice; only **Private Local Model** can send chat today, while mock and future
+image profiles remain preview-only in Chat. It exposes no model name, endpoint, key, or path.
+Safe preview is still a separate safety boundary, but no longer a separate
+dominant surface. The user types once, then chooses either Send for Chat or
+Preview action for a dry-run review. A typed chat prompt never renders as a fake
+command preview.
+
+## 0.49 chat-first simplification
+
+- Chat opens as the default desktop Workbench state.
+- The sidebar becomes an off-canvas menu in Chat to preserve horizontal space.
+- The bottom status rail is hidden; safety copy remains in the topbar and inline
+  Chat labels.
+- Chat options are closed by default. Profile/context controls remain available
+  behind the disclosure, and the approval checkbox stays inline near Send.
+- No authority changes: no new IPC, no shell, no workspace/file context, no
+  writes, no memory persistence, no image generation, and no autonomous loop.
