@@ -6,7 +6,7 @@
 [provider]
 kind = "openai_compatible_local"
 display_name = "Private Local Model"
-model = "<configured-locally>"
+model = "your-local-model-id"
 base_url = "http://localhost:8000/v1"
 # api_key = "<optional-local-placeholder>"
 trust = "local_untrusted"

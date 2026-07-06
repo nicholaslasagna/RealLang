@@ -43,10 +43,19 @@ export function PrivateLocalModelPanel() {
         desktop={desktop}
         onRefreshStatus={() => void refreshStatus()}
       />
-      <section className="provider-safe-actions" data-testid="provider-safe-actions" aria-label="Safe provider actions">
-        <ProviderSmokeCard onSessionStatusChange={setSmokeSessionStatus} />
-        <PrivateChatSandboxCard />
-      </section>
+      <details className="provider-safe-actions" data-testid="provider-safe-actions">
+        <summary>
+          <span>
+            <b>Connection checks</b>
+            <small>fixed smoke check · single-turn sandbox · approval required</small>
+          </span>
+          <em>Open</em>
+        </summary>
+        <div className="provider-safe-actions__body" aria-label="Safe provider actions">
+          <ProviderSmokeCard onSessionStatusChange={setSmokeSessionStatus} />
+          <PrivateChatSandboxCard />
+        </div>
+      </details>
       <details className="settings-disclosure provider-advanced" data-testid="provider-advanced-details">
         <summary>Advanced provider details</summary>
         <div className="provider-console__stack">

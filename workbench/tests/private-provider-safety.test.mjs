@@ -58,7 +58,7 @@ test("provider example uses placeholders only", async () => {
   const example = await read(repoRoot, ".realforge.toml.example");
   assert.match(example, /openai_compatible_local/);
   assert.match(example, /Private Local Model/);
-  assert.match(example, /<configured-locally>/);
+  assert.match(example, /your-local-model-id/);
   assert.match(example, /trust = "local_untrusted"/);
   assert.match(example, /\.realforge\.local\.toml/);
   assert.doesNotMatch(example, /\[model\.trust\]/);
@@ -70,7 +70,7 @@ test("provider example uses placeholders only", async () => {
 
 test("docs provider example matches public-safe template", async () => {
   const docExample = await read(repoRoot, "docs/provider-config.example.toml");
-  assert.match(docExample, /<configured-locally>/);
+  assert.match(docExample, /your-local-model-id/);
   assert.match(docExample, /trust = "local_untrusted"/);
   assert.doesNotMatch(docExample, /\[model\.trust\]/);
   assert.doesNotMatch(docExample, /sk-[A-Za-z0-9]{10,}/);

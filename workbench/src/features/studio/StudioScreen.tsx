@@ -4,6 +4,8 @@ import type { WorkbenchScreen } from "../../state/types";
 import { Badge, Button, Icon, SectionHeading } from "../../components/primitives";
 import { ImageGenerator } from "./ImageGenerator";
 import { CreativeBriefPanel } from "./CreativeBriefPanel";
+import { AssetsPlanPanel } from "./AssetsPlanPanel";
+import { EngineUnrealPanel } from "./EngineUnrealPanel";
 
 const STUDIO_TABS: WorkbenchScreen[] = ["creative", "image", "vision", "engine", "assets"];
 
@@ -46,6 +48,10 @@ export function StudioScreen({ screen }: StudioScreenProps) {
         <ImageGenerator />
       ) : screen === "creative" ? (
         <CreativeBriefPanel />
+      ) : screen === "assets" ? (
+        <AssetsPlanPanel />
+      ) : screen === "engine" ? (
+        <EngineUnrealPanel />
       ) : (
       <>
       <div className={`workflow-notice workflow-notice--${content.accent}`}>

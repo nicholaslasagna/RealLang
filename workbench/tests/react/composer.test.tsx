@@ -213,6 +213,7 @@ describe("safe command composer UI", () => {
     fireEvent.change(screen.getByLabelText("Local model request"), { target: { value: "/command" } });
 
     expect(await screen.findByTestId("composer-slash-menu")).toBeInTheDocument();
+    expect(screen.getByTestId("mode-ask-local")).toBeInTheDocument();
     expect(useWorkbenchStore.getState().paletteOpen).toBe(false);
     expect(screen.getByText("/ask")).toBeInTheDocument();
     expect(screen.getByText("/plan")).toBeInTheDocument();

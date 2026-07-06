@@ -13,6 +13,7 @@ const MAX_FIELD_LEN: usize = 256;
 const LOCAL_CHAT_KIND: &str = "openai_compatible_local";
 const LOCAL_IMAGE_KIND: &str = "local_image_provider";
 const LOCAL_TRUST: &str = "local_untrusted";
+const PLACEHOLDER_MODEL_IDS: [&str; 2] = ["<configured-locally>", "your-local-model-id"];
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -273,7 +274,7 @@ fn chat_status(
     let recognized = sanitized_field(kind.as_deref()).as_deref() == Some(LOCAL_CHAT_KIND);
     let endpoint = base_url.as_deref().and_then(parse_local_endpoint);
     let model_configured = sanitized_field(model.as_deref())
-        .is_some_and(|value| value != "<configured-locally>");
+        .is_some_and(|value| !PLACEHOLDER_MODEL_IDS.contains(&value.as_str()));
     let api_key_configured = sanitized_field(api_key.as_deref()).is_some();
     ChatProviderStatus {
         configured: recognized && endpoint.is_some() && model_configured,
@@ -496,6 +497,21 @@ api_key = "not-for-ipc"
         assert!(!json.contains("not-for-ipc"));
         assert!(!json.contains(r#""api_key""#));
         assert!(json.contains("api_key_configured"));
+    }
+
+    #[test]
+    fn public_model_placeholder_is_not_configured() {
+        let result = report_from_bundle(parse_redacted_status(
+            r#"
+[provider]
+kind = "openai_compatible_local"
+model = "your-local-model-id"
+base_url = "http://localhost:8000/v1"
+"#,
+        )
+        .unwrap());
+        assert!(!result.configured);
+        assert!(!result.model_configured);
     }
 
     #[test]

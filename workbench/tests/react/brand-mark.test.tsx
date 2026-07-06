@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Topbar } from "../../src/components/layout/Topbar";
@@ -25,5 +25,14 @@ describe("RealForge brand mark", () => {
     expect(screen.getByText("Model")).toBeInTheDocument();
     expect(screen.getAllByText("Private Local Model").length).toBeGreaterThan(0);
     expect(screen.getByRole("combobox", { name: /model connection/i })).toBeInTheDocument();
+  });
+
+  it("toggles the navigation drawer from the topbar menu button", () => {
+    useWorkbenchStore.setState({ staffPreview: false, sidebarOpen: false, selectedModelProfileId: "private-local" });
+    render(<Topbar />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open navigation/i }));
+    expect(useWorkbenchStore.getState().sidebarOpen).toBe(true);
+    expect(screen.getByRole("button", { name: /close navigation/i })).toHaveAttribute("aria-expanded", "true");
   });
 });

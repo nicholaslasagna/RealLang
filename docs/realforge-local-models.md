@@ -113,7 +113,7 @@ image-generation interface. See the
 ```toml
 [model]
 provider = "ollama"
-model = "<configured-locally>"
+model = "your-local-model-id"
 base_url = "http://localhost:11434"
 ```
 
@@ -125,7 +125,7 @@ For a user-configured OpenAI-compatible local provider:
 [provider]
 kind = "openai_compatible_local"
 display_name = "Private Local Model"
-model = "<configured-locally>"
+model = "your-local-model-id"
 base_url = "http://localhost:8000/v1"
 trust = "local_untrusted"
 ```

@@ -34,7 +34,7 @@ def _write_private_config(home: Path, *, include_secrets: bool = True) -> None:
         "[provider]",
         'kind = "openai_compatible_local"',
         'display_name = "Private Local Model"',
-        f'model = "{SECRET_MODEL}"' if include_secrets else 'model = "<configured-locally>"',
+        f'model = "{SECRET_MODEL}"' if include_secrets else 'model = "your-local-model-id"',
         'base_url = "http://localhost:8000/v1"',
         'trust = "local_untrusted"',
     ]
@@ -144,6 +144,16 @@ base_url = "https://example.com/v1"
     status = build_private_provider_status(runtime)
     assert status.configured is False
     assert status.endpoint_host is None
+
+
+def test_public_model_placeholder_is_not_configured(isolated_home: Path):
+    _write_private_config(isolated_home, include_secrets=False)
+    runtime = load_private_provider_runtime(path=isolated_home / CONFIG_FILE_NAME)
+    assert runtime is not None
+    assert runtime.configured is False
+    status = build_private_provider_status(runtime)
+    assert status.configured is False
+    assert status.model_configured is False
 
 
 def test_parse_local_endpoint_accepts_loopback_hosts():

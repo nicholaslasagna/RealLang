@@ -13,6 +13,7 @@ LOCAL_PROVIDER = "openai_compatible_local"
 LOCAL_IMAGE_PROVIDER = "local_image_provider"
 COMFYUI_IMAGE_PROVIDER = "comfyui"
 SUPPORTED_IMAGE_PROVIDERS = (LOCAL_IMAGE_PROVIDER, COMFYUI_IMAGE_PROVIDER)
+PLACEHOLDER_MODEL_IDS = frozenset(("<configured-locally>", "your-local-model-id"))
 # Inline ComfyUI workflow is bounded by the config file size; a workflow_path file
 # gets its own larger cap at read time.
 MAX_WORKFLOW_INLINE_CHARS = MAX_FILE_BYTES
@@ -23,6 +24,10 @@ class PrivateProviderConfigError(Exception):
         super().__init__(message)
         self.code = code
         self.message = message
+
+
+def is_placeholder_model_id(value: str | None) -> bool:
+    return (value or "").strip() in PLACEHOLDER_MODEL_IDS
 
 
 @dataclass(frozen=True)
@@ -40,7 +45,7 @@ class PrivateProviderRuntimeSettings:
             return False
         endpoint = parse_local_endpoint(self.base_url or "")
         model = (self.model or "").strip()
-        return endpoint is not None and bool(model) and model != "<configured-locally>"
+        return endpoint is not None and bool(model) and not is_placeholder_model_id(model)
 
 
 @dataclass(frozen=True)
@@ -343,7 +348,7 @@ def build_private_provider_status(runtime: PrivateProviderRuntimeSettings | None
     model_configured = bool(
         runtime.model
         and runtime.model.strip()
-        and runtime.model.strip() != "<configured-locally>"
+        and not is_placeholder_model_id(runtime.model)
     )
 
     if runtime.provider != LOCAL_PROVIDER:

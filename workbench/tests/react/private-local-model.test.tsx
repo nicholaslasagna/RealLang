@@ -127,6 +127,13 @@ describe("Private local model panel", () => {
     fireEvent.click(screen.getByText(/readiness checklist/i));
   }
 
+  function openProviderSafeActions() {
+    const safeActions = screen.getByTestId("provider-safe-actions");
+    if (!safeActions.hasAttribute("open")) {
+      fireEvent.click(within(safeActions).getByText(/connection checks/i));
+    }
+  }
+
   it("renders private local profile with local untrusted label", async () => {
     render(<PrivateLocalModelPanel />);
     await waitFor(() => {
@@ -142,13 +149,15 @@ describe("Private local model panel", () => {
     render(<PrivateLocalModelPanel />);
 
     const picker = await screen.findByTestId("model-connection-picker");
-    expect(within(picker).getByRole("heading", { name: /choose model/i })).toBeInTheDocument();
-    expect(within(picker).getByRole("radio", { name: /private local model/i })).toBeChecked();
+    expect(within(picker).getByRole("heading", { name: /model connection/i })).toBeInTheDocument();
+    expect(within(picker).getByRole("combobox", { name: /connection/i })).toHaveValue("private-local");
     expect(within(picker).getByText(/exact model names, endpoints, keys, and paths stay out/i)).toBeInTheDocument();
 
-    fireEvent.click(within(picker).getByRole("radio", { name: /deterministic mock/i }));
+    fireEvent.change(within(picker).getByRole("combobox", { name: /connection/i }), { target: { value: "mock" } });
     expect(useWorkbenchStore.getState().selectedModelProfileId).toBe("mock");
-    expect(within(picker).getByRole("radio", { name: /private local image model/i })).toBeDisabled();
+    expect(within(picker).getByRole("option", { name: /private local image model/i })).toBeDisabled();
+    expect(within(picker).getByTestId("model-picker-current")).toHaveTextContent(/deterministic mock/i);
+    expect(within(picker).getByText(/approval required/i)).toBeInTheDocument();
     expect(within(picker).getByTestId("provider-setup-guide")).toHaveTextContent(/private config/i);
     expect(within(picker).getByLabelText(/local chat endpoint preview/i)).toBeInTheDocument();
     expect(within(picker).getByLabelText(/configured model label preview/i)).toBeInTheDocument();
@@ -213,7 +222,7 @@ describe("Private local model panel", () => {
     for (const label of ["Workspace context", "File access", "Tools", "Shell", "Memory", "Persistence", "Image generation"]) {
       expect(within(safety).getByText(label)).toBeInTheDocument();
     }
-    expect(within(dashboard).getByText("Config detected")).toBeInTheDocument();
+    await waitFor(() => expect(within(dashboard).getByText("Config detected")).toBeInTheDocument());
     expect(within(dashboard).getByText("METADATA ONLY")).toBeInTheDocument();
     expect(within(dashboard).getByTestId("provider-readiness-diagnosis")).toHaveTextContent(/Configured, not verified/i);
   });
@@ -223,6 +232,7 @@ describe("Private local model panel", () => {
     render(<PrivateLocalModelPanel />);
     const dashboard = await screen.findByTestId("provider-readiness-dashboard");
     expect(within(dashboard).getByText("Config detected")).toBeInTheDocument();
+    openProviderSafeActions();
 
     fireEvent.click(screen.getByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
     fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
@@ -281,6 +291,7 @@ describe("Private local model panel", () => {
     await waitFor(() => {
       expect(screen.getByText(/desktop status unavailable/i)).toBeInTheDocument();
     });
+    openProviderSafeActions();
     expect(mocks.loadProviderStatus).not.toHaveBeenCalled();
     const desktopOnlyButtons = screen.getAllByRole("button", { name: /desktop app required/i });
     expect(desktopOnlyButtons.every((button) => button.hasAttribute("disabled"))).toBe(true);
@@ -294,6 +305,7 @@ describe("Private local model panel", () => {
 
   it("requires fresh approval and exposes no prompt textbox", async () => {
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const runButton = await screen.findByRole("button", { name: /run provider smoke/i });
     expect(runButton).toBeDisabled();
     expect(within(screen.getByTestId("provider-smoke-card")).queryByRole("textbox")).not.toBeInTheDocument();
@@ -339,6 +351,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     fireEvent.click(await screen.findByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
     fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
 
@@ -371,6 +384,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     fireEvent.click(await screen.findByRole("checkbox", { name: /approve one fixed provider smoke check/i }));
     fireEvent.click(screen.getByRole("button", { name: /run provider smoke/i }));
 
@@ -382,6 +396,7 @@ describe("Private local model panel", () => {
 
   it("requires approval before sending bounded sandbox text", async () => {
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     const send = screen.getByRole("button", { name: /send approved text/i });
     expect(send).toBeDisabled();
@@ -412,6 +427,7 @@ describe("Private local model panel", () => {
       })
     );
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     const approval = screen.getByRole("checkbox", { name: /approve this one local provider request/i });
     fireEvent.change(textarea, { target: { value: "One request" } });
@@ -439,6 +455,7 @@ describe("Private local model panel", () => {
       })
     );
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     fireEvent.change(textarea, { target: { value: "Sensitive user text" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
@@ -465,6 +482,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     fireEvent.change(textarea, { target: { value: "Do not echo this prompt" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
@@ -493,6 +511,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     fireEvent.change(textarea, { target: { value: "P".repeat(2200) } });
     expect(textarea).toHaveValue("P".repeat(2000));
@@ -526,6 +545,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     fireEvent.change(textarea, { target: { value: "Hello" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
@@ -542,6 +562,7 @@ describe("Private local model panel", () => {
 
   it("clears only the visible response when requested", async () => {
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     const textarea = await screen.findByRole("textbox", { name: /your sandbox text/i });
     fireEvent.change(textarea, { target: { value: "Keep this draft" } });
     fireEvent.click(screen.getByRole("checkbox", { name: /approve this one local provider request/i }));
@@ -576,6 +597,7 @@ describe("Private local model panel", () => {
       }
     });
     render(<PrivateLocalModelPanel />);
+    openProviderSafeActions();
     fireEvent.change(await screen.findByRole("textbox", { name: /your sandbox text/i }), {
       target: { value: "Hello" }
     });

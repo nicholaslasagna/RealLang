@@ -228,6 +228,7 @@ async function run() {
 
       await page.getByRole("button", { name: "Provider / Local Model", exact: true }).click();
       await page.waitForSelector('[data-testid="provider-readiness-dashboard"]');
+      await page.getByText("Connection checks", { exact: true }).click();
       await page.waitForSelector('[data-testid="provider-smoke-card"]', { state: "visible" });
       const smokeButton = page.getByRole("button", { name: "Run provider smoke", exact: true });
       if (await smokeButton.isEnabled()) throw new Error(`Provider smoke started enabled at ${width}px`);

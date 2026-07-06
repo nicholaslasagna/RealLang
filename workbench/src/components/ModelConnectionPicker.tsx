@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import type { ProviderStatus } from "../bridge";
 import {
   MODEL_PROVIDER_PROFILES,
@@ -56,8 +57,16 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
     MODEL_PROVIDER_PROFILES.find((profile) => profile.id === selectedModelProfileId) ??
     MODEL_PROVIDER_PROFILES[0];
   const imageProfile = MODEL_PROVIDER_PROFILES.find((profile) => profile.id === "private-local-image");
-  const configuredModelLabel = privateLocalModel.modelLabel || "<configured-locally>";
+  const configuredModelLabel = privateLocalModel.modelLabel || "your-local-model-id";
   const imageEndpoint = imageProfile?.defaultBaseUrl ?? "http://localhost:8188";
+  const selectedStatus = loading ? "Checking" : profileStatus(selectedProfile, status, desktop);
+  const selectedTone = profileTone(selectedProfile, status, desktop);
+  const chatConfigured = desktop && Boolean(status?.configured);
+  const imageConfigured = desktop && Boolean(status?.image_provider_configured);
+
+  const handleProfileChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    selectModelProfile(event.currentTarget.value);
+  };
 
   const copyTemplate = () => {
     const template = [
@@ -97,44 +106,62 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
         <span className="model-picker__icon"><Icon name="cpu" /></span>
         <div>
           <p className="eyebrow">MODEL CONNECTION</p>
-          <h2 id="model-picker-title">Choose model</h2>
-          <p>Pick the connection RealForge should use. Exact model names, endpoints, keys, and paths stay out of the UI.</p>
+          <h2 id="model-picker-title">Model connection</h2>
+          <p>Choose what powers the app. Exact model names, endpoints, keys, and paths stay out of the UI.</p>
         </div>
         <Badge label={trustLevelLabel(selectedProfile.trustLevel)} tone={selectedProfile.trustLevel === "deterministic" ? "cyan" : "amber"} />
       </header>
 
-      <div className="model-picker__options" role="radiogroup" aria-label="Model connection">
-        {MODEL_PROVIDER_PROFILES.map((profile) => {
-          const selected = profile.id === selectedProfile.id;
-          const disabled = profile.id === "private-local-image";
-          return (
-            <label
-              key={profile.id}
-              className={`model-picker__option ${selected ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}`.trim()}
-            >
-              <input
-                type="radio"
-                name="model-profile"
-                value={profile.id}
-                checked={selected}
-                disabled={disabled}
-                onChange={() => selectModelProfile(profile.id)}
-              />
-              <span className="model-picker__option-icon" aria-hidden="true">
-                <Icon name={profile.id === "mock" ? "flask-conical" : profile.id === "private-local-image" ? "image" : "cpu"} />
-              </span>
-              <span className="model-picker__option-copy">
-                <b>{profile.displayName}</b>
-                <small>{profileHint(profile, status)}</small>
-              </span>
-              <Badge label={loading && profile.id === "private-local" ? "Checking" : profileStatus(profile, status, desktop)} tone={profileTone(profile, status, desktop)} />
-            </label>
-          );
-        })}
+      <div className="model-picker__chooser">
+        <label className="model-picker__select-label" htmlFor="model-connection-select">
+          <span>Connection</span>
+          <select
+            id="model-connection-select"
+            className="model-picker__select"
+            aria-describedby="model-picker-current-hint"
+            value={selectedProfile.id}
+            onChange={handleProfileChange}
+          >
+            {MODEL_PROVIDER_PROFILES.map((profile) => (
+              <option key={profile.id} value={profile.id} disabled={profile.id === "private-local-image"}>
+                {profile.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="model-picker__current" data-testid="model-picker-current">
+          <span className="model-picker__option-icon" aria-hidden="true">
+            <Icon name={selectedProfile.id === "mock" ? "flask-conical" : selectedProfile.id === "private-local-image" ? "image" : "cpu"} />
+          </span>
+          <span className="model-picker__option-copy">
+            <b>{selectedProfile.displayName}</b>
+            <small id="model-picker-current-hint">{profileHint(selectedProfile, status)}</small>
+          </span>
+          <Badge label={selectedStatus} tone={selectedTone} />
+        </div>
+      </div>
+
+      <div className="model-picker__summary" aria-label="Connection summary">
+        <span>
+          <Icon name={chatConfigured ? "circle-check" : "triangle-alert"} />
+          Chat {chatConfigured ? "configured" : "needs setup"}
+        </span>
+        <span>
+          <Icon name={imageConfigured ? "circle-check" : "image"} />
+          Image {imageConfigured ? "configured" : "optional"}
+        </span>
+        <span>
+          <Icon name="shield-check" />
+          Approval required
+        </span>
+        <span>
+          <Icon name="hard-drive" />
+          Private config only
+        </span>
       </div>
 
       <p className="model-picker__note">
-        Selection is session-local UI state. <b>Private Local Model</b> powers chat; image generation runs on the Image screen from your configured backend. Every send still requires approval.
+        Selection is session-local UI state. Chat uses <b>Private Local Model</b>; image generation runs from your configured image backend on the Image screen.
       </p>
 
       <details className="model-setup" data-testid="provider-setup-guide">
@@ -162,7 +189,7 @@ export function ModelConnectionPicker({ status, loading, desktop }: ModelConnect
               <input
                 value={privateLocalModel.modelLabel}
                 aria-label="Configured model label preview"
-                placeholder="<configured-locally>"
+                placeholder="your-local-model-id"
                 onChange={(event) => setPrivateLocalModelLabel(event.currentTarget.value)}
               />
             </label>

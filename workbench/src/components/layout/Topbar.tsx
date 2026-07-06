@@ -8,6 +8,7 @@ import { Icon } from "../primitives";
 
 export function Topbar() {
   const staffPreview = useWorkbenchStore((s) => s.staffPreview);
+  const sidebarOpen = useWorkbenchStore((s) => s.sidebarOpen);
   const toggleSidebar = useWorkbenchStore((s) => s.toggleSidebar);
   const selectedModelProfileId = useWorkbenchStore((s) => s.selectedModelProfileId);
   const selectModelProfile = useWorkbenchStore((s) => s.selectModelProfile);
@@ -77,7 +78,14 @@ export function Topbar() {
           ))}
         </div>
       </details>
-      <button className="icon-button mobile-menu" type="button" onClick={toggleSidebar} aria-label="Toggle navigation">
+      <button
+        className="icon-button mobile-menu"
+        type="button"
+        onClick={toggleSidebar}
+        aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={sidebarOpen}
+        aria-controls="sidebar"
+      >
         <Icon name="menu" />
       </button>
     </>

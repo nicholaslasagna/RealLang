@@ -72,11 +72,14 @@ describe("Settings simplification (0.35)", () => {
     const advanced = screen.getByTestId("provider-advanced-details");
     expect(advanced).not.toHaveAttribute("open");
     expect(screen.getByTestId("provider-safe-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("provider-safe-actions")).not.toHaveAttribute("open");
+    expect(screen.getByText(/fixed smoke check · single-turn sandbox · approval required/i)).toBeInTheDocument();
     expect(screen.getByTestId("provider-smoke-card")).toBeInTheDocument();
   });
 
   it("keeps smoke and chat approval-gated in safe actions", async () => {
     render(<PrivateLocalModelPanel />);
+    fireEvent.click(screen.getByText(/connection checks/i));
     const smokeRun = await screen.findByRole("button", { name: /run provider smoke/i });
     const chatSend = screen.getByRole("button", { name: /send approved text/i });
     expect(smokeRun).toBeDisabled();

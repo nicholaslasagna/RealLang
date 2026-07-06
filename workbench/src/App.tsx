@@ -56,6 +56,12 @@ export default function App() {
           <nav id="sidebar" className="sidebar" aria-label="RealForge sections">
             <Sidebar />
           </nav>
+          <button
+            className="sidebar-scrim"
+            type="button"
+            aria-label="Dismiss navigation drawer"
+            onClick={() => useWorkbenchStore.setState({ sidebarOpen: false })}
+          />
           <main id="main" className="main-panel" tabIndex={-1} ref={mainRef}>
             <MainRouter />
           </main>

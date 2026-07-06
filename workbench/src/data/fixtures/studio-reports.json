@@ -46,9 +46,9 @@
   },
   "engine": {
     "presentation": {
-      "eyebrow": "ENGINE PLANNING",
-      "title": "Prepare engine work without touching projects.",
-      "description": "Read-only scans and approval-gated Unreal and Blender planning. No process launches.",
+      "eyebrow": "UNREAL PRODUCTION COCKPIT",
+      "title": "Plan, script, and validate Unreal work.",
+      "description": "Pick a template — gameplay, UMG, level blockout, asset import, Blueprints, cinematics, optimization — and your local model returns a reviewable Unreal Engine 5.x work package: plan, Editor Python, manual steps, validation checklist, and risks. RealForge launches nothing and writes no files; output stays local and untrusted.",
       "accent": "blue",
       "example": ["Scan an Unreal project", "search", "Build a read-only project profile for modules, plugins, content roots, and validation risks.", "/engine scan", "Preview project scan"],
       "items": [
@@ -63,7 +63,7 @@
     "presentation": {
       "eyebrow": "ASSET PIPELINES",
       "title": "Connect briefs to reviewable production plans.",
-      "description": "Bounded references become untrusted pipeline context, never automatic production actions.",
+      "description": "Your local model turns a brief into deliverables, pipeline stages, tasks, dependencies, constraints, review gates, and risks. Plan only — RealForge never launches tools or writes files. Output stays local and untrusted.",
       "accent": "green",
       "example": ["Plan a Blender asset pipeline", "workflow", "Draft modeling, UV, bake, collision, LOD, export, import, and review gates without launching tools.", "/asset pipeline", "Preview pipeline plan"],
       "items": [

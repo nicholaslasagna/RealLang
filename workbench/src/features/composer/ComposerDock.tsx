@@ -79,7 +79,6 @@ export function ComposerDock({
     const query = slashPaletteQuery(input);
     if (query !== null) {
       setSlashQuery(query);
-      if (askMode) onModeChange("preview");
       return;
     }
     if (!input) {
@@ -135,6 +134,11 @@ export function ComposerDock({
   // Standard chat keyboard behavior, in Ask-local mode only. Safe preview keeps
   // the default textarea behavior (Enter inserts a newline; never sends/executes).
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Escape" && slashQuery !== null) {
+      event.preventDefault();
+      setSlashQuery(null);
+      return;
+    }
     const query = slashPaletteQuery(event.currentTarget.value);
     if (query !== null && event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -161,7 +165,6 @@ export function ComposerDock({
   };
 
   const openSlashPalette = (query: string) => {
-    if (askMode) onModeChange("preview");
     setSlashQuery(query);
   };
 
@@ -309,6 +312,41 @@ export function ComposerDock({
             <Icon name="arrow-up" />
           </button>
         )}
+        {slashQuery !== null ? (
+          <div className="composer-slash-menu" data-testid="composer-slash-menu" role="listbox" aria-label="Slash command suggestions">
+            <header>
+              <span>COMMANDS</span>
+              <button
+                type="button"
+                onClick={() => {
+                  openPalette(slashQuery);
+                  setSlashQuery(null);
+                }}
+              >
+                All commands <Icon name="command" />
+              </button>
+            </header>
+            {slashMatches.length ? (
+              <div className="composer-slash-menu__list">
+                {slashMatches.map((command) => (
+                  <button
+                    key={command.command}
+                    type="button"
+                    role="option"
+                    onClick={() => selectSlashCommand(command.command)}
+                  >
+                    <code>{command.command}</code>
+                    <span>{command.description}</span>
+                    <small>{command.domain}</small>
+                    <em className={`slash-safety slash-safety--${commandTone(command)}`}>{command.safety}</em>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p>No matching slash command. Open all commands to browse the registry.</p>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <p className="composer-hint">
@@ -316,39 +354,6 @@ export function ComposerDock({
           ? `${selectedModelProfile.displayName} · session-only · no files, tools, memory, or workspace context`
           : "Stages a dry-run preview only · no model chat · no writes"}
       </p>
-
-      {slashQuery !== null ? (
-        <div className="composer-slash-menu" data-testid="composer-slash-menu" role="listbox" aria-label="Slash command suggestions">
-          <header>
-            <span>COMMANDS</span>
-            <button type="button" onClick={() => {
-              openPalette(slashQuery);
-              setSlashQuery(null);
-            }}>
-              All commands <Icon name="command" />
-            </button>
-          </header>
-          {slashMatches.length ? (
-            <div className="composer-slash-menu__list">
-              {slashMatches.map((command) => (
-                <button
-                  key={command.command}
-                  type="button"
-                  role="option"
-                  onClick={() => selectSlashCommand(command.command)}
-                >
-                  <code>{command.command}</code>
-                  <span>{command.description}</span>
-                  <small>{command.domain}</small>
-                  <em className={`slash-safety slash-safety--${commandTone(command)}`}>{command.safety}</em>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p>No matching slash command. Open all commands to browse the registry.</p>
-          )}
-        </div>
-      ) : null}
 
       {askMode ? (
         <details className="composer-chat-options" data-testid="composer-chat-options">

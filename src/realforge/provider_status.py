@@ -11,6 +11,7 @@ from realforge.private_provider_config import (
     PrivateProviderConfigError,
     build_private_image_provider_status,
     build_private_provider_status,
+    is_placeholder_model_id,
     load_private_local_config_bundle,
     parse_local_endpoint,
     private_local_config_path,
@@ -200,7 +201,7 @@ def _model_is_configured(model: str | None, *, redacted: bool) -> bool:
     if not model or not model.strip():
         return False
     if redacted:
-        return model.strip() != "<configured-locally>"
+        return not is_placeholder_model_id(model)
     return True
 
 

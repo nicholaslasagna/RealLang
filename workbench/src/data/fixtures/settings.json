@@ -21,7 +21,7 @@
     ] },
     { "id": "provider", "label": "Provider / Local Model", "icon": "cpu", "values": [
       { "label": "Provider", "value": "openai_compatible_local", "note": "Private local server (configure in .realforge.local.toml)" },
-      { "label": "Model", "value": "<configured-locally>", "note": "Identity stored in gitignored local config" },
+      { "label": "Model", "value": "your-local-model-id", "note": "Identity stored in gitignored local config" },
       { "label": "Trust", "value": "LOCAL UNTRUSTED", "note": "Provider output remains untrusted" }
     ] },
     { "id": "permissions", "label": "Permissions", "icon": "lock-keyhole", "values": [
